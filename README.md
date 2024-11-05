@@ -24,6 +24,7 @@ Code File Documentation
 * Contributors: Full information of authors and their respective contributions.
 * Sources: any online documentation that code or inspiration for code is sourced from. Within reason (no need to cite documentation for 'print()'
 * Relevant files: if this draws from other code, or other code draws from this, please cite the relevant file
+* Circuitry: if the code is run using some type of wiring or external circuit, there should be a description of how to wire up that circuit, such that someone can recreate the full test.
 
 Within the code, there should be extensive, almost unnecessary commenting. Generally try to include the author's thought process as the code is executing:
 * When defining variables, include their application.
