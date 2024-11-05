@@ -1,0 +1,7 @@
+#README
+This directory contains the code that will be run on the Raspberry Pi embedded system. The directories are organized in the order that code would theoretically flow through them. FIrst, it would be explorative. Then, once understood, it becomes functional for the final design. After being functional, it will be integrated with other systems and fully tested in its respective system. Finally, it will be tested and integrated with other code, then placed in the deliverable directory.
+
+* Exploration: directory containing code used just to experiment and explore the usage of the components. For instance seeing how the OS works, attempting threading, doing basic IO. 
+* Functional: directory containing code that will need to be functional for the end product. For instance integrating with the sensors and data processing, establishing external communication, threading, FSM of integration with the Arduino.
+* Demonstration: directory containing code that demonstrates the subsystems. Think of it like a rough draft. At this point the code works in theory, and now just needs to have the functionality integrated together. For instance the combination of successful sensing of an object, data communication to embedded system, data processing, instruction communication to Arduino system, status from control system, system output. 
+* Deliverable: directory containing the final code that will be delivered to the client. This will be empty for most of the project. Code will get moved here from 'demonstration' only after it has been throughly debugged. 
