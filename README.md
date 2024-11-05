@@ -2,10 +2,8 @@
 This is the repository for Colorado School of Mines senior design group 50: Variable Object Capture Mechanism. It will contain all of the code relevant to the project. To group members, please ask Walter (me) if you don't have experience working with Github. This README shall serve as a general introduction to the nature of the code and usage of the repo. 
 
 #README
-This top level folder is separated based on the environment that the code will be written and executed in. This is the typical readme section.
-
-PI_code is a folder containing the code that will be run on the Raspberry Pi 5 embedded system. 
-ARD_code is a folder containing the control system code that will be run on the Arduino Uno 3. 
+PI_code: directory containing the code that will be run on the Raspberry Pi 5 embedded system. 
+ARD_code: directory containing the control system code that will be run on the Arduino Uno 3. 
 
 #Usage
 Github is a very useful tool to manage a team's contributions to a library of code, as well as manage versions of the code to use when debugging. Please, as mentioned above, reach out to Walter if you have questions about how to use Github or the repo. Failure to do so could result in loss of work and progress, even corruption of the repository as a whole. README files are used as the documentation for a directory as a whole. If you create a new file, be sure to document it well, according to the 'documentation' section of this README.
