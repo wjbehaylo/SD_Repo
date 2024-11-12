@@ -17,6 +17,8 @@ led=gpiozero.LED(17)
 button=gpiozero.Button(7)
 start = False
 
+
+#In theory, this loop should run indefinitely. The button acts as an on-off toggle. 
 while True:
     
     if button.is_pressed:
