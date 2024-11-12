@@ -6,4 +6,4 @@ hello-world.py: a basic Python file to print hello world
 hello-world.cpp: a basic C++ file to print hello world
 
 
-button-led.cpp: a C++ file to turn on an external LED when an external button is pressed
+button-led.cpp: a python file to turn on an external LED when an external button is pressed
