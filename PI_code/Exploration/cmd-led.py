@@ -6,7 +6,6 @@
 #1,2
 #3,4
 # connect an LED and a resistor in series, with one end connecting to pin 11, other end connecting to 6 (GND)
-#connect a button between pins 1 and 7, so that when pressed pin 7 will get the 3.3V from pin 1
 
 import gpiozero
 from time import sleep
@@ -14,23 +13,30 @@ from time import sleep
 
 #if the circuit is connected to GPIO17, specify the pin as 17 (not 11)
 led=gpiozero.LED(17)
-button=gpiozero.Button(7)
-start = False
 
+led.on()
+print("program starting")
+sleep(0.5)
+led.off()
+sleep(0.1)
 
-#In theory, this loop should run indefinitely. The button acts as an on-off toggle. 
-while True:
-    
-    if button.is_pressed:
-        start=not start
-        print(start)
+enable = False
 
-    if start:
-        led.on()
-        sleep(0.5)
-        led.off()
-        sleep(0.5)
-
-
-
-    
+while True: 
+    sleep(1) #start off with waiting a second. The decided upon task will execute until a new one is entered
+    cmd = input("enter \'ON\', \'OFF\', \'STROBE\', or \'DONE\': ")
+    match cmd:
+        case "ON":
+            led.on()
+        case "OFF":
+            led.off()
+        case "STROBE":
+            led.on()
+            sleep(1)
+            led.off()
+            sleep(1)
+            led.on()
+            sleep(1)
+            led.off()
+        case "DONE":
+            break

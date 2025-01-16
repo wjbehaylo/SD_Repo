@@ -7,7 +7,7 @@
 #3,4
 # for this, a breadboard will be necessary
 #connect pin 6 to GND
-#connect pin 2 to VCC (5V)
+#connect pin 2 to VCC (5V)                                                                                                      
 #connect pin 18 (GPIO 24, trig) to trig
 #on the breadboard,
 # resistor connecting GND and pin 16 (GPIO 23, echo)
@@ -16,6 +16,8 @@
 #connect pin 11 (GPIO 17) to an LED in series with a resistor connected to ground (pin6)
 
 import gpiozero
+import RPi.GPIO as GPIO
+from time import sleep
 
 
 #essentially with US sensors, trigger is applied and has the US send out a value
@@ -26,10 +28,19 @@ import gpiozero
 # max_distance, which sets the maximum distance in the range (m)
 # threshold_distance, the close side of the range (m)
 ultrasonic_1=gpiozero.DistanceSensor(23, 24)
-
 pwm_led=gpiozero.PWMLED(17)
-
+pwm_led.value=0
+sleep(1)
+pwm_led.value=0.5
+sleep(1)
+pwm_led.value=1
+sleep(1)
+pwm_led.value=0
+print("hello")
+print('Distance to nearest object is', ultrasonic_1.distance, 'm')
+sleep(10)
 while True:
-    print('Distance to nearest object is', ultrasonic_1.distance, 'm')
+    sleep(1)
+    #print('Distance to nearest object is', ultrasonic_1.distance, 'm')
     pwm_led.value=1-ultrasonic_1.distance #set the pwm value to be 1- the detected distace. so at 1m it will be off, at 0.1 it will be almost bright
 
