@@ -17,7 +17,7 @@ obj_points = []  # 3d point in real world space
 img_points = []  # 2d points in image plane
 
 # Load calibration images
-images = glob.glob('/home/seedlab/repo/SEED/Demo1/CV/*.png')
+images = glob.glob('/home/sd-group50/SD_Repo/PI_code/Camera_Calib/*.png')
 
 for image in images:
     img = cv2.imread(image)

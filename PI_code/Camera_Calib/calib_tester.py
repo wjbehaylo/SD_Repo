@@ -15,7 +15,7 @@ objpoints = []  # 3d points in real world space
 imgpoints = []  # 2d points in image plane
 
 # Load chessboard images
-images = glob.glob('/home/seedlab/repo/SEED/Demo1/CV/*.png')  # Adjust path accordingly
+images = glob.glob('/home/sd-group-50/SD_Repo/PI_code/Camera_Calib/*.png')  # Adjust path accordingly
 
 for img_path in images:
     img = cv2.imread(img_path)
