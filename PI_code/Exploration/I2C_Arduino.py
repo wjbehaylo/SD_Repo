@@ -1,10 +1,8 @@
-+# Purpose: this is an exploration file to set up the Raspberry Pi to Arduino I2C sending.
++# Purpose: this is an exploration file to set up the Raspberry Pi to Arduino I2C sending and receiving
 # Contributors: Walter
 # Sources: SEED_LAB repository for previous examples, install for SMBus2https://pypi.org/project/smbus2/ Documentation for smbus2 https://smbus2.readthedocs.io/en/latest/
 # Relevant files: this file is related to the I2C_Pi file located in ARD_code.
-# Circuitry: first, make sure smbus2 is downloaded on the pi. Run "pip install smbus2" to get it on
-# Then, we need the SMBUS libraryif the code is run using some type of wiring or external circuit, there should be a description of how to wire up that circuit, such that someone can recreate the full test.
-
+# Circuitry: A4 is SDA on Arduino, A5 is SCL on Arduino, second pin from top on left (03) is SDA on Pi, third pin from top on left (05) is SCL on Pi, Connect GND on Arduino to fifth pin from top left (09) on Pi. Connect other similar names as well
 from smbus2 import SMBus #this is to get the I2C connection functionality we want. We will need to run 
 from time import sleep
 # I2C address of the Arduino. I2C starts off by clarifying what is to be written to, then writing there.
@@ -15,7 +13,7 @@ i2c_arduino = SMBus(1)
 #offset represents which register will be written to on the arduino. Different registers might store different things based on mode of operation.
 #for instance, register 16 might be the I2C message pertaining to the rotation that should be gone to, whereas register 15 might have the amount to close the arms and register 14 might signify that capture is going
 #for now, we are just testing sending one message and we want to experiment with where to send it.
-write_offset=int(input("Enter an offset to write to:"))
+write_offset=int(input("Enter an offset to write to. 1 to write pin, 2 to write string, :"))
 
 #this is the actual message that will be sent. 32 characters or less because 32 bytes send in one block.
 write_string=input("Enter a string of 32 characters or less:")
@@ -44,22 +42,16 @@ print("sending complete")
 #then, we would just use 'i2c_arduino.write_byte_data(ARD_ADDR, offset, command)'
 
 #this is just waiting for the user to try to get a message from the arduino side of things
-while(int(input("Enter 1 if the Arduino is ready to be read:")) !=1):
-    sleep(0.1)
-
+#For simplicity, this will just be a byte
 #note that this is not wrapped in a 'try-except' block, but it could be if that is deemed necessary and easy enough. It will be actually, just not right now.
-
-#I'm not entirely sure if this is necessary, we might just be able to read in all 32 bytes (which I think is the max of a block), and some will be irrelevant. Could be tested out though
-read_message_length_offset=int(input("What offset will have the length of the message being sent?"))
-read_message_length=i2c_arduino.read_byte_data(ARD_ADDR,read_message_length_offset)
 
 #now that we know the length of the message, which I'm still not sure if we needed or not, but is still useful. We now need where the message starts
 read_message_offset=int(input("Enter an offset to read from:"))
-read_message=i2c_arduino.read_i2c_block_data(ARD_ADDR,read_message_offset, read_message_length)
+read_message=i2c_arduino.read_byte_data(ARD_ADDR,read_message_offset)
 
 #now we will print the length and location of the message, following by the message itself
-print("We read a message of length"+str(read_message_length)+"from offset"+read_message_offset+"of the Arduino:")
-print(str(read_message))
+print("We read a byte from offset"+read_message_offset+"of the Arduino:")
+print(read_message)
 
 #closing message
 print("This program is finished running now")

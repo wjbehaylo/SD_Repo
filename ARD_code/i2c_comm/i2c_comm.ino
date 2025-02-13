@@ -1,10 +1,12 @@
 #include <Wire.h>
 #define MY_ADDR 8
+#define LED_OFFSET 1
+#define STR_OFFSET 2
 // Global variables to be used for I2C communication
 volatile uint8_t offset = 0;
 volatile uint8_t reply = 0;
 
-volatile uint8_t instruction = 0;
+volatile uint8_t instruction[32] = {0};
 volatile uint8_t msgLength = 0;
 void setup() {
   Serial.begin(9600);
@@ -19,8 +21,9 @@ void setup() {
 void loop() {
   // If there is data on the buffer, read it
   if (msgLength > 0) {
-    if (offset==1) {
-    digitalWrite(LED_BUILTIN,instruction);
+    if (offset==LED_OFFSET){ 
+      //in theory, sending null character '\0' would turn it one way, anything else would turn it the other
+      digitalWrite(LED_BUILTIN,instruction);
     }
     printReceived();
     msgLength = 0;
@@ -35,7 +38,7 @@ void printReceived() {
   Serial.println(msgLength);
   Serial.print("Instruction received: ");
   for (int i=0;i<msgLength;i++) {
-    Serial.print(String(instruction)+"\t");
+    Serial.print(String(instruction[i])+"\t");
   }
   Serial.println("");
 }
@@ -45,14 +48,19 @@ void receive() {
   offset = Wire.read();
   // If there is information after the offset, it is telling us more about the command.
   while (Wire.available()) {
-    instruction = Wire.read();
-    reply = int(instruction) + 100;
+    instruction[msgLength] = Wire.read();
+    msgLength++; //after each byte is read, update the length of the message accordingly
   }
+  
 }
 void request() {
   // According to the Wire source code, we must call write() within the requesting ISR
   // and nowhere else. Otherwise, the timing does not work out. See line 238:
   // https://github.com/arduino/ArduinoCore-avr/blob/master/libraries/Wire/src/Wire.cpp
-  Wire.write(reply);
-  reply = 0;
+  Serial.print("Enter number to send: ");
+  while(Serial.available()); //this will wait until serial is no longer available, meaning something has been sent
+  number=Serial.read(); //this reads in one byte of incoming data
+  Serial.print("Sending: ");
+  Serial.print(number);
+  Wire.write(number);
 }
