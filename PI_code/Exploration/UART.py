@@ -33,7 +33,7 @@ if(ser.is_open):
 
 #.is_open() returns true or false
 ser.write(b"Start capture!\n") #then this should print this to the putty
-ser.write_timeout = 1 
+ser.write_timeout = 1 #I think this is just how long it can take to write before opening up the line again
 #sleep(1)
 line1 = ser.readline(100) #requires 100 bytes to be sent to it in order to print out whole message, will overflow past 100
 print(line1)

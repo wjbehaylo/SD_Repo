@@ -1,10 +1,9 @@
-# Purpose: this is an exploration file to set up the Raspberry Pi to Arduino I2C sending.
++# Purpose: this is an exploration file to set up the Raspberry Pi to Arduino I2C sending.
 # Contributors: Walter
 # Sources: SEED_LAB repository for previous examples, install for SMBus2https://pypi.org/project/smbus2/ Documentation for smbus2 https://smbus2.readthedocs.io/en/latest/
 # Relevant files: this file is related to the I2C_Pi file located in ARD_code.
 # Circuitry: first, make sure smbus2 is downloaded on the pi. Run "pip install smbus2" to get it on
 # Then, we need the SMBUS libraryif the code is run using some type of wiring or external circuit, there should be a description of how to wire up that circuit, such that someone can recreate the full test.
-# we 
 
 from smbus2 import SMBus #this is to get the I2C connection functionality we want. We will need to run 
 from time import sleep
