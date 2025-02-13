@@ -6,7 +6,7 @@
 volatile uint8_t offset = 0;
 volatile uint8_t reply = 0;
 
-volatile uint8_t instruction[32] = {0};
+volatile char instruction[32] = {0};
 volatile uint8_t msgLength = 0;
 void setup() {
   Serial.begin(9600);
@@ -57,10 +57,9 @@ void request() {
   // According to the Wire source code, we must call write() within the requesting ISR
   // and nowhere else. Otherwise, the timing does not work out. See line 238:
   // https://github.com/arduino/ArduinoCore-avr/blob/master/libraries/Wire/src/Wire.cpp
-  
   //theoretically, it would send a constant status when probed, which would update when the system has successfully captured the debris or failed to. It could also be other stuff for like arm movement and whatnot.
   
-  number=1; //for now we will send a '1'
+  int number=1; //for now we will send a '1'
   Serial.print("Sending: ");
   Serial.print(number);
   Wire.write(number);
