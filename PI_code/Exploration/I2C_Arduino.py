@@ -1,8 +1,12 @@
-+# Purpose: this is an exploration file to set up the Raspberry Pi to Arduino I2C sending and receiving
+# Purpose: this is an exploration file to set up the Raspberry Pi to Arduino I2C sending and receiving
 # Contributors: Walter
 # Sources: SEED_LAB repository for previous examples, install for SMBus2https://pypi.org/project/smbus2/ Documentation for smbus2 https://smbus2.readthedocs.io/en/latest/
 # Relevant files: this file is related to the I2C_Pi file located in ARD_code.
-# Circuitry: A4 is SDA on Arduino, A5 is SCL on Arduino, second pin from top on left (03) is SDA on Pi, third pin from top on left (05) is SCL on Pi, Connect GND on Arduino to fifth pin from top left (09) on Pi. Connect other similar names as well
+# Circuitry: connect the following listed pins
+#   A4 is SDA on Arduino, second pin from top on left (03) is SDA on Pi,
+#   A5 is SCL on Arduino, third pin from top on left (05) is SCL on Pi,
+#   GND on Arduino to fifth pin from top left (09) on Pi.
+
 from smbus2 import SMBus #this is to get the I2C connection functionality we want. We will need to run 
 from time import sleep
 # I2C address of the Arduino. I2C starts off by clarifying what is to be written to, then writing there.
@@ -13,14 +17,15 @@ i2c_arduino = SMBus(1)
 #offset represents which register will be written to on the arduino. Different registers might store different things based on mode of operation.
 #for instance, register 16 might be the I2C message pertaining to the rotation that should be gone to, whereas register 15 might have the amount to close the arms and register 14 might signify that capture is going
 #for now, we are just testing sending one message and we want to experiment with where to send it.
-write_offset=int(input("Enter an offset to write to. 1 to write pin, 2 to write string, :"))
+write_offset=int(input("Enter an offset to write to. 1 to write pin, 2 to write string: "))
 
 #this is the actual message that will be sent. 32 characters or less because 32 bytes send in one block.
-write_string=input("Enter a string of 32 characters or less:")
+# if writing the led pin, send a 0 for off, send a 1 for on
+write_string=input("Enter a string of 32 characters or less: ")
 
 #this is just a sanity check on what is trying to be sent
 #Also, I'm pretty sure that the '+' sign makes its own space, but I might have to add one in.
-print("sending"+ write_string)
+print("sending "+ write_string)
 
 #the 'ord' function takes in a byte in the form of a character or length 1 string, and returns the unicode value
 #obviously, we are sending these in byte packages so we need to send them as their unicode values. 
@@ -50,7 +55,7 @@ read_message_offset=int(input("Enter an offset to read from:"))
 read_message=i2c_arduino.read_byte_data(ARD_ADDR,read_message_offset)
 
 #now we will print the length and location of the message, following by the message itself
-print("We read a byte from offset"+read_message_offset+"of the Arduino:")
+print("We read a byte from offset "+str(read_message_offset)+" of the Arduino:")
 print(read_message)
 
 #closing message

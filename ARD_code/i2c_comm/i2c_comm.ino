@@ -57,9 +57,10 @@ void request() {
   // According to the Wire source code, we must call write() within the requesting ISR
   // and nowhere else. Otherwise, the timing does not work out. See line 238:
   // https://github.com/arduino/ArduinoCore-avr/blob/master/libraries/Wire/src/Wire.cpp
-  Serial.print("Enter number to send: ");
-  while(Serial.available()); //this will wait until serial is no longer available, meaning something has been sent
-  number=Serial.read(); //this reads in one byte of incoming data
+  
+  //theoretically, it would send a constant status when probed, which would update when the system has successfully captured the debris or failed to. It could also be other stuff for like arm movement and whatnot.
+  
+  number=1; //for now we will send a '1'
   Serial.print("Sending: ");
   Serial.print(number);
   Wire.write(number);
