@@ -11,7 +11,10 @@
 #   fifth pin from top left (09) is ground on Pi.
 #   sensor has a voltage regulator, so Vin can be 5V-3V and it will work
 
-#   Must install the Adafruit Circuit Python VL53L0X, ensure latest version of Adafruit Circuit Python is running
+# must launch the virtual environment using this command:
+#   source circuitpython-env/bin/activate
+#   to run this, any I suppose any later programs, run them through the command line using 'python3 VL53L0X-sensor-code.py' or similar command
+# Must install the Adafruit Circuit Python VL53L0X, ensure latest version of Adafruit Circuit Python is running
 #   Ensure adafruit_vl53l0x.mpy and adafruit_bus_device libraries installed
 #   run sudo pip3 install adafruit-circuitpython-vl53l0x from command line
 
