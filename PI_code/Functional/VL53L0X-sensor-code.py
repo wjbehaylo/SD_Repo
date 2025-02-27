@@ -5,9 +5,9 @@
 #   https://cdn-learn.adafruit.com/downloads/pdf/adafruit-vl53l0x-micro-lidar-distance-sensor-breakout.pdf sensor datasheet
 # Relevant files: 
 # Circuitry: connect the following listed pins
-#   top left pin on pi is 3.3V, connect to Vin
-#   second pin from top on left (03) is SDA on Pi,
-#   third pin from top on left (05) is SCL on Pi,
+#   top left pin on pi is 3.3V, connect to Vin, as is 9th from top left
+#   second pin from top on left (03) is SDA on Pi, (blue cable)
+#   third pin from top on left (05) is SCL on Pi, (white cable)
 #   fifth pin from top left (09) is ground on Pi.
 #   sensor has a voltage regulator, so Vin can be 5V-3V and it will work
 
