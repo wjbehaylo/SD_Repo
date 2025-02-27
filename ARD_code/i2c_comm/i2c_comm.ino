@@ -2,7 +2,11 @@
 #define MY_ADDR 8
 #define LED_OFFSET 1
 #define STR_OFFSET 2
-// Global variables to be used for I2C communication
+/* Global variables to be used for I2C communication
+Pin A5 of the Arduino is SCL, connected to breadboard bus
+Pin A4 of the Arduino is SDA, connected to breadboard bus
+*/ 
+
 volatile uint8_t offset = 0;
 volatile uint8_t reply = 0;
 

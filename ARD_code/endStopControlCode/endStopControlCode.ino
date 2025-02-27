@@ -1,22 +1,17 @@
 /* 
-LimitSwitch
+Control code for the end stops
 
-Turns off motor is limit switch is pressed, otherwise motor will continue running
-*/
+Turns off motor is end stop is pressed, otherwise motor will continue running
 
-
-/* 
-LimitSwitch
-
-Stops motor when any limit switch is pressed, otherwise motor continues running. 
-HIGH means the limit switch is NOT pressed. 
+Stops motor when any end stop is pressed, otherwise motor continues running. 
+HIGH means the end stop is NOT pressed. 
 LOW means the switch is pressed.
 */
 
-#define LIMIT_SWITCH_PIN1 7  // Limit switch 1 connected to pin 7
-#define LIMIT_SWITCH_PIN2 8  // Limit switch 2 connected to pin 8
-#define LIMIT_SWITCH_PIN3 12 // Limit switch 3 connected to pin 12
-#define LIMIT_SWITCH_PIN4 13 // Limit switch 4 connected to pin 13
+#define LIMIT_SWITCH_PIN1 7  // Limit switch 1 connected to pin 7, currentState 1
+#define LIMIT_SWITCH_PIN2 8  // Limit switch 2 connected to pin 8, currentState 2
+#define LIMIT_SWITCH_PIN3 12 // Limit switch 3 connected to pin 12, currentState 3
+#define LIMIT_SWITCH_PIN4 13 // Limit switch 4 connected to pin 13, currentState 4
 
 #define MOTOR_PIN 9  // Motor control pin
 
@@ -44,21 +39,37 @@ void loop() {
   int currentState4 = digitalRead(LIMIT_SWITCH_PIN4);
 
   // Check if any switch state has changed
-  if (currentState1 != lastState1 || currentState2 != lastState2 ||
-      currentState3 != lastState3 || currentState4 != lastState4) {
+  if (currentState1 != lastState1) {
     lastDebounceTime = millis();
+  }
+  else if (currentState2 != lastState2) {
+    lastDebounceTime = millis();
+  }
+  else if (currentState3 != lastState3) {
+    lastDebounceTime = millis();
+  } 
+  else if (currentState4 != lastState4) {
+        lastDebounceTime = millis();
   }
 
   // Wait for debounce delay
   if ((millis() - lastDebounceTime) > debounceDelay) {
-    if (currentState1 == LOW || currentState2 == LOW || 
-        currentState3 == LOW || currentState4 == LOW) {
-      Serial.println("A limit switch is PRESSED. Stopping motor.");
+    if (currentState1 == LOW) {
+      Serial.println("Current limit switch 1 is PRESSED. Stopping motor.");
       digitalWrite(MOTOR_PIN, LOW);  // Stop motor
-    } else {
-      Serial.println("All limit switches are UNTOUCHED. Running motor.");
-      digitalWrite(MOTOR_PIN, HIGH); // Run motor
-    }
+    } else if (currentState2 == LOW) {
+      Serial.println("Current limit switch 2 is PRESSED. Stopping motor.");
+      digitalWrite(MOTOR_PIN, LOW);  // Stop motor
+    } else if (currentState3 == LOW) {
+      Serial.println("Current limit switch 3 is PRESSED. Stopping motor.");
+      digitalWrite(MOTOR_PIN, LOW); // Stop motor
+    } else if (currentState4 == LOW) {
+      Serial.println("Current limit switch 4 is PRESSED. Stopping motor.");
+      digitalWrite(MOTOR_PIN, LOW); // Stop motor
+  } else {
+    Serial.println("All limit switches are UNTOUCHED. Running motor.");
+    digitalWrite(MOTOR_PIN, HIGH); // Run motor
+  }
   }
 
   // Update last states
