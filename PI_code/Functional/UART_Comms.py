@@ -42,28 +42,37 @@ ser.timeout = None #keeps reading line of communication as open until the messag
 #debugging
 if(ser.is_open):
     print("It is open")
-    
+ser.write(b"Connection Established\r\n")
 #we only want messages of one bit at a time. We will have switch statement and output the confirmed message based on the input
-message=ser.readline(1)
+#We need the message in bytes, the message reinterpretted, and to send the message back
+message_bytes=ser.readline(1)
+message=message_bytes.decode('utf-8')
+#ser.write(message_bytes+b"\r\n")
+
+print(message)
 while(message != 'Q'):
     match message:
         case '?':
-            ser.write(b"Usage Guidelines:\nThe following is a list of possible one character messages that can be sent\n")
-            ser.write(b"    (?): Help, prints out the Usage Guidelines\n\n")
+            ser.write(b"Usage Guidelines:\r\nThe following is a list of possible one character messages that can be sent\r\n")
+            ser.write(b"    (?): Help, prints out the Usage Guidelines\r\n\n")
             
-            ser.write(b"    (S): Start, begins the standard capture process\n")
-            ser.write(b"    (P): Pause, pauses the system's current execution\n")
-            ser.write(b"    (Q): Quit, terminates the serial connection\n\n")
+            ser.write(b"    (S): Start, begins the standard capture process\r\n")
+            ser.write(b"    (P): Pause, pauses the system's current execution\r\n")
+            ser.write(b"    (Q): Quit, terminates the serial connection\r\n\n")
 
-            ser.write(b"    (D): Distance, output distance to the debris\n")
-            ser.write(b"    (T): Type, output type of debris detected\n\n")
+            ser.write(b"    (D): Distance, output distance to the debris\r\n")
+            ser.write(b"    (T): Type, output type of debris detected\r\n\n")
             
-            ser.write(b"    (M): Move, followed by a value, instructs the claw to close\n")
-            ser.write(b"    (O): Open, fully open the claw\n")
-            ser.write(b"    (C): Close, fully close the claw\n\n")
+            ser.write(b"    (M): Move, followed by a value, instructs the claw to close\r\n")
+            ser.write(b"    (O): Open, fully open the claw\r\n")
+            ser.write(b"    (C): Close, fully close the claw\r\n\n")
             
-            ser.write(b"    (R): Rotate, followed by a value, instructs the claw to rotate\n")
-            ser.write(b"    (=): Equals, rotates the claw into = configuration\n")
-            ser.write(b"    (+): Plus, rotates the claw into the plus configuration\n\n")
-ser.write(b"Quit option selected, closing UART connection\n")
+            ser.write(b"    (R): Rotate, followed by a value, instructs the claw to rotate\r\n")
+            ser.write(b"    (=): Equals, rotates the claw into = configuration\r\n")
+            ser.write(b"    (+): Plus, rotates the claw into the plus configuration\r\n\n")
+    message_bytes=ser.readline(1)
+    message=message_bytes.decode('utf-8')
+    print(message)
+    ser.write(message_bytes+b"\r\n")
+ser.write(b"Quit option selected, closing UART connection\r\n")
 ser.close()
