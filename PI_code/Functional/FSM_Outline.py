@@ -126,7 +126,6 @@ def stateB():
 #Thoughts:
 #   This could be simplified into an Arduino Receive state. Maybe there should be a way for the host computer to abort processes, so the UART needs to be threaded?
 
-
 #stateI is "Arduino Capture Wait" **ARDUINO RECEIVE**
 #Purpose:
 #   The arduino has tried to capture the thing now, so we will see if it is successful or not. 
