@@ -213,13 +213,8 @@ def UART():
                 #I am planning on status_UART being a string, so we need to encode it 
                 ser.write(status_UART.encode("utf-8")+b"\r\n")
             
-
-                
-                
-                    
         message_bytes=ser.readline(1)
         message=message_bytes.decode('utf-8')
         print(message)
         ser.write(message_bytes+b"\r\n")
-    ser.write(b"Quit option selected, closing UART connection\r\n")
     ser.close()
