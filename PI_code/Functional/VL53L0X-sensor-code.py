@@ -15,6 +15,8 @@
 #   Ensure adafruit_vl53l0x.mpy and adafruit_bus_device libraries installed
 #   run sudo pip3 install adafruit-circuitpython-vl53l0x from command line
 
+#   run 'source circuitpython-env/bin/activate' to enter the virtual environment where board and busio are downloaded.
+
 import time
 
 import board
