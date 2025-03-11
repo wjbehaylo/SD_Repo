@@ -78,7 +78,10 @@ def UART():
 
     #debugging
     if(ser.is_open):
-        print("It is open")
+        print("UART connection is open")
+    else:
+        print("Failure to open UART, exiting\r\n")
+        return
     ser.write(b"Connection Established\r\n")
     #we only want messages of one bit at a time. We will have switch statement and output the confirmed message based on the input
     #We need the message in bytes, the message reinterpretted, and to send the message back
@@ -218,9 +221,10 @@ def UART():
                 ser.write(status_UART.encode("utf-8")+b"\r\n")
             case '=':
                 ser.write(b"Rotating arm into = configuration\r\n")
+                rotating_arm=1
                 configuring_arm=1
                 arm_configuration=0
-                while(configuring_arm==1):
+                while(rotating_arm==1):
                     sleep(0.1)
                 ser.write(b"Arm configuration finished\r\n")
                 #status will be updated during the process

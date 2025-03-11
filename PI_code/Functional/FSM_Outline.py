@@ -29,7 +29,7 @@
 #stateH is "Data_Analysis"
 #stateQ is "Quit"
 
-#stateA is "initializing". 
+#stateA is "Initializing". 
 #Purpose: 
 #   this is here to confirm the start up of the program and FSM.
 #Functionality:
@@ -38,8 +38,6 @@
 #   It will transition to Moving_Arms, or Quit if the system doesn't work
 #Thoughts:
 #   This is kind of just a sanity check, it might send messages to other things to confirm the sending lines are open
-def stateA():
-    return stateB
 
 #stateB is "UART_Wait"
 #Purpose: 
