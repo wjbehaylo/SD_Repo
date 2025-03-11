@@ -3,7 +3,6 @@
 # Sources: 
 #   Based on programming used in SEED_LAB for object detection
 # Relevant files: camera_calib.py, camera_matrix.npy, distortion_coeffs.npy, and relevant png checker board images from the camera
-# Circuitry: this is purely software
 
 import cv2
 import threading
@@ -33,8 +32,7 @@ camera.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
 
 # Current frame captured from camera
 current_frame = None
-# Create a lock for thread-safe frame access
-frame_lock = threading.Lock()
+
 #Flag to control main loop
 is_running = True
 
@@ -50,7 +48,6 @@ def capture_frame():
     global current_frame, is_running, frame_lock
     # Continue capturing frames while is_running is True
     while is_running:
-
         ret, frame = camera.read()
         # Check if frame capture was successful
         if ret:
@@ -71,10 +68,7 @@ def debris_object_detect_and_distance():
 
     #continue processing frames while is_running is True
     while is_running:
-
-        with frame_lock:
-            # Check if there is a current frame
-            if current_frame is not None:
+        if current_frame is not None:
                 ret, frame = camera.read()
                 if not ret:
                     print("Failed to capture image!")
@@ -92,7 +86,7 @@ def debris_object_detect_and_distance():
                 # Find the contours of the object  
                 contours, _ = cv2.findContours(thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE) 
 
-                for contours in contours:
+                for contour in contours:
                     area = cv2.contourArea(contour)
              
                     # Check if the area is within tolerance for classification
@@ -117,8 +111,33 @@ def debris_object_detect_and_distance():
                                 cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
 
             # Show the processed frame (optional)
-            cv2.imshow("Detected Objects", undistort_frame)
-            if cv2.waitKey(1) & 0xFF == ord('q'):
-                break
+        cv2.imshow("Detected Objects", undistort_frame)
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            break
 
+def main():
+    #Main function to start capturing and processing frames
+    global is_running
+    
+    #Start threads for capturing and processing frames
+    capture_thread = threading.Thread(target=capture_frame) 
+    process_thread = threading.Thread(target=debris_object_detect_and_distance)
+
+    capture_thread.start()
+    process_thread.start()
+    sleep(1)
+    try:
+        while is_running:
+
+            time.sleep(0.1)  # Main thread can handle other tasks if necessary
+    except KeyboardInterrupt:
+        is_running = False
+    
+    capture_thread.join()
+    process_thread.join()
+    
+    camera.release()
     cv2.destroyAllWindows()
+
+if __name__ == "__main__":
+    main()
