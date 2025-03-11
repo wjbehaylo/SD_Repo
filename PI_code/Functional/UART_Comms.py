@@ -64,6 +64,7 @@ def UART():
     global configuring_arm
     global arm_configuration
     
+    #will thread status_UART and check regularly
     global status_UART
     global new_status
     #if there are other usb devices connected before this, you may have to replace 0 with 1, 2, or 3 I think. Otherwise just find which port it is. 
