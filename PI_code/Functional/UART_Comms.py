@@ -23,6 +23,8 @@ from time import sleep
 
 #this is a flag to signal if capture is going on
 capture_start=0
+#this is a flag to signal that the system should be reset
+initialize=0
 #this is a flag to signal if the program should stop, it won't often be set
 program_quit=0
 #this is a flag to signal that we should read the time of flight sensor
@@ -43,10 +45,15 @@ arm_configuration=0
 rotate_amount=0
 #this is going to be a string of the status of whatever thing just happened
 status_UART="" 
+#this will be a flag to be set if there is new status during the capture process.
+#so when going through the states, if capture_start==1, then they will set 'new_status'=1 to signal that something needs to be sent out.
+#after it is sent out over the ser_write stuff, new_status will be set back to 0
+new_status=0
 
 def UART():
     #global variables
     global capture_start
+    global initialize
     global program_quit
     global detecting_distance
     global detecting_object
@@ -56,9 +63,9 @@ def UART():
     global rotate_amount
     global configuring_arm
     global arm_configuration
-    global rotating_arm
     
     global status_UART
+    global new_status
     #if there are other usb devices connected before this, you may have to replace 0 with 1, 2, or 3 I think. Otherwise just find which port it is. 
     ser = serial.Serial('/dev/ttyAMA0')
 
@@ -86,7 +93,8 @@ def UART():
                 ser.write(b"Usage Guidelines:\r\nThe following is a list of possible one character messages that can be sent\r\n")
                 ser.write(b"    (?): Help, prints out the Usage Guidelines\r\n\n")
                 
-                ser.write(b"    (S): Start, begins the standard capture process\r\n")
+                ser.write(b"    (S): Start, begins the standard capture process\r\n") #note that there isn't a state for this, since it just sets the capture_start flag to be 1 then goes to resetting
+                ser.write(b"    (I): Initialize, resets the system to default configuration\r\n")
                 ser.write(b"    (Q): Quit, terminates the serial connection\r\n\n")
 
                 ser.write(b"    (D): Distance, output distance to the debris\r\n")
@@ -107,11 +115,27 @@ def UART():
                 #it will be set back to 0 once capture is complete, at which point this while loop will stop
                 while(capture_start==1):
                     sleep(0.1)
+                    #this if statement is just so that each state can still communicate through, even though the UART is doing what it is actively.
+                    if(new_status==1):
+                        ser.write(status_UART.encode("utf-8")+b"\r\n")
+                        new_status=0
                 ser.write(b"Capture process finished\r\n")
                 #status will be updated during the process
                 #I am planning on status_UART being a string, so we need to encode it 
                 ser.write(status_UART.encode("utf-8")+b"\r\n")
                     
+            case 'I':
+                #this case corresponds to the system being reset to its default, theoretically after a capture or on start up
+                ser.write(b"Initializing system\r\n")
+                initialize=1
+                while(initialize==1):
+                    sleep(0.1)
+                    if(new_status==1):
+                        ser.write(status_UART.encode("utf-8")+b"\r\n")
+                        new_status=0
+                ser.write(b"Intialization process finished\r\n")
+                ser.write(status_UART.encode("utf-8")+b"\r\n")
+                
             case 'Q':
                 #this state, however infrequenctly used, will be to termiante the program's functionality and end the while loops
                 ser.write(b"Quitting\r\n")
@@ -212,7 +236,9 @@ def UART():
                 #status will be updated during the process
                 #I am planning on status_UART being a string, so we need to encode it 
                 ser.write(status_UART.encode("utf-8")+b"\r\n")
-            
+            case _:
+                ser.write(b"Command "+message_bytes+b" not supported.\r\n Please make a valid selection ('?' for help)\r\n")
+        
         message_bytes=ser.readline(1)
         message=message_bytes.decode('utf-8')
         print(message)
