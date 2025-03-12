@@ -1,5 +1,8 @@
 # Purpose: this is a program that uses the camera calibration camera matrix and distortion coefficients to identify an object based on its shape and the number of contours
 # Contributors: Angela
+# How to Run: Execute using the python terminal.
+# Make sure either camera is connected for live feed. Camera coefficients need to be in the same
+# directory as script.
 # Sources: 
 #   Based on programming used in SEED_LAB for object detection
 # Relevant files: camera_calib.py, camera_matrix.npy, distortion_coeffs.npy, and relevant png checker board images from the camera
@@ -19,129 +22,167 @@ ARUINO_I2C_ADDRESS = 8
 # Initialize SMBus library for I2C communication (using bus 1)
 i2c_bus = SMBus(1)
 
-# Initialize thread lock
-frame_lock = threading.Lock()
+# Camera constants
+HEIGHT = 480
+WIDTH = 640
 
-# Initialize camera
-# Open camera with index 0
-camera = cv2.VideoCapture(0)
-# Set camera frames per second to 60
-camera.set(cv2.CAP_PROP_FPS, 60)
-# Width of camera
-camera.set(cv2.CAP_PROP_FRAME_WIDTH, 640) 
-# Height of camera
-camera.set(cv2.CAP_PROP_FRAME_HEIGHT, 480) 
-
-# Current frame captured from camera
+# Shared resources
+detectedObject = False
 current_frame = None
-#Flag to control main loop
 is_running = True
 
-#Load camera calibration data
-camera_matrix=np.load("camera_matrix.npy")
-distortion_coeffs = np.load("distortion_coeffs.npy")
-# Extract the focal length
-focal_points = [camera_matrix[0, 0], camera_matrix[1, 1]]
+# Load Camera Calibration Data
+camera_matrix = np.load("camera_matrix.npy")
+distortion_coeffs = np.load("dist_coeffs.npy")
 
-
-def capture_frame(): 
-    # Capture frames camera and updates global value for current_frame
-    global current_frame, is_running
-    # Continue capturing frames while is_running is True
-    while is_running:
-        ret, frame = camera.read()
-        # Check if frame capture was successful
-        if ret:
-            # Ensure thread-safe access to current_frame
-            with frame_lock:
-                current_frame = frame.copy()
-
-def debris_object_detect_and_distance():
-    # Process captured frames to detect ArUco markers and calculate their angles and distance
-    global current_frame, is_running
-
-    # Define area thresholds for classification (example values, adjust as needed)
-    CUBESAT_AREA = 500  # Example threshold for CubeSat
-    ROCKET_BODY_AREA = 2000  # Example threshold for Rocket Body
-    STARLINK_AREA = 1000  # Example threshold for Starlink
-    TOLERANCE = 0.1  # Allow a ±10% variation in area for classification
-
-    #continue processing frames while is_running is True
-    while is_running:
-        with frame_lock: #thread-safe frame access
-            if current_frame is None:
-                continue
-            frame = current_frame.copy()
-                
-            #undistort image based on current_frame, camera_matrix, and distortion_coeffs
-            undistort_frame = cv2.undistort(frame, camera_matrix, distortion_coeffs)
-            
-            # Convert the image to grayscale for object detection
-            gray_image = cv2.cvtColor(undistort_frame, cv2.COLOR_BGR2GRAY)
-
-            # separate the object from the background 
-            _, thresh = cv2.threshold(gray_image, 127, 255, 0)
-
-            # Find the contours of the object  
-            contours, _ = cv2.findContours(thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE) 
-
-            for contour in contours:
-                area = cv2.contourArea(contour)
-            
-                # Check if the area is within tolerance for classification
-                if (CUBESAT_AREA * (1 - TOLERANCE)) <= area <= (CUBESAT_AREA * (1 + TOLERANCE)):
-                    classification = "CubeSat"
-                elif (STARLINK_AREA * (1 - TOLERANCE)) <= area <= (STARLINK_AREA * (1 + TOLERANCE)):
-                    classification = "Starlink"
-                elif (ROCKET_BODY_AREA * (1 - TOLERANCE)) <= area <= (ROCKET_BODY_AREA * (1 + TOLERANCE)):
-                    classification = "Rocket Body"
-                else:
-                    classification = "Unknown Object"
-
-                # Print classification and size
-                scale_factor = 0.1  # Example conversion factor (1 pixel = 0.1 cm)
-                size = area * (scale_factor ** 2)
-                print(f'{classification} Detected! Size: {size:.2f} cm²')
-
-                # Draw and label the detected object
-                x, y, w, h = cv2.boundingRect(contour)
-                cv2.rectangle(undistort_frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
-                cv2.putText(undistort_frame, classification, (x, y - 10),
-                            cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
-
-        # Show the processed frame (optional)
-        cv2.imshow("Detected Objects", undistort_frame)
+# 3D Models for different objects (these are placeholder values, adjust as necessary)
+object_models = {
+    "CubeSat": np.array([
+        [-0.5, -0.5, 0],   # Front-bottom-left
+        [ 0.5, -0.5, 0],   # Front-bottom-right
+        [ 0.5,  0.5, 0],   # Front-top-right
+        [-0.5,  0.5, 0],   # Front-top-left
+        [-0.5, -0.5, 1],   # Back-bottom-left
+        [ 0.5, -0.5, 1],   # Back-bottom-right
+        [ 0.5,  0.5, 1],   # Back-top-right
+        [-0.5,  0.5, 1]    # Back-top-left
+    ], dtype=np.float32),
     
-        if cv2.waitKey(1) & 0xFF == ord('q'):
-            is_running = False #exit program
-            break
+    "Starlink": np.array([
+        # Define 3D points for the Starlink satellite model
+        [-1.0, -0.5, 0], [ 1.0, -0.5, 0], [ 1.0,  0.5, 0], [-1.0,  0.5, 0],  # Square points
+        [-1.0, -0.5, 1], [ 1.0, -0.5, 1], [ 1.0,  0.5, 1], [-1.0,  0.5, 1]   # Corresponding back points
+    ], dtype=np.float32),
+    
+    "Rocket Body": np.array([
+        # Define 3D points for the Rocket Body model
+        [-0.5, -0.5, 0], [ 0.5, -0.5, 0], [ 0.5,  0.5, 0], [-0.5,  0.5, 0],  # Base
+        [-0.5, -0.5, 10], [ 0.5, -0.5, 10], [ 0.5,  0.5, 10], [-0.5,  0.5, 10]  # Top
+    ], dtype=np.float32)
+}
+
+# Initialize the camera
+def initializeCamera():
+    camera = cv2.VideoCapture(0)
+    camera.set(cv2.CAP_PROP_FRAME_WIDTH, WIDTH)
+    camera.set(cv2.CAP_PROP_FRAME_HEIGHT, HEIGHT)
+    camera.set(cv2.CAP_PROP_AUTO_EXPOSURE, 3)
+    camera.set(cv2.CAP_PROP_AUTO_EXPOSURE, 1)
+    camera.set(cv2.CAP_PROP_BRIGHTNESS, 250)
+    camera.set(cv2.CAP_PROP_EXPOSURE, 39)
+    camera.set(cv2.CAP_PROP_BUFFERSIZE, 1)
+    camera.set(cv2.CAP_PROP_FPS, 120)
+    return camera
+
+def calculate_distance_with_pose_estimation(object_points, image_points, camera_matrix, distortion_coeffs):
+    """
+    Function to calculate the distance to an object using pose estimation.
+
+    Args:
+    - object_points: 3D coordinates of the object model (numpy array)
+    - image_points: 2D image coordinates of the object model in the image (numpy array)
+    - camera_matrix: Camera matrix containing the intrinsic parameters (numpy array)
+    - distortion_coeffs: Distortion coefficients (numpy array)
+
+    Returns:
+    - distance: The distance from the camera to the object (float)
+    - projected_points: The 2D projected points on the image (numpy array)
+    """
+    # SolvePnP to get rotation and translation vectors
+    _, rvec, tvec = cv2.solvePnP(object_points, image_points, camera_matrix, distortion_coeffs)
+
+    # Extract the translation vector (tvec) to get the distance
+    distance = np.linalg.norm(tvec)  # Euclidean distance (meters)
+
+    # Optionally, project the 3D object points to the 2D image plane using the pose
+    projected_points, _ = cv2.projectPoints(object_points, rvec, tvec, camera_matrix, distortion_coeffs)
+
+    return distance, projected_points
+
+def capture_frame(camera):
+    ret, frame = camera.read()
+    if ret:
+        return frame.copy()
+    return None
+
+def debris_detect(frame, camera_matrix, distortion_coeffs):
+    """
+    Classify the detected object and calculate its distance using pose estimation.
+    
+    Args:
+    - frame: The captured frame from the camera.
+    - camera_matrix: Camera matrix containing the intrinsic parameters (numpy array)
+    - distortion_coeffs: Distortion coefficients (numpy array)
+    
+    Returns:
+    - None (Displays the frame with distance and classification).
+    """
+    # Convert frame to grayscale and find contours
+    gray_image = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+    _, thresh = cv2.threshold(gray_image, 127, 255, 0)
+    contours, _ = cv2.findContours(thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+
+    for contour in contours:
+        # Calculate the area of the detected contour
+        area = cv2.contourArea(contour)
+        if area < 100:  # Ignore small contours
+            continue
+
+        # Assume the object is CubeSat, Starlink, or Rocket Body
+        detected_object = "Unknown Object"
+        image_points = []
+
+        # Calculate bounding box for contour (image points)
+        x, y, w, h = cv2.boundingRect(contour)
+        image_points = np.array([[x, y], [x + w, y], [x + w, y + h], [x, y + h]], dtype=np.float32)
+
+        # Match object based on area or other criteria (can be expanded with more sophisticated checks)
+        if area < 1500:
+            detected_object = "CubeSat"
+            object_points = object_models["CubeSat"]
+        elif area < 3000:
+            detected_object = "Starlink"
+            object_points = object_models["Starlink"]
+        else:
+            detected_object = "Rocket Body"
+            object_points = object_models["Rocket Body"]
+
+        # Call pose estimation for the detected object
+        distance, projected_points = calculate_distance_with_pose_estimation(object_points, image_points, camera_matrix, distortion_coeffs)
+
+        # Display the distance and classification
+        print(f"Detected {detected_object} at distance: {distance:.2f} meters")
+
+        # Draw the projected points and bounding box on the frame
+        for point in projected_points:
+            cv2.circle(frame, tuple(point[0].astype(int)), 5, (0, 0, 255), -1)
+
+        cv2.putText(frame, f'{detected_object}: {distance:.2f}m', (x, y - 10),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+
+    # Show the image with the projected points and object classification
+    cv2.imshow("Detected Objects and Distance", frame)
 
 def main():
-    #Main function to start capturing and processing frames
-    global is_running
-    
-    #Start threads for capturing and processing frames
-    capture_thread = threading.Thread(target=capture_frame) 
-    process_thread = threading.Thread(target=debris_object_detect_and_distance)
+    # Initialize the camera
+    camera = initializeCamera()
 
-    capture_thread.start()
-    process_thread.start()
-    sleep(1) #might not be needed but added for caution
+    while True:
+        # Capture a frame from the camera
+        frame = capture_frame(camera)
+        if frame is None:
+            continue  # If the frame is not captured, skip to the next iteration
+        
+        # Detect debris and calculate the distance
+        debris_detect(frame, camera_matrix, distortion_coeffs)
+        
+        # Exit the loop if the 'q' key is pressed
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            break
 
-    try:
-        while is_running:
-            time.sleep(0.1)  # Main thread can handle other tasks if necessary
-    except KeyboardInterrupt:
-        print("\nStopping threads...")
-        is_running = False
-    
-    #wait for threads to finish
-    capture_thread.join()
-    process_thread.join()
-    
-    #clean up
-    camera.release()
-    cv2.destroyAllWindows()
+        # Releasee Resources
+        camera.release()
+        cv2.destroyAllWindows()
 
 if __name__ == "__main__":
     main()
