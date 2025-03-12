@@ -1,8 +1,7 @@
-# Purpose: this is a program that uses the camera calibration camera matrix and distortion coefficients to identify an object based on its shape and the number of contours
+# Purpose: This is a program that uses the camera calibration camera matrix and distortion coefficients to identify a debris object based on its shape and the number of contours
 # Contributors: Angela
-# How to Run: Execute using the python terminal.
-# Make sure either camera is connected for live feed. Camera coefficients need to be in the same
-# directory as script.
+# How to Run: Execute using the python terminal. Make sure either camera is connected for live feed. 
+# Camera and distortion coefficients need to be in the same directory as script.
 # Sources: 
 #   Based on programming used in SEED_LAB for object detection
 # Relevant files: camera_calib.py, camera_matrix.npy, distortion_coeffs.npy, and relevant png checker board images from the camera
@@ -27,18 +26,19 @@ HEIGHT = 480
 WIDTH = 640
 
 # Shared resources
-detectedObject = False
+detected_object = False # This is the flag indicating whether any object was detected
+detected_object_type = None  # This will hold the type of the detected object 
 current_frame = None
 is_running = True
 
-# Lock for synchronizing frame access
+# Lock for synchronizing frame access (not sure if needed tbh)
 frame_lock = threading.Lock()
 
 # Load Camera Calibration Data
 camera_matrix = np.load("camera_matrix.npy")
 distortion_coeffs = np.load("dist_coeffs.npy")
 
-# 3D Models for different objects (these are placeholder values, adjust as necessary)
+# 3D Models for different objects (these are placeholder values, adjust when values are confirmed)
 object_models = {
     "CubeSat": np.array([
         [-0.5, -0.5, 0],   # Front-bottom-left
@@ -111,6 +111,7 @@ def capture_frame(camera):
     return None # Return none if frame is not captured successfully
 
 def debris_detect(frame, camera_matrix, distortion_coeffs):
+    global detected_object, detected_object_type 
     """
     Classify the detected object and calculate its distance using pose estimation.
     
@@ -127,6 +128,9 @@ def debris_detect(frame, camera_matrix, distortion_coeffs):
     _, thresh = cv2.threshold(gray_image, 127, 255, 0)
     contours, _ = cv2.findContours(thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 
+    detected_object = False  # Reset the flag at the beginning of each frame processing
+    detected_object_type = None  # Reset detectedObjectType
+
     for contour in contours:
         # Calculate the area of the detected contour
         area = cv2.contourArea(contour)
@@ -134,7 +138,6 @@ def debris_detect(frame, camera_matrix, distortion_coeffs):
             continue
 
         # Assume the object is CubeSat, Starlink, or Rocket Body
-        detected_object = "Unknown Object"
         image_points = []
 
         # Calculate bounding box for contour (image points)
@@ -143,17 +146,20 @@ def debris_detect(frame, camera_matrix, distortion_coeffs):
 
         # Match object based on area or other criteria (can be expanded with more sophisticated checks)
         if area < 1500:
-            detected_object = "CubeSat"
+            detected_object_type = "CubeSat"
             object_points = object_models["CubeSat"]
         elif area < 3000:
-            detected_object = "Starlink"
+            detected_object_type = "Starlink"
             object_points = object_models["Starlink"]
         else:
-            detected_object = "Rocket Body"
+            detected_object_type = "Rocket Body"
             object_points = object_models["Rocket Body"]
 
         # Call pose estimation for the detected object
         distance, projected_points = calculate_distance_with_pose_estimation(object_points, image_points, camera_matrix, distortion_coeffs)
+
+        # Mark the object as detected
+        detected_object = True
 
         # Display the distance and classification
         print(f"Detected {detected_object} at distance: {distance:.2f} meters")
@@ -164,9 +170,17 @@ def debris_detect(frame, camera_matrix, distortion_coeffs):
 
         cv2.putText(frame, f'{detected_object}: {distance:.2f}m', (x, y - 10),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+        
+        # Exit loop b/c object is identified
+        break
 
     # Show the image with the projected points and object classification
     cv2.imshow("Detected Objects and Distance", frame)
+
+    # Return to stop further processing once an object is detected
+    if detected_object:
+        return
+
 
 # Function to continuously capture frames in a separate thread
 # This function runs in a background thread to capture frames continuously, 
