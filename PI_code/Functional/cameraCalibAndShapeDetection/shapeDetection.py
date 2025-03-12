@@ -31,6 +31,9 @@ detectedObject = False
 current_frame = None
 is_running = True
 
+# Lock for synchronizing frame access
+frame_lock = threading.Lock()
+
 # Load Camera Calibration Data
 camera_matrix = np.load("camera_matrix.npy")
 distortion_coeffs = np.load("dist_coeffs.npy")
@@ -94,16 +97,18 @@ def calculate_distance_with_pose_estimation(object_points, image_points, camera_
     # Extract the translation vector (tvec) to get the distance
     distance = np.linalg.norm(tvec)  # Euclidean distance (meters)
 
-    # Optionally, project the 3D object points to the 2D image plane using the pose
+    # Project the 3D object points to the 2D image plane using the pose
     projected_points, _ = cv2.projectPoints(object_points, rvec, tvec, camera_matrix, distortion_coeffs)
 
     return distance, projected_points
 
+# Function to capture a single frame from the camera
+# This is a synchronous function that captures and returns one frame at a time.
 def capture_frame(camera):
     ret, frame = camera.read()
     if ret:
-        return frame.copy()
-    return None
+        return frame.copy() # Return copy of captured frame
+    return None # Return none if frame is not captured successfully
 
 def debris_detect(frame, camera_matrix, distortion_coeffs):
     """
@@ -163,18 +168,33 @@ def debris_detect(frame, camera_matrix, distortion_coeffs):
     # Show the image with the projected points and object classification
     cv2.imshow("Detected Objects and Distance", frame)
 
+# Function to continuously capture frames in a separate thread
+# This function runs in a background thread to capture frames continuously, 
+# allowing the main loop to process frames without being blocked.
+def capture_frames_in_thread(camera):
+    global current_frame
+    while is_running:  # Run while the is_running flag is True
+        frame = capture_frame(camera)  # Capture one frame using capture_frame
+        if frame is not None:
+            with frame_lock:  # Acquire lock before updating the frame
+                current_frame = frame  # Update the shared current_frame variable with the latest frame
+
 def main():
     # Initialize the camera
     camera = initializeCamera()
 
+    # Start a thread to capture frames in parallel
+    frame_thread = threading.Thread(target=capture_frames_in_thread, args=(camera,))
+    frame_thread.daemon = True # kills the frame_thread automatically if main finishes executing
+    frame_thread.start()
+
     while True:
-        # Capture a frame from the camera
-        frame = capture_frame(camera)
-        if frame is None:
-            continue  # If the frame is not captured, skip to the next iteration
+        with frame_lock:
+            if current_frame is None:
+                continue  # If the frame is not captured, skip to the next iteration
         
-        # Detect debris and calculate the distance
-        debris_detect(frame, camera_matrix, distortion_coeffs)
+            # Detect debris and calculate the distance
+            debris_detect(current_frame, camera_matrix, distortion_coeffs)
         
         # Exit the loop if the 'q' key is pressed
         if cv2.waitKey(1) & 0xFF == ord('q'):
