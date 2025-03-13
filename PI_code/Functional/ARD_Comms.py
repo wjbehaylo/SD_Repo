@@ -36,8 +36,22 @@ OFFSET:
         send it to + configuration
         so the content shouldn't matter again
     
-RECEIVING:
-
+REQUESTING: every second or so, the Pi will try to read the arduino's register 0 to get the status
+OFFSET:
+0:
+    we decided offset 0 is for general status, and there is enough flexibility to get many messages
+Messages: These will communicate the status of the current operation
+    0:
+        ARD still executing, no new status
+        this will keep the read going
+    1:
+        rotation success
+    2:
+        (0) end stop hit
+    3:
+        (90) end stop hit
+    4:
+        
 
 '''
 
