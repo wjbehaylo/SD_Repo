@@ -16,6 +16,31 @@ from time import sleep
 #   OFFSET is the offset that will be written to on the Arduino
 #   MESSAGE is the message that will be written over the line, assume that it is here in string form and will need to be encoded 
 
+'''
+This is a python file with the ARDUINO communication protocol written out. One writes the rotational number of degrees to the Arduino and the linear
+'''
+
+'''
+Rotational Messages:
+ADDRESS: rot_ard_add (8)
+
+SENDING: these are things that will be written in the ARD_Write function
+OFFSET:
+    0:
+        rotate a number of degrees, specified in 'rotate_amount' global variable
+        this could either be an integer number, or we could use IEEE 754 encoding to send over an accurate float if necessary
+    1:
+        send it to = configuration
+        so the content shouldn't matter
+    2:
+        send it to + configuration
+        so the content shouldn't matter again
+    
+RECEIVING:
+
+
+'''
+
 rot_ard_add = 8
 lin_ard_add = 15
 
