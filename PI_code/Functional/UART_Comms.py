@@ -12,6 +12,25 @@
 # pin 8, (fourth down on right) is GPIO14, TXD. Connect to RXD on converter
 # pin 10, (fifth down on right) is GPIO15, RXD. Connect to TXD on converter
 
+'''
+Status: in this part I'll have information about the current status of the UART_Comms.py file
+
+I think if the user tries to input a message longer than '1' into ser.readline(1) it breaks. I would go through and replace all of these then with the solution.
+    maybe I need to use 'ser.read_until(b"\n") to just get the whole thing, 
+    Then I could have it try and maybe fail to recognize the message, like multiple input characters just goes to the default case
+    Or letters when I'm trying to do numbers would throw some type of exception that would require new input 
+    I don't think this would be too complex, and could be a useful/good thing to do honestly, if it doesn't take too long. Not a priority though
+    
+I haven't made this threaded yet, and I know that I can send and receive the '?' message, but I haven't tried out the other ones.
+    To test this, just remove the flags being set high and waiting to be set low, like the while loops.
+
+Supposedly, ser.readline(1) isn't a real thing, and readline just takes in a line until the \n character is encountered
+    I think it could be nice if every character that is read is printed out as it is typed, rather than relying on the \n to see what you've sent
+    Maybe I could read each character one at a time, and continue while the character is not '\n'
+    I am also unsure of what exactly my 'enter' key being pressed sends. It could be \r\n, or just \n. Because I'm on windows I think its \r\n
+'''
+
+
 #note that to properly run UART there is a specific TBD order that the pi and putty must be opened
 
 import serial
@@ -33,6 +52,8 @@ detecting_distance=0
 detecting_object=0
 #this is a flag to signal that the arms will be moving
 moving_arm=0
+#this is a flag, that is technically an integer, which will symbolize pair0(0) pair1(1) or both(2) pairs of arms being moved
+pair_select=0
 #this is a value to write how many steps the arms will be moving
 move_amount=0
 #this is a flag to signal if arms are rotating
@@ -59,6 +80,7 @@ def UART():
     global detecting_object
     global moving_arm
     global move_amount
+    global pair_select
     global rotating_arm
     global rotate_amount
     global configuring_arm
@@ -104,11 +126,11 @@ def UART():
                 ser.write(b"    (D): Distance, output distance to the debris\r\n")
                 ser.write(b"    (T): Type, output type of debris detected\r\n\n")
                 
-                ser.write(b"    (M): Move, followed by a value, actuate X steps (+ is TBD, - is TBD)\r\n")
+                ser.write(b"    (M): Move, followed by a value, actuate X steps (+ is closing, - is opening)\r\n")
                 ser.write(b"    (O): Open, fully open the claw\r\n")
                 ser.write(b"    (C): Close, fully close the claw\r\n\n")
                 
-                ser.write(b"    (R): Rotate, followed by a value, rotate X degrees (+ is TBH, - is TBD\r\n") #degrees to steps conversion will be determined
+                ser.write(b"    (R): Rotate, followed by a value, rotate X degrees\r\n") #degrees to steps conversion will be determined
                 ser.write(b"    (=): Equals, rotates the claw into = configuration\r\n")
                 ser.write(b"    (+): Plus, rotates the claw into the plus configuration\r\n\n")
             case 'S':
@@ -132,13 +154,17 @@ def UART():
                 #this case corresponds to the system being reset to its default, theoretically after a capture or on start up
                 ser.write(b"Initializing system\r\n")
                 initialize=1
+                #now we wait for it to be finished initializng, which does include it going through a few states
                 while(initialize==1):
                     sleep(0.1)
+                    #we check if any of these states have new status to mention
                     if(new_status==1):
                         ser.write(status_UART.encode("utf-8")+b"\r\n")
                         new_status=0
                 ser.write(b"Intialization process finished\r\n")
-                ser.write(status_UART.encode("utf-8")+b"\r\n")
+                
+                #I don't think we need this here because we kind of gave out the status already?
+                #ser.write(status_UART.encode("utf-8")+b"\r\n")
                 
             case 'Q':
                 #this state, however infrequenctly used, will be to termiante the program's functionality and end the while loops
@@ -168,12 +194,39 @@ def UART():
                 ser.write(status_UART.encode("utf-8")+b"\r\n")
             case 'M':
                 #this state has the motor move by a certain amount
-                ser.write(b"Input an integer to specify number of steps (+ is TBD, - is TBD)\r\n")
-                x=ser.read_until(b"\n") #read until a newline character
-                ser.write(b"Moving "+x+b" steps\r\n")
-                x_int=int(x.decode('utf-8'))
-                moving_arm=1
-                move_amount=x_int
+                
+                #here, we get which motors to move
+                while(True):
+                    ser.write(b"Input which pair of arms you would like to move (0 is pair 0, 1 is pair 1, 2 is both pairs)\r\n")
+                    arm_sel_bytes=ser.readline(1)
+                    arm_sel=arm_sel_bytes.decode('utf-8')
+                    ser.write(arm_sel_bytes+b"\r\n")
+                    if(arm_sel!="0" or arm_sel!="1" or arm_sel!="2"):
+                        ser.write(b"Invalid input\r\n")
+                        continue
+                    #if we are here, we know we have a valid selection and we can convert it to integer and move on
+                    pair_select=int(arm_sel)
+                    break
+            
+                #here, we get how much to move them by.
+                #I decided they will move the same, so you can't move each motor a different amount simultaneously.
+                while (True):
+                    ser.write(b"Input an integer to specify number of steps (+ is closing, - is opening)\r\n")
+                    
+                    x = ser.read_until(b"\n").strip()  # Read input and remove any whitespace/newline
+
+                    try:
+                        x_int = int(x.decode('utf-8'))  # Convert input to integer   
+                        #that line was where the error would be, so at this point we know it was a proper thing
+                        ser.write(b"Moving " + x + b" steps\r\n")
+                        moving_arm = 1
+                        move_amount = x_int
+                        break  # Exit loop since we got a valid integer
+                    except ValueError:
+                        #if we couldn't convert to int, we gotta do it again
+                        ser.write(b"Invalid input. Please enter an integer.\r\n")
+                    
+                
                 while(moving_arm==1):
                     sleep(0.1)
                 ser.write(b"Claw movement finished\r\n")
@@ -182,6 +235,20 @@ def UART():
                 ser.write(status_UART.encode("utf-8")+b"\r\n")
             case 'O':
                 #this state is just to fully open the arms
+                
+                #here, we get which motors to move
+                while(True):
+                    ser.write(b"Input which pair of arms you would like to open (0 is pair 0, 1 is pair 1, 2 is both pairs)\r\n")
+                    arm_sel_bytes=ser.readline(1)
+                    arm_sel=arm_sel_bytes.decode('utf-8')
+                    ser.write(arm_sel_bytes+b"\r\n")
+                    if(arm_sel!="0" or arm_sel!="1" or arm_sel!="2"):
+                        ser.write(b"Invalid input\r\n")
+                        continue
+                    #if we are here, we know we have a valid selection and we can convert it to integer and move on
+                    pair_select=int(arm_sel)
+                    break
+                
                 ser.write(b"Opening claw\r\n")
                 #note that this number will be positive or negative because of how we want to send it.
                 #TBD pos or negative
@@ -195,6 +262,19 @@ def UART():
                 ser.write(status_UART.encode("utf-8")+b"\r\n")
             case 'C':
                 #this state is just to fully open the arms
+                #here, we get which motors to move
+                while(True):
+                    ser.write(b"Input which pair of arms you would like to close (0 is pair 0, 1 is pair 1, 2 is both pairs)\r\n")
+                    arm_sel_bytes=ser.readline(1)
+                    arm_sel=arm_sel_bytes.decode('utf-8')
+                    ser.write(arm_sel_bytes+b"\r\n")
+                    if(arm_sel!="0" or arm_sel!="1" or arm_sel!="2"):
+                        ser.write(b"Invalid input\r\n")
+                        continue
+                    #if we are here, we know we have a valid selection and we can convert it to integer and move on
+                    pair_select=int(arm_sel)
+                    break
+                
                 ser.write(b"Closing claw\r\n")
                 #note that this number will be positive or negative because of how we want to send it.
                 #TBD pos or negative
@@ -208,36 +288,48 @@ def UART():
                 ser.write(status_UART.encode("utf-8")+b"\r\n")
             case 'R':
                 #this state has the motor move by a certain amount
-                ser.write(b"Input an integer to specify number of degrees (+ is TBD, - is TBD)\r\n")
-                x=ser.read_until(b"\n") #read until a newline character
-                ser.write(b"Rotating "+x+b" degrees\r\n")
-                x_int=int(x.decode('utf-8'))
-                rotating_arm=1
-                rotate_amount=x_int
+                
+                while (True):
+                    ser.write(b"Input an integer to specify number of degrees\r\n")
+                    
+                    x = ser.read_until(b"\n").strip()  # Read input and remove any whitespace/newline
+
+                    try:
+                        x_int = int(x.decode('utf-8'))  # Convert input to integer   
+                        #that line was where the error would be, so at this point we know it was a proper thing
+                        ser.write(b"Rotating " + x + b" degrees\r\n")
+                        rotating_arm_arm = 1
+                        rotate_amount = x_int
+                        break  # Exit loop since we got a valid integer
+                    except ValueError:
+                        #if we couldn't convert to int, we gotta do it again
+                        ser.write(b"Invalid input. Please enter an integer.\r\n")
+                
+                #now we wait for it to no longer be rotating
                 while(rotating_arm==1):
                     sleep(0.1)
-                ser.write(b"Arm rotation finished\r\n")
+                ser.write(b"Claw rotation finished\r\n")
                 #status will be updated during the process
                 #I am planning on status_UART being a string, so we need to encode it 
                 ser.write(status_UART.encode("utf-8")+b"\r\n")
             case '=':
-                ser.write(b"Rotating arm into = configuration\r\n")
+                ser.write(b"Rotating claw into = configuration\r\n")
                 rotating_arm=1
                 configuring_arm=1
                 arm_configuration=0
                 while(rotating_arm==1):
                     sleep(0.1)
-                ser.write(b"Arm configuration finished\r\n")
+                ser.write(b"Claw configuration finished\r\n")
                 #status will be updated during the process
                 #I am planning on status_UART being a string, so we need to encode it 
                 ser.write(status_UART.encode("utf-8")+b"\r\n")
             case '+':
-                ser.write(b"Rotating arm into + configuration\r\n")
+                ser.write(b"Rotating claw into + configuration\r\n")
                 configuring_arm=1
                 arm_configuration=1
                 while(configuring_arm==1):
                     sleep(0.1)
-                ser.write(b"Arm configuration finished\r\n")
+                ser.write(b"Claw configuration finished\r\n")
                 #status will be updated during the process
                 #I am planning on status_UART being a string, so we need to encode it 
                 ser.write(status_UART.encode("utf-8")+b"\r\n")

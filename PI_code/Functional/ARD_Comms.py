@@ -17,7 +17,11 @@ from time import sleep
 #   MESSAGE is the message that will be written over the line, assume that it is here in string form and will need to be encoded 
 
 '''
-This is a python file with the ARDUINO communication protocol written out. One writes the rotational number of degrees to the Arduino and the linear
+This is a python file with the ARDUINO communication protocol written out. One function writes the rotational number of degrees to the Arduino and the linear
+
+**Note that any message of 0 or 10 will mean that the state of ARD_Wait is remained in
+**Any message of 5 or 15 will mean the command was unrecognized, so the quit state would be gone to (or maybe UART_Wait if we want another chance)
+
 '''
 
 '''
@@ -40,19 +44,109 @@ REQUESTING: every second or so, the Pi will try to read the arduino's register 0
 OFFSET:
 0:
     we decided offset 0 is for general status, and there is enough flexibility to get many messages
-Messages: These will communicate the status of the current operation
+Messages: These will communicate the status of the current operation, from Arduino to PI
     0:
         ARD still executing, no new status
         this will keep the read going
     1:
         rotation success
     2:
-        (0) end stop hit
+        configuration success
     3:
-        (90) end stop hit
+        (0) end stop hit
     4:
-        
+        (90) end stop hit      
+    5:
+        Unrecognized command, Arduino doesn't know how to respond  
 
+'''
+
+'''
+LINEAR MESSAGES:
+ADDRESS: lin_ard_add (15)
+
+SENDING: things that will be written in the ARD_Write function
+OFFSET:
+    **Note that for any of these, either arms movement will be stopped by its respective end stops being contacted, or the force sensors**
+    0:
+        move pair0 by the number of steps stored in move amount. Sends over in IEEE754
+    1:
+        move pair1 by the number of steps stored in move amount. Sends over in IEEE754
+    2:
+        move both of the arm pairs by the number of steps stored in move amount. Sends over in IEEE754
+
+
+REQUESTING: this will be the messages communicated from the ARDUINO to the PI regarding linear movement.
+
+Note if the message is 5 or 15, regardless of offset, that the FSM will be moving out of ARD_WAIT and
+OFFSET:
+    0:
+        This is just about pair0 movement
+        Messages:
+            0:
+                Still moving/completing task
+            1:
+                Movement complete, no end stops or force sensors
+            2:
+                Fully open end stop triggered
+            3:
+                Fully closed end stop triggered
+            4:
+                Force sensor triggered
+            5:
+                Unrecognized movement command, could be due to incomplete or corrupt data
+                
+    1:
+        This is just about pair1 movement
+        Messages:
+            0:
+                Still moving/completing task
+            1:
+                Movement complete, no end stops or force sensors
+            2:
+                Fully open end stop triggered
+            3:
+                Fully closed end stop triggered
+            4:
+                Force sensor triggered
+            5:
+                Unrecognized movement command, could be due to incomplete or corrupt data
+
+    2:
+        This is for both arm movement. I based these messages on a combination of the ones for individual pairs, hence the out of order nature.
+        Note that for this, It needs to wait for both arms to be finished in one way or another to continue.
+        Also note that there are force sensors for each pair, likely on one arm because of their parallel closure.
+        I think that I will just have the system waiting on two bytes for this offset, one byte for the message from each motor.
+        The bytes will be interpretted as separate integers. 
+        These messages are per byte, so we would theoretically not be getting both a sub10 one (pair0) and a larger than 10 one (pair1)
+        Messages:
+            0:
+                Pair 0 Still moving/completing task
+            1:
+                Pair 0 Movement complete, no end stops or force sensors
+            2:
+                Pair 0 Fully open end stop triggered
+            3:
+                Pair 0 Fully closed end stop triggered
+            4:
+                Pair 0 Force sensor triggered
+            5:
+                Pair 0 Unrecognized movement command. 
+                
+            10:
+                Pair 1 Still moving/completing task
+            11:
+                Pair 1 Movement complete, no end stops or force sensors
+            12:
+                Pair 1 Fully open end stop triggered
+            13:
+                Pair 1 Fully closed end stop triggered
+            14:
+                Pair 1 Force sensor triggered
+            15:
+                Pair 1 unrecognized movement command
+                
+    
 '''
 
 rot_ard_add = 8
@@ -61,13 +155,6 @@ lin_ard_add = 15
 OFFSET = 
 
 def ARD_Write(ADDRESS, OFFSET, MESSAGE):
-    """
-    Function to write to the Arduino the number of degrees needed to rotate and the 
-
-    Args:
-
-    Returns:
-    """
     return
     
 def ARD_Read(ADDRESS, OFFSET):
