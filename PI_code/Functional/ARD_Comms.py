@@ -17,7 +17,7 @@ from time import sleep
 #   MESSAGE is the message that will be written over the line, assume that it is here in string form and will need to be encoded 
 
 '''
-This is a python file with the ARDUINO communication protocol written out. One function writes the rotational number of degrees to the Arduino and the linear
+This is a python file with the ARDUINO communication protocol written out. One writes the rotational number of degrees to the Arduino and the linear
 '''
 
 '''
@@ -61,6 +61,13 @@ lin_ard_add = 15
 OFFSET = 
 
 def ARD_Write(ADDRESS, OFFSET, MESSAGE):
+    """
+    Function to write to the Arduino the number of degrees needed to rotate and the 
+
+    Args:
+
+    Returns:
+    """
     return
     
 def ARD_Read(ADDRESS, OFFSET):
