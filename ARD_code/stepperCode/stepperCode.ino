@@ -36,12 +36,14 @@ void setup() {
 
 void loop() {
 
-  steppers_lin.moveTo(400);
-  steppers_lin.runSpeedToPosition(); // If you dont want blocking consider using run() instead.
+  // steppers_lin.moveTo(400);
+  // steppers_lin.runSpeedToPosition(); // If you dont want blocking consider using run() instead.
+  steppers_moveMM(steppers_lin, 2);
   delay(1000);
 
-  steppers_lin.moveTo(0);
-  steppers_lin.runSpeedToPosition();
+  // steppers_lin.moveTo(0);
+  // steppers_lin.runSpeedToPosition();
+  steppers_moveMM(steppers_lin, 0);
   delay(1000);
 
   //steppers_moveMM(steppers_lin, 2);
