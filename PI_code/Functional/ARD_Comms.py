@@ -197,6 +197,7 @@ def lin_ARD_Read(OFFSET):
     while True:
         try:
             #read block of data from arduino reg based on arduino's offset
+            sleep(1)
             if OFFSET == 0 or OFFSET == 1:
                 status = i2c_arduino.read_byte_data(lin_ard_add, OFFSET)
                 print(f"Pair {OFFSET} Status: {status}")
@@ -220,6 +221,13 @@ def lin_ARD_Read(OFFSET):
                     print(f"Pair {OFFSET} Unknown status")
                 #if we get to this point we haven't continued so we have the status
                 break
+            elif OFFSET ==2:
+                status = i2c_arduino.read_block_data(lin_ard_add, OFFSET, 2)
+                #status 0 
+        except IOError:
+            print("Could not read from Arduino")
+            
+        
         except IOError:
             
                 
