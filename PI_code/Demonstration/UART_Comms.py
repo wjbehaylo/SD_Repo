@@ -387,29 +387,3 @@ def UART():
         print(message)
         ser.write(message_bytes+b"\r\n")
     ser.close()
-    
-    
-#This function is for the point of testing
-def main():
-    #let it warm up
-    global is_running
-    sleep(1)
-    global is_running #variable to determine if it is still going
-    #setting up the thread for the UART
-    UART_thread=threading.Thread(target=UART)
-    UART_thread.start()
-    while(UART_thread.is_alive()):
-        sleep(1)
-        
-    print("UART thread finished")
-
-    sleep(1)
-    try:
-        while is_running:
-
-            time.sleep(0.1)  # Main thread can handle other tasks if necessary
-    except KeyboardInterrupt:
-        is_running = False
-
-if __name__ == "__main__":
-    main()
