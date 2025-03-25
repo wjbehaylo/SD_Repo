@@ -10,6 +10,7 @@
 from smbus2 import SMBus #this is to get the I2C connection functionality we want. We will need to run 
 from time import sleep
 import numpy as np
+from Generate_Status import Generate_Status #For the generation of status strings
 
 #the I2C connection will be established in the main function, and accessed globally here
 #This function just writes a message to the Arduinos
@@ -212,18 +213,9 @@ def lin_ARD_Read(OFFSET):
                 if status[OFFSET]%10 == 0:
                     print(f"Pair {OFFSET} Still moving/completing task")
                     continue
-                elif status[OFFSET]%10 == 1:
-                    print(f"Pair {OFFSET} Movement complete, no end stops or force sensors")
-                elif status[OFFSET]%10 == 2:
-                    print(f"Pair {OFFSET} Fully open, end stop triggered")
-                elif status[OFFSET]%10 == 3:
-                    print(f"Pair {OFFSET} Fully closed, end stop triggered")
-                elif status[OFFSET]%10 == 4:
-                    print(f"Pair {OFFSET} Force sensor triggered")
-                elif status[OFFSET]%10 == 5:
-                    print(f"Pair {OFFSET} Unrecognized movement command")
                 else:
-                    print(f"Pair {OFFSET} Unknown status ({status[OFFSET]})")
+                    #Use our trusty Generate_Status function
+                    print(Generate_Status(status[OFFSET]))
                 
             
             elif OFFSET ==2:
@@ -235,18 +227,8 @@ def lin_ARD_Read(OFFSET):
                 for i in status:
                     if(status[i]%10) == 0:
                         print(f"Pair {i} Status: Still moving/completing task")
-                    elif(status[i]%10) == 1:
-                        print(f"Pair {i} Status: Movement complete, no end stops or force sensors")
-                    elif(status[i]%10) == 2:
-                        print(f"Pair {i} Status: Fully open, end stop triggered")
-                    elif(status[i]%10) == 3:
-                        print(f"Pair {i} Status: Fully closed, end stop triggered")
-                    elif(status[i]%10) == 4:
-                        print(f"Pair {i} Status: Force sensor triggered")
-                    elif(status[i]%10) == 5:
-                        print(f"Pair {i} Status: Unrecognized movement command")
                     else:
-                        print(f"Pair {i} Status: Unknown status ({status[i]})")
+                        print(Generate_Status(status[OFFSET]))
             
                 # Break if the status of each pair is nonzero. Otherwise, one is still executing
                     if status[0] != 0 and status[1] != 0:
@@ -292,18 +274,8 @@ def rot_ARD_Read(OFFSET):
                 if(status==20):
                     print("Still rotating")
                     continue
-                elif(status==21):
-                    print("Rotation success")
-                elif(status==22):
-                    print("Configuration success")
-                elif(status==23):
-                    print("0 degrees, endstop triggered")
-                elif(status==24):
-                    print("90 degrees, endstop triggered")
-                elif(status==25):
-                    print("Unrecognized command")
                 else:
-                    print("Unknown status")
+                    print(Generate_Status(status[OFFSET]))
                 #if we get here, the movement has finished
                 break
             else:
@@ -314,22 +286,3 @@ def rot_ARD_Read(OFFSET):
     except IOError:
         print("Could not read data from the Arduino")
         return -1
-
-        
-'''
-def main():
-    OFFSET = 0  # reading the general status (OFFSET 0)
-    global i2c_arduino
-    i2c_arduino=SMBus(1)
-    while True:
-        linear_result = lin_ARD_Read(OFFSET)
-        if ieee_vector:
-            print(f"IEEE Vector: {ieee_vector}")
-        
-        # Wait 1 second before trying again
-        sleep(1)
-
-if __name__ == '__main__':
-    main()
-
-'''
