@@ -239,7 +239,7 @@ def UART():
                     print(x,end='')
                     
                     while(x!="\r"):
-                        if(x=="\b"):
+                        if(x=="\b" or ord(x)==8):
                             move_message=move_message[0:-1]
                         else:
                             move_message+=x
