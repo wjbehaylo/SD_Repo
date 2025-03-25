@@ -182,9 +182,7 @@ def stateD():
 def stateE():
     #oh boy, this is gonna be a doozy
     
-    #here, what happens is based on whether we are rotating or moving the arm
-    #note that when opening, moving comes before rotating
-    #but when closing, rotating comes before moving
+    
     
     #first, we need to check if we are initializing
     global initialize
