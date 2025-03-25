@@ -17,10 +17,6 @@ import numpy as np
 #   OFFSET is the offset that will be written to on the Arduino
 #   MESSAGE is the message that will be written over the line, assume that it is here in string form and will need to be encoded 
 
-# serial stuff intial setup
-arduino = serial.Serial('/dev/ttyUSB0', 9600, timeout=1)  
-sleep(2)  # waiting for extra caution, we can change if needed
-
 '''
 This is a python file with the ARDUINO communication protocol written out. One function writes the rotational number of degrees to the Arduino and the linear
 
@@ -154,6 +150,11 @@ OFFSET:
     
 '''
 
+i2c_arduino=SMBus(1)
+pair_select=0
+rot_ard_add = 8
+lin_ard_add = 15
+
 def Generate_IEEE_vector(value):   
     #np.float32(value) turns the value into a 32 bit numpy floating point 
     #.view("I") makes it interpretted as an unsigned integer
@@ -174,20 +175,16 @@ def Generate_IEEE_vector(value):
     #returns a vector of the 4 bytes to be written
     return [byte1_val, byte2_val, byte3_val, byte4_val]
 
-rot_ard_add = 8
-lin_ard_add = 15
 
-#OFFSET determines which pair we are moving: 0 is pair0, 1 is pair1, 2 is both pairs
-#The message is just going to be passed from the value in the global variable move amount
+#OFFSET determines which pair we are moving: 0 is pair0, 1 is pair1, 2 is both pairs. Passed in from global pair_select
+#MESSAGE is just going to be passed from the value in the global variable move amount
 #if this function returns a '1', it means the data wasn't written
 #if it returns a 0, it was successfully written
 def lin_ARD_Write(OFFSET, MESSAGE):
-    global lin_ard_add
-    #initialize the bus
-    i2c_arduino=SMBus(1)
     #here message will be an integer, and we need to convert it into an array of 4 binary bytes the arduino will then interpret
     linear_array=Generate_IEEE_vector(MESSAGE)
     #OFFSET=0 means we are writing to pair0, OFFSET=1 means we are writing to pair1, OFFSET=2 means we are writing to both pairs.
+    #This will be passed as input to this function though
     try:
         i2c_arduino.write_i2c_block_data(lin_ard_add, OFFSET, linear_array)
         sleep(0.1)
@@ -197,19 +194,18 @@ def lin_ARD_Write(OFFSET, MESSAGE):
     return 0
 
 def lin_ARD_Read(OFFSET):
-    global lin_ard_add
-    i2c_arduino = SMBus(1)
     while True:
         try:
             #read block of data from arduino reg based on arduino's offset
             if OFFSET == 0 or OFFSET == 1:
-                status = i2c_arduino.read_block_data(lin_ard_add, 0, 1)
-                status = status[0] #extract first byte
+                status = i2c_arduino.read_byte_data(lin_ard_add, OFFSET)
                 print(f"Pair {OFFSET} Status: {status}")
 
                 #interpret the status 
+                #note that this is just for debugging, the function will return the actual value
                 if status == 0:
                     print(f"Pair {OFFSET} Still moving/completing task")
+                    continue
                 elif status == 1:
                     print(f"Pair {OFFSET} Movement complete, no end stops or force sensors")
                 elif status == 2:
@@ -222,24 +218,45 @@ def lin_ARD_Read(OFFSET):
                     print(f"Pair {OFFSET} Unrecognized movement command")
                 else:
                     print(f"Pair {OFFSET} Unknown status")
+                #if we get to this point we haven't continued so we have the status
+                break
+        except IOError:
+            
+                
 
 
     return
 
-#we are writing to the rotational arduino
 
+#The offset varies depending on a few global variables: rotating_arm, configuring_arm, arm_configuration
+#If configuring_arm=0, offset=0
+#if configuring_arm=1 and arm_configuration=0, offset=1
+#if configuring_arm=1 and arm_configuration=1, offset=2
+
+#if this returns a 1, it means data wasn't written
+#if it returns a 0, data was written successfully
 def rot_ARD_Write(OFFSET, MESSAGE):
-    i2c_arduino=SMBus(1)
+    #first we need to convert the integer message
+    rotational_array=Generate_IEEE_vector(MESSAGE)
+    try:
+        i2c_arduino.write_i2c_block_data(rot_ard_add, OFFSET, rotational_array)
+        sleep(0.1)
+    except IOError:
+        print("Could not write data to the Arduino")
+        return 1
+    return 0
     
-    return
     
+
 def rot_ARD_Read(OFFSET):
+    
     MESSAGE=""
     return MESSAGE
 
 def main():
     OFFSET = 0  # reading the general status (OFFSET 0)
-    
+    global i2c_arduino
+    i2c_arduino=SMBus(1)
     while True:
         linear_result = lin_ARD_Read(OFFSET)
         if ieee_vector:

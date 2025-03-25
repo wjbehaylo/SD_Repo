@@ -37,6 +37,8 @@ detecting_distance=0
 detecting_object=0
 #this is a flag to signal that the arms will be moving
 moving_arm=0
+#this is a flag, that is technically an integer, which will symbolize pair0(0) pair1(1) or both(2) pairs of arms being moved
+pair_select=0
 #this is a value to write how many steps the arms will be moving
 move_amount=0
 #this is a flag to signal if arms are rotating
@@ -49,8 +51,14 @@ arm_configuration=0
 rotate_amount=0
 #this is going to be a string of the status of whatever thing just happened
 status_UART="" 
-#this will be a flag to be set if there is new status to be output
+#this will be a flag to be set if there is new status during the capture process.
+#so when going through the states, if capture_start==1, then they will set 'new_status'=1 to signal that something needs to be sent out.
+#after it is sent out over the ser_write stuff, new_status will be set back to 0
 new_status=0
+
+#Flag to control main loop
+is_running = True
+
 
 
 #Global variables for Arduino Communications

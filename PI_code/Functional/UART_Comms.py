@@ -394,6 +394,7 @@ def main():
     #let it warm up
     global is_running
     sleep(1)
+    global is_running #variable to determine if it is still going
     #setting up the thread for the UART
     UART_thread=threading.Thread(target=UART)
     UART_thread.start()
