@@ -152,12 +152,14 @@ def UART():
                     #this if statement is just so that each state can still communicate through, even though the UART is doing what it is actively.
                     if(new_status==1):
                         ser.write(status_UART.encode("utf-8")+b"\r\n")
+                        status_UART=""
                         new_status=0
                 test=1
                 ser.write(b"Capture process finished\r\n")
                 #status will be updated during the process
                 #I am planning on status_UART being a string, so we need to encode it 
                 ser.write(status_UART.encode("utf-8")+b"\r\n")
+                status_UART=""
                     
             case 'I':
                 #this case corresponds to the system being reset to its default, theoretically after a capture or on start up
@@ -169,12 +171,15 @@ def UART():
                     #we check if any of these states have new status to mention
                     if(new_status==1):
                         ser.write(status_UART.encode("utf-8")+b"\r\n")
+                        status_UART=""
                         new_status=0
                 test=1
                 ser.write(b"Intialization process finished\r\n")
                 
                 #I don't think we need this here because we kind of gave out the status already?
                 ser.write(status_UART.encode("utf-8")+b"\r\n")
+                status_UART=""
+
                 
             case 'Q':
                 #this state, however infrequenctly used, will be to termiante the program's functionality and end the while loops
@@ -194,6 +199,7 @@ def UART():
                 #status will be updated during the process
                 #I am planning on status_UART being a string, so we need to encode it 
                 ser.write(status_UART.encode("utf-8")+b"\r\n")
+                status_UART=""
             case 'T':
                 #this state has the CV detect the type of the object 
                 ser.write(b"Detecting object\r\n")
@@ -205,6 +211,7 @@ def UART():
                 #status will be updated during the process
                 #I am planning on status_UART being a string, so we need to encode it 
                 ser.write(status_UART.encode("utf-8")+b"\r\n")
+                status_UART=""
             case 'M':
                 #this state has the motor move by a certain amount
                 
@@ -259,6 +266,7 @@ def UART():
                 #status will be updated during the process
                 #I am planning on status_UART being a string, so we need to encode it 
                 ser.write(status_UART.encode("utf-8")+b"\r\n")
+                status_UART=""
             case 'O':
                 #this state is just to fully open the arms
                 
@@ -287,6 +295,7 @@ def UART():
                 #status will be updated during the process
                 #I am planning on status_UART being a string, so we need to encode it 
                 ser.write(status_UART.encode("utf-8")+b"\r\n")
+                status_UART=""
             case 'C':
                 #this state is just to fully open the arms
                 #here, we get which motors to move
@@ -314,6 +323,7 @@ def UART():
                 #status will be updated during the process
                 #I am planning on status_UART being a string, so we need to encode it 
                 ser.write(status_UART.encode("utf-8")+b"\r\n")
+                status_UART=""
             case 'R':
                 #this state has the motor rotate by a certain amount
                 #this while loop is for while we don't have a complete messsage
@@ -355,6 +365,7 @@ def UART():
                 #status will be updated during the process
                 #I am planning on status_UART being a string, so we need to encode it 
                 ser.write(status_UART.encode("utf-8")+b"\r\n")
+                status_UART=""
             case '=':
                 ser.write(b"Rotating claw into = configuration\r\n")
                 rotating_arm=1
@@ -367,6 +378,7 @@ def UART():
                 #status will be updated during the process
                 #I am planning on status_UART being a string, so we need to encode it 
                 ser.write(status_UART.encode("utf-8")+b"\r\n")
+                status_UART=""
             case '+':
                 ser.write(b"Rotating claw into + configuration\r\n")
                 rotating_arm=1
@@ -379,6 +391,7 @@ def UART():
                 #status will be updated during the process
                 #I am planning on status_UART being a string, so we need to encode it 
                 ser.write(status_UART.encode("utf-8")+b"\r\n")
+                status_UART=""
             case _:
                 ser.write(b"Command "+message_bytes+b" not supported.\r\nPlease make a valid selection ('?' for help)\r\n")
         
