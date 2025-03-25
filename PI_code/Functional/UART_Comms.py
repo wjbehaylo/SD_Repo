@@ -227,16 +227,17 @@ def UART():
                     move_message=""
                     x_bytes=ser.readline(1)
                     x=x_bytes.decode('utf-8')
-                    ser.write(x_bytes+b"\r\n")
+                    ser.write(x_bytes)
                     print(x,end='')
                     
                     while(x!="\n"):
                         move_message+=x
                         x_bytes=ser.readline(1)
                         x=x_bytes.decode('utf-8')
-                        ser.write(x_bytes+b"\r\n")
+                        ser.write(x_bytes)
                         print(x,end='')
                     #for newline
+                    ser.write(b"\r\n")
                     print()
 
                     try:
