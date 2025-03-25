@@ -181,6 +181,7 @@ def UART():
                 ser.write(b"Quitting\r\n")
                 program_quit=1
                 #we want to exit this while loop, so that the connection gets closed
+                sleep(1)
                 break
             case 'D':
                 #this state gets the distance reading from the time of flight sensor
