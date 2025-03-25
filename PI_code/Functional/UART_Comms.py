@@ -241,9 +241,9 @@ def UART():
                     print()
 
                     try:
-                        x_int = int(x.decode('utf-8'))  # Convert input to integer   
+                        x_int = int(move_message)  # Convert input to integer   
                         #that line was where the error would be, so at this point we know it was a proper thing
-                        ser.write(b"Moving " + x + b" steps\r\n")
+                        ser.write(b"Moving " + move_message.encode('utf-8') + b" steps\r\n")
                         moving_arm = 1
                         move_amount = x_int
                         break  # Exit loop since we got a valid integer
