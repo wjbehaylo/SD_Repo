@@ -9,6 +9,7 @@
 
 from smbus2 import SMBus #this is to get the I2C connection functionality we want. We will need to run 
 from time import sleep
+import numpy as np
 
 #the I2C connection will be established in the main function, and accessed globally here
 #This function just writes a message to the Arduinos
@@ -149,14 +150,48 @@ OFFSET:
     
 '''
 
+def Generate_IEEE_vector(value):   
+    #np.float32(value) turns the value into a 32 bit numpy floating point 
+    #.view("I") makes it interpretted as an unsigned integer
+    #bin()[2:] converts the number into binary, and removes the 0b prefix
+    #.zfill(32) makes sure it is 32 bits
+    value_32_bits = bin(np.float32(value).view("I"))[2:].zfill(32)
+    #splits up the 32 bits into 4 8 bit sections
+    byte1 = value_32_bits[:8]
+    byte2 = value_32_bits[8:16]
+    byte3 = value_32_bits[16:24]
+    byte4 = value_32_bits[24:]
+    #turns each of the 4 8 bit sections into an integer, from binary
+    byte1_val = int(byte1, 2) 
+    byte2_val = int(byte2, 2) 
+    byte3_val = int(byte3, 2)
+    byte4_val = int(byte4, 2)
+    
+    #returns a vector of the 4 bytes to be written
+    return [byte1_val, byte2_val, byte3_val, byte4_val]
+
 rot_ard_add = 8
 lin_ard_add = 15
 
 OFFSET = 
 
-def ARD_Write(ADDRESS, OFFSET, MESSAGE):
+#OFFSET determines which pair we are moving: 0 is pair0, 1 is pair1, 2 is both pairs
+#The message is just going to be passed from the value in the global variable move amount
+def lin_ARD_Write(OFFSET, MESSAGE):
+    
+    return
+
+def lin_ARD_Read(OFFSET, MESSAGE):
+    return
+
+#we are writing to the rotational arduino
+#
+def rot_ARD_Write(OFFSET, MESSAGE):
+    i2c_arduino=SMBus(1)
+    
     return
     
-def ARD_Read(ADDRESS, OFFSET):
+def rot_ARD_Read(OFFSET):
     MESSAGE=""
     return MESSAGE
+
