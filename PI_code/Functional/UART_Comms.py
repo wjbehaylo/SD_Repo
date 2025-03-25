@@ -342,3 +342,15 @@ def UART():
         print(message)
         ser.write(message_bytes+b"\r\n")
     ser.close()
+    
+    
+#This function is for the point of testing
+def main():
+    #let it warm up
+    sleep(1)
+    #setting up the thread for the UART
+    UART_thread=threading.Thread(target=UART)
+    UART_thread.start()
+    while(UART_thread.is_alive()):
+        sleep(0.1)
+    print("UART thread finished")
