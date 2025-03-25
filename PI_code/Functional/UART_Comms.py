@@ -110,7 +110,7 @@ def UART():
     ser.write(b"Connection Established\r\n")
     #we only want messages of one bit at a time. We will have switch statement and output the confirmed message based on the input
     #We need the message in bytes, the message reinterpretted, and to send the message back
-    message_bytes=ser.readline(1)
+    message_bytes=ser.read_until(b"\n")
     message=message_bytes.decode('utf-8')
     ser.write(message_bytes+b"\r\n")
 
@@ -339,7 +339,7 @@ def UART():
             case _:
                 ser.write(b"Command "+message_bytes+b" not supported.\r\n Please make a valid selection ('?' for help)\r\n")
         
-        message_bytes=ser.readline(1)
+        message_bytes=ser.read_until(b"\n")
         message=message_bytes.decode('utf-8')
         print(message)
         ser.write(message_bytes+b"\r\n")
