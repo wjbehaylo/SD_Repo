@@ -153,6 +153,7 @@ def UART():
                     if(new_status==1):
                         ser.write(status_UART.encode("utf-8")+b"\r\n")
                         new_status=0
+                test=1
                 ser.write(b"Capture process finished\r\n")
                 #status will be updated during the process
                 #I am planning on status_UART being a string, so we need to encode it 
@@ -169,6 +170,7 @@ def UART():
                     if(new_status==1):
                         ser.write(status_UART.encode("utf-8")+b"\r\n")
                         new_status=0
+                test=1
                 ser.write(b"Intialization process finished\r\n")
                 
                 #I don't think we need this here because we kind of gave out the status already?
@@ -186,6 +188,7 @@ def UART():
                 detecting_distance=1
                 while(detecting_distance==1 and test==1):
                     sleep(0.1)
+                test=1
                 ser.write(b"Distance detection finished\r\n")
                 #status will be updated during the process
                 #I am planning on status_UART being a string, so we need to encode it 
@@ -196,6 +199,7 @@ def UART():
                 detecting_object=1
                 while(detecting_object==1 and test==1):
                     sleep(0.1)
+                test=1
                 ser.write(b"Object detection finished\r\n")
                 #status will be updated during the process
                 #I am planning on status_UART being a string, so we need to encode it 
@@ -237,6 +241,7 @@ def UART():
                 
                 while(moving_arm==1 and test==1):
                     sleep(0.1)
+                test=1
                 ser.write(b"Claw movement finished\r\n")
                 #status will be updated during the process
                 #I am planning on status_UART being a string, so we need to encode it 
@@ -264,6 +269,7 @@ def UART():
                 move_amount=1000000 #undetermined positive or negative
                 while(moving_arm==1 and test==1):
                     sleep(0.1)
+                test=1
                 ser.write(b"Claw movement finished\r\n")
                 #status will be updated during the process
                 #I am planning on status_UART being a string, so we need to encode it 
@@ -290,6 +296,7 @@ def UART():
                 move_amount=-1000000 #undetermined positive or negative
                 while(moving_arm==1 and test==1):
                     sleep(0.1)
+                test=1
                 ser.write(b"Claw movement finished\r\n")
                 #status will be updated during the process
                 #I am planning on status_UART being a string, so we need to encode it 
@@ -316,6 +323,7 @@ def UART():
                 #now we wait for it to no longer be rotating
                 while(rotating_arm==1 and test==1):
                     sleep(0.1)
+                test=1
                 ser.write(b"Claw rotation finished\r\n")
                 #status will be updated during the process
                 #I am planning on status_UART being a string, so we need to encode it 
@@ -327,6 +335,7 @@ def UART():
                 arm_configuration=0 #this is the configuration for the -
                 while(rotating_arm==1 and test==1):
                     sleep(0.1)
+                test=1
                 ser.write(b"Claw configuration finished\r\n")
                 #status will be updated during the process
                 #I am planning on status_UART being a string, so we need to encode it 
@@ -338,6 +347,7 @@ def UART():
                 arm_configuration=1 #this is the configuration for the +
                 while(rotating_arm==1 and test==1):
                     sleep(0.1)
+                test=1
                 ser.write(b"Claw configuration finished\r\n")
                 #status will be updated during the process
                 #I am planning on status_UART being a string, so we need to encode it 
@@ -363,6 +373,7 @@ def main():
     UART_thread.start()
     while(UART_thread.is_alive()):
         sleep(1)
+        test=0
         
     print("UART thread finished")
 
