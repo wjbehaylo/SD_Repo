@@ -178,7 +178,7 @@ def Generate_IEEE_vector(value):
 
 #OFFSET determines which pair we are moving: 0 is pair0, 1 is pair1, 2 is both pairs. Passed in from global pair_select
 #MESSAGE is just going to be passed from the value in the global variable move amount
-#if this function returns a -1, it means the data wasn't written
+#if this function returns a '1', it means the data wasn't written
 #if it returns a 0, it was successfully written
 def lin_ARD_Write(OFFSET, MESSAGE):
     #here message will be an integer, and we need to convert it into an array of 4 binary bytes the arduino will then interpret
@@ -190,14 +190,13 @@ def lin_ARD_Write(OFFSET, MESSAGE):
         sleep(0.1)
     except IOError:
         print("Could not write data to the Arduino")
-        return -1
+        return 1
     return 0
 
 def lin_ARD_Read(OFFSET):
     while True:
         try:
             #read block of data from arduino reg based on arduino's offset
-            sleep(1)
             if OFFSET == 0 or OFFSET == 1:
                 status = i2c_arduino.read_byte_data(lin_ard_add, OFFSET)
                 print(f"Pair {OFFSET} Status: {status}")
@@ -218,22 +217,65 @@ def lin_ARD_Read(OFFSET):
                 elif status == 5:
                     print(f"Pair {OFFSET} Unrecognized movement command")
                 else:
-                    print(f"Pair {OFFSET} Unknown status")
-                #if we get to this point we haven't continued so we have the status
-                break
-            elif OFFSET ==2:
-                status = i2c_arduino.read_block_data(lin_ard_add, OFFSET, 2)
-                #status 0 
-        except IOError:
-            print("Could not read from Arduino")
-            
-        
-        except IOError:
-            
+                    print(f"Pair {OFFSET} Unknown status ({status})")
+                    break
+                if status != 0:
+                    break
                 
+                #if we get to this point we haven't continued so we have the status
+            elif OFFSET ==2:
+                #read 2 bytes,1 for each pair
+                status = i2c_arduino.read_block_data(lin_ard_add, OFFSET, 2)
+                status_pair_0 = status[0]
+                status_pair_1 = status[1]
 
+                #PAIR 0
+                if status_pair_0 == 0:
+                    print(f"Pair 0 Status: Still moving/completing task")
+                    continue
+                elif status_pair_0 == 1:
+                    print(f"Pair 0 Status: Movement complete, no end stops or force sensors")
+                elif status_pair_0 == 2:
+                    print(f"Pair 0 Status: Fully open, end stop triggered")
+                elif status_pair_0 == 3:
+                    print(f"Pair 0 Status: Fully closed, end stop triggered")
+                elif status_pair_0 == 4:
+                    print(f"Pair 0 Status: Force sensor triggered")
+                elif status_pair_0 == 5:
+                    print(f"Pair 0 Status: Unrecognized movement command")
+                else:
+                    print(f"Pair 0 Status: Unknown status ({status_pair_0})")
+            
 
-    return
+                #PAIR 1
+                if status_pair_1 == 0:
+                    print(f"Pair 1 Status: Still moving/completing task")
+                    continue
+                elif status_pair_1 == 1:
+                    print(f"Pair 1 Status: Movement complete, no end stops or force sensors")
+                elif status_pair_1 == 2:
+                    print(f"Pair 1 Status: Fully open, end stop triggered")
+                elif status_pair_1 == 3:
+                    print(f"Pair 1 Status: Fully closed, end stop triggered")
+                elif status_pair_1 == 4:
+                    print(f"Pair 1 Status: Force sensor triggered")
+                elif status_pair_1 == 5:
+                    print(f"Pair 1 Status: Unrecognized movement command")
+                else:
+                    print(f"Pair 1 Status: Unknown status ({status_pair_1})")
+                
+                # Break if the status of either pair is anything other than 0
+                if status_pair_0 != 0 or status_pair_1 != 0:
+                    break
+            
+            else:
+                print(f"Invalid OFFSET {OFFSET}")
+                return None
+        sleep(1)
+            
+    except IOError:
+        print("Could not read from Arduino")
+        return None
 
 
 #The offset varies depending on a few global variables: rotating_arm, configuring_arm, arm_configuration
@@ -251,45 +293,15 @@ def rot_ARD_Write(OFFSET, MESSAGE):
         sleep(0.1)
     except IOError:
         print("Could not write data to the Arduino")
-        return -1
+        return 1
     return 0
     
     
-#OFFSET here will always be 0, since there weren't enough other locations to warant it
-#This returns -1 on failure, 0 on success
-def rot_ARD_Read(OFFSET):
-    try:
-        while True:
-            sleep(1)
-            if(OFFSET==0):
-                status=i2c_arduino.read_byte_data(rot_ard_add, OFFSET)
-                print(f"Status: {status}")
-                if(status==0):
-                    print("Still rotating")
-                    continue
-                elif(status==1):
-                    print("Rotation success")
-                elif(status==2):
-                    print("Configuration success")
-                elif(status==3):
-                    print("0 degrees, endstop triggered")
-                elif(status==4):
-                    print("90 degrees, endstop triggered")
-                elif(status==5):
-                    print("Unrecognized command")
-                else:
-                    print("Unknown status")
-                #if we get here, the movement has finished
-                break
-            else:
-                print("Unknown offset")
-                break
-        return status
-    except IOError:
-        print("Could not read data from the Arduino")
-        return -1
 
-        
+def rot_ARD_Read(OFFSET):
+    
+    MESSAGE=""
+    return MESSAGE
 
 def main():
     OFFSET = 0  # reading the general status (OFFSET 0)
