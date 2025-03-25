@@ -10,12 +10,17 @@
 from smbus2 import SMBus #this is to get the I2C connection functionality we want. We will need to run 
 from time import sleep
 import numpy as np
+import serial 
 
 #the I2C connection will be established in the main function, and accessed globally here
 #This function just writes a message to the Arduinos
 #   ADDRESS is the address being written to over I2C, 8 for rotational, 15 for linear
 #   OFFSET is the offset that will be written to on the Arduino
 #   MESSAGE is the message that will be written over the line, assume that it is here in string form and will need to be encoded 
+
+# serial stuff intial setup
+arduino = serial.Serial('/dev/ttyUSB0', 9600, timeout=1)  
+sleep(2)  # waiting for extra caution, we can change if needed
 
 '''
 This is a python file with the ARDUINO communication protocol written out. One function writes the rotational number of degrees to the Arduino and the linear
@@ -173,8 +178,6 @@ def Generate_IEEE_vector(value):
 rot_ard_add = 8
 lin_ard_add = 15
 
-
-
 #OFFSET determines which pair we are moving: 0 is pair0, 1 is pair1, 2 is both pairs
 #The message is just going to be passed from the value in the global variable move amount
 def lin_ARD_Write(OFFSET, MESSAGE):
@@ -194,4 +197,18 @@ def rot_ARD_Write(OFFSET, MESSAGE):
 def rot_ARD_Read(OFFSET):
     MESSAGE=""
     return MESSAGE
+
+def main():
+    OFFSET = 0  # reading the general status (OFFSET 0)
+    
+    while True:
+        ieee_vector = lin_ARD_Read(OFFSET, MESSAGE)
+        if ieee_vector:
+            print(f"IEEE Vector: {ieee_vector}")
+        
+        # Wait 1 second before trying again
+        sleep(1)
+
+if __name__ == '__main__':
+    main()
 
