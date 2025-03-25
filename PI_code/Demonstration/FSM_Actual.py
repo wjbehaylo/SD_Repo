@@ -13,6 +13,7 @@
 #Arduino
 from smbus2 import SMBus #this is to get the I2C connection functionality we want. We will need to run 
 from time import sleep
+from UART_Comms import UART #to get our UART Function
 
 #Time of Flight, note that different I2C methods might be problematic
 import board

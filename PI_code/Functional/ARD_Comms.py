@@ -18,47 +18,18 @@ import numpy as np
 #   MESSAGE is the message that will be written over the line, assume that it is here in string form and will need to be encoded 
 
 '''
-This is a python file with the ARDUINO communication protocol written out. One function writes the rotational number of degrees to the Arduino and the linear
+This is a python file with the ARDUINO communication protocol written out. 
+There are 4 functions, one for reading or writing to each arduino.
+These functions are expected to read the value and return it, as well as output to the Python's stdout with print for debugging
 
-**Note that any message of 0 or 10 will mean that the state of ARD_Wait is remained in
-**Any message of 5 or 15 will mean the command was unrecognized, so the quit state would be gone to (or maybe UART_Wait if we want another chance)
+For the purpose of generating the UART_status string, no two status values are the same.
+This enables the value to be passed into a large if else function. 
 
-'''
+Note that status is output only at the end of a function once it is called
+Thus, there is no need for a default or anything, as there will always be a status when the function is called.
 
-'''
-Rotational Messages:
-ADDRESS: rot_ard_add (8)
-
-SENDING: these are things that will be written in the ARD_Write function. This happens in the Arduino's 'Receive' routine
-OFFSET:
-    0:
-        rotate a number of degrees, specified in 'rotate_amount' global variable
-        this could either be an integer number, or we could use IEEE 754 encoding to send over an accurate float if necessary
-    1:
-        send it to = configuration
-        so the content shouldn't matter
-    2:
-        send it to + configuration
-        so the content shouldn't matter again
-    
-REQUESTING: every second or so, the Pi will try to read the arduino's register 0 to get the status. This is the arduino's 'Request' routine
-OFFSET:
-0:
-    we decided offset 0 is for general status, and there is enough flexibility to get many messages
-Messages: These will communicate the status of the current operation, from Arduino to PI
-    0:
-        ARD still executing, no new status
-        this will keep the read going
-    1:
-        rotation success
-    2:
-        configuration success
-    3:
-        (0) end stop hit
-    4:
-        (90) end stop hit      
-    5:
-        Unrecognized command, Arduino doesn't know how to respond  
+**Note that any message ending in 0 will mean that the state of ARD_Wait is remained in
+**Ending in 5 will mean the command was unrecognized
 
 '''
 
@@ -70,85 +41,115 @@ SENDING: things that will be written in the ARD_Write function, this is receivin
 OFFSET:
     **Note that for any of these, either arms movement will be stopped by its respective end stops being contacted, or the force sensors**
     0:
-        move pair0 by the number of steps stored in move amount. Sends over in IEEE754
+        move pair0 by the number of steps stored in move amount. Sends over in IEEE
     1:
-        move pair1 by the number of steps stored in move amount. Sends over in IEEE754
+        move pair1 by the number of steps stored in move amount. Sends over in IEEE
     2:
-        move both of the arm pairs by the number of steps stored in move amount. Sends over in IEEE754
+        move both of the arm pairs by the number of steps stored in move amount. Sends over in IEEE
 
 
-REQUESTING: this will be the messages communicated from the ARDUINO to the PI regarding linear movement.
-
-Note if the message is 5 or 15, regardless of offset, that the FSM will be moving out of ARD_WAIT and
+REQUESTING: this will be the status communicated from the ARDUINO to the PI regarding linear movement.
+Note that this function, lin_ARD_Read, returns a two element array.
 OFFSET:
     0:
         This is just about pair0 movement
-        Messages:
+        Status:
             0:
-                Still moving/completing task
+                pair0 Still moving/completing task
             1:
-                Movement complete, no end stops or force sensors
+                pair0 Movement complete, no end stops or force sensors
             2:
-                Fully open end stop triggered
+                pair0 Fully open end stop triggered
             3:
-                Fully closed end stop triggered
+                pair0 Fully closed end stop triggered
             4:
-                Force sensor triggered
+                pair0 Force sensor triggered
             5:
-                Unrecognized movement command, could be due to incomplete or corrupt data
+                pair0 Unrecognized movement command, could be due to incomplete or corrupt data
                 
     1:
         This is just about pair1 movement
-        Messages:
-            0:
-                Still moving/completing task
-            1:
-                Movement complete, no end stops or force sensors
-            2:
-                Fully open end stop triggered
-            3:
-                Fully closed end stop triggered
-            4:
-                Force sensor triggered
-            5:
-                Unrecognized movement command, could be due to incomplete or corrupt data
+        Status:
+            10:
+                pair1 Still moving/completing task
+            11:
+                pair1 Movement complete, no end stops or force sensors
+            12:
+                pair1 Fully open end stop triggered
+            13:
+                pair1 Fully closed end stop triggered
+            14:
+                pair1 Force sensor triggered
+            15:
+                pair1 Unrecognized movement command, could be due to incomplete or corrupt data
 
     2:
-        This is for both arm movement. I based these messages on a combination of the ones for individual pairs, hence the out of order nature.
-        Note that for this, It needs to wait for both arms to be finished in one way or another to continue.
-        Also note that there are force sensors for each pair, likely on one arm because of their parallel closure.
-        I think that I will just have the system waiting on two bytes for this offset, one byte for the message from each motor.
-        The bytes will be interpretted as separate integers. 
-        These messages are per byte, so we would theoretically not be getting both a sub10 one (pair0) and a larger than 10 one (pair1)
-        Messages:
+        This is for both arm movement. 
+        Note that for this, each of the output bytes will be set to non-10 divisible values, meaning they will both contribute to UART status when checked
+        
+        The bytes will be interpretted as separate integers. The byte0 is pair0, byte1 is pair1. Thus they use the same encoding as above
+        Status:
             0:
-                Pair 0 Still moving/completing task
+                pair0 Still moving/completing task
             1:
-                Pair 0 Movement complete, no end stops or force sensors
+                pair0 Movement complete, no end stops or force sensors
             2:
-                Pair 0 Fully open end stop triggered
+                pair0 Fully open end stop triggered
             3:
-                Pair 0 Fully closed end stop triggered
+                pair0 Fully closed end stop triggered
             4:
-                Pair 0 Force sensor triggered
+                pair0 Force sensor triggered
             5:
-                Pair 0 Unrecognized movement command. 
-                
+                pair0 Unrecognized movement command, could be due to incomplete or corrupt data
             10:
-                Pair 1 Still moving/completing task
+                pair1 Still moving/completing task
             11:
-                Pair 1 Movement complete, no end stops or force sensors
+                pair1 Movement complete, no end stops or force sensors
             12:
-                Pair 1 Fully open end stop triggered
+                pair1 Fully open end stop triggered
             13:
-                Pair 1 Fully closed end stop triggered
+                pair1 Fully closed end stop triggered
             14:
-                Pair 1 Force sensor triggered
+                pair1 Force sensor triggered
             15:
-                Pair 1 unrecognized movement command
-                
-    
+                pair1 Unrecognized movement command, could be due to incomplete or corrupt data
 '''
+'''
+Rotational Messages:
+ADDRESS: rot_ard_add (8)
+
+SENDING: these are things that will be written in the ARD_Write function. This happens in the Arduino's 'Receive' routine
+OFFSET:
+    0:
+        rotate a number of degrees, specified in 'rotate_amount' global variable
+        this could either be an integer number, or we could use IEEE encoding to send over an accurate float if necessary
+    1:
+        send it to = configuration
+        so the content shouldn't matter
+    2:
+        send it to + configuration
+        so the content shouldn't matter again
+    
+REQUESTING: every second or so, the Pi will try to read the arduino's register 0 to get the status. This is the arduino's 'Request' routine
+OFFSET:
+0:
+    we decided offset 0 is for general status, and there is enough flexibility to get many messages
+Status: 
+    20:
+        Rotating
+    21:
+        Rotation success
+    22:
+        configuration success
+    23:
+        (0) end stop hit
+    24:
+        (90) end stop hit      
+    25:
+        Unrecognized command, Arduino doesn't know how to respond  
+
+'''
+
 
 i2c_arduino=SMBus(1)
 pair_select=0
@@ -178,7 +179,7 @@ def Generate_IEEE_vector(value):
 
 #OFFSET determines which pair we are moving: 0 is pair0, 1 is pair1, 2 is both pairs. Passed in from global pair_select
 #MESSAGE is just going to be passed from the value in the global variable move amount
-#if this function returns a '1', it means the data wasn't written
+#if this function returns a '-1', it means the data wasn't written
 #if it returns a 0, it was successfully written
 def lin_ARD_Write(OFFSET, MESSAGE):
     #here message will be an integer, and we need to convert it into an array of 4 binary bytes the arduino will then interpret
@@ -190,92 +191,75 @@ def lin_ARD_Write(OFFSET, MESSAGE):
         sleep(0.1)
     except IOError:
         print("Could not write data to the Arduino")
-        return 1
+        return -1
     return 0
 
+#This function reads from the target offset of the Arduino
+#It will return the status of the movement
 def lin_ARD_Read(OFFSET):
-    while True:
-        try:
+    status={0,0}
+    try:
+        while True:
+            sleep(1)
             #read block of data from arduino reg based on arduino's offset
             if OFFSET == 0 or OFFSET == 1:
-                status = i2c_arduino.read_byte_data(lin_ard_add, OFFSET)
-                print(f"Pair {OFFSET} Status: {status}")
+                status[OFFSET] = i2c_arduino.read_byte_data(lin_ard_add, OFFSET)
+                print(f"Pair {OFFSET} Status: {status[OFFSET]}")
 
                 #interpret the status 
                 #note that this is just for debugging, the function will return the actual value
-                if status == 0:
+                #the #10 works since the arms have the same things here.
+                if status[OFFSET]%10 == 0:
                     print(f"Pair {OFFSET} Still moving/completing task")
                     continue
-                elif status == 1:
+                elif status[OFFSET]%10 == 1:
                     print(f"Pair {OFFSET} Movement complete, no end stops or force sensors")
-                elif status == 2:
+                elif status[OFFSET]%10 == 2:
                     print(f"Pair {OFFSET} Fully open, end stop triggered")
-                elif status == 3:
+                elif status[OFFSET]%10 == 3:
                     print(f"Pair {OFFSET} Fully closed, end stop triggered")
-                elif status == 4:
+                elif status[OFFSET]%10 == 4:
                     print(f"Pair {OFFSET} Force sensor triggered")
-                elif status == 5:
+                elif status[OFFSET]%10 == 5:
                     print(f"Pair {OFFSET} Unrecognized movement command")
                 else:
-                    print(f"Pair {OFFSET} Unknown status ({status})")
-                    break
-                if status != 0:
-                    break
+                    print(f"Pair {OFFSET} Unknown status ({status[OFFSET]})")
                 
-                #if we get to this point we haven't continued so we have the status
+            
             elif OFFSET ==2:
-                #read 2 bytes,1 for each pair
+                #read 2 bytes,1 for each pair.
+                #The return of the function here will be
                 status = i2c_arduino.read_block_data(lin_ard_add, OFFSET, 2)
-                status_pair_0 = status[0]
-                status_pair_1 = status[1]
-
-                #PAIR 0
-                if status_pair_0 == 0:
-                    print(f"Pair 0 Status: Still moving/completing task")
-                    continue
-                elif status_pair_0 == 1:
-                    print(f"Pair 0 Status: Movement complete, no end stops or force sensors")
-                elif status_pair_0 == 2:
-                    print(f"Pair 0 Status: Fully open, end stop triggered")
-                elif status_pair_0 == 3:
-                    print(f"Pair 0 Status: Fully closed, end stop triggered")
-                elif status_pair_0 == 4:
-                    print(f"Pair 0 Status: Force sensor triggered")
-                elif status_pair_0 == 5:
-                    print(f"Pair 0 Status: Unrecognized movement command")
-                else:
-                    print(f"Pair 0 Status: Unknown status ({status_pair_0})")
             
-
-                #PAIR 1
-                if status_pair_1 == 0:
-                    print(f"Pair 1 Status: Still moving/completing task")
-                    continue
-                elif status_pair_1 == 1:
-                    print(f"Pair 1 Status: Movement complete, no end stops or force sensors")
-                elif status_pair_1 == 2:
-                    print(f"Pair 1 Status: Fully open, end stop triggered")
-                elif status_pair_1 == 3:
-                    print(f"Pair 1 Status: Fully closed, end stop triggered")
-                elif status_pair_1 == 4:
-                    print(f"Pair 1 Status: Force sensor triggered")
-                elif status_pair_1 == 5:
-                    print(f"Pair 1 Status: Unrecognized movement command")
-                else:
-                    print(f"Pair 1 Status: Unknown status ({status_pair_1})")
+                #This should just go twice, once for each motor's status
+                for i in status:
+                    if(status[i]%10) == 0:
+                        print(f"Pair {i} Status: Still moving/completing task")
+                    elif(status[i]%10) == 1:
+                        print(f"Pair {i} Status: Movement complete, no end stops or force sensors")
+                    elif(status[i]%10) == 2:
+                        print(f"Pair {i} Status: Fully open, end stop triggered")
+                    elif(status[i]%10) == 3:
+                        print(f"Pair {i} Status: Fully closed, end stop triggered")
+                    elif(status[i]%10) == 4:
+                        print(f"Pair {i} Status: Force sensor triggered")
+                    elif(status[i]%10) == 5:
+                        print(f"Pair {i} Status: Unrecognized movement command")
+                    else:
+                        print(f"Pair {i} Status: Unknown status ({status[i]})")
+            
+                # Break if the status of each pair is nonzero. Otherwise, one is still executing
+                    if status[0] != 0 and status[1] != 0:
+                        return status
+                    
                 
-                # Break if the status of either pair is anything other than 0
-                if status_pair_0 != 0 or status_pair_1 != 0:
-                    break
-            
             else:
                 print(f"Invalid OFFSET {OFFSET}")
-                return None
-        sleep(1)
+                return -1
             
     except IOError:
         print("Could not read from Arduino")
-        return None
+        return -1
 
 
 #The offset varies depending on a few global variables: rotating_arm, configuring_arm, arm_configuration
@@ -283,7 +267,7 @@ def lin_ARD_Read(OFFSET):
 #if configuring_arm=1 and arm_configuration=0, offset=1
 #if configuring_arm=1 and arm_configuration=1, offset=2
 
-#if this returns a 1, it means data wasn't written
+#if this returns a -1, it means data wasn't written
 #if it returns a 0, data was written successfully
 def rot_ARD_Write(OFFSET, MESSAGE):
     #first we need to convert the integer message
@@ -293,16 +277,46 @@ def rot_ARD_Write(OFFSET, MESSAGE):
         sleep(0.1)
     except IOError:
         print("Could not write data to the Arduino")
-        return 1
+        return -1
     return 0
     
     
-
+#OFFSET will always be 0 here, if this works correctly
 def rot_ARD_Read(OFFSET):
-    
-    MESSAGE=""
-    return MESSAGE
+    try:
+        while True:
+            sleep(1)
+            if(OFFSET==0):
+                status=i2c_arduino.read_byte_data(rot_ard_add, OFFSET)
+                print(f"Status: {status}")
+                if(status==20):
+                    print("Still rotating")
+                    continue
+                elif(status==21):
+                    print("Rotation success")
+                elif(status==22):
+                    print("Configuration success")
+                elif(status==23):
+                    print("0 degrees, endstop triggered")
+                elif(status==24):
+                    print("90 degrees, endstop triggered")
+                elif(status==25):
+                    print("Unrecognized command")
+                else:
+                    print("Unknown status")
+                #if we get here, the movement has finished
+                break
+            else:
+                print("Unknown offset")
+                #-1 will be the status of failure I think.
+                return -1
+        return status
+    except IOError:
+        print("Could not read data from the Arduino")
+        return -1
 
+        
+'''
 def main():
     OFFSET = 0  # reading the general status (OFFSET 0)
     global i2c_arduino
@@ -318,3 +332,4 @@ def main():
 if __name__ == '__main__':
     main()
 
+'''
