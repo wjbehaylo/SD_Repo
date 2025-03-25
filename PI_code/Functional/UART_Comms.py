@@ -7,10 +7,10 @@
 # Exploration, UART_exploration.py
 #Circuitry: 
 # use the HiLetgo CP2102 USB converter with free cable, and the raspberry pi 5, and the wires. 
-# pin 1 (top left, consider usb ports to be bottom of board) is 3.3V, connect to 3.3V on converter
-# pin 6 (third down on right) is ground, connect to ground on converter
-# pin 8, (fourth down on right) is GPIO14, TXD. Connect to RXD on converter
-# pin 10, (fifth down on right) is GPIO15, RXD. Connect to TXD on converter
+# pin 1 (top left, consider usb ports to be bottom of board) is 3.3V, connect to 3.3V on converter green
+# pin 6 (third down on right) is ground, connect to ground on converter white
+# pin 8, (fourth down on right) is GPIO14, TXD. Connect to RXD on converter purple
+# pin 10, (fifth down on right) is GPIO15, RXD. Connect to TXD on converter blue
 
 '''
 Status: in this part I'll have information about the current status of the UART_Comms.py file
@@ -316,7 +316,7 @@ def UART():
                 ser.write(b"Rotating claw into = configuration\r\n")
                 rotating_arm=1
                 configuring_arm=1
-                arm_configuration=0
+                arm_configuration=0 #this is the configuration for the -
                 while(rotating_arm==1):
                     sleep(0.1)
                 ser.write(b"Claw configuration finished\r\n")
@@ -325,9 +325,10 @@ def UART():
                 ser.write(status_UART.encode("utf-8")+b"\r\n")
             case '+':
                 ser.write(b"Rotating claw into + configuration\r\n")
+                rotating_arm=1
                 configuring_arm=1
-                arm_configuration=1
-                while(configuring_arm==1):
+                arm_configuration=1 #this is the configuration for the +
+                while(rotating_arm==1):
                     sleep(0.1)
                 ser.write(b"Claw configuration finished\r\n")
                 #status will be updated during the process
