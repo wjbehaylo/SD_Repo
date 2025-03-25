@@ -77,7 +77,7 @@ lin_ard_add=15
 
 #Generally, when resetting you open first, then un rotate. When capturing, you rotate first, then close
 
-#Initializing
+#Initializing the system, this will go into moving arm then rotating arm
 def stateA():
     global moving_arm
     global pair_select
@@ -110,44 +110,78 @@ def stateB():
     #does it matter if I have an infinite loop here instead of recursively calling this function again if none of the things are 0?
     while (True):
         #the next state will be determined based on the set of variables in the UART module
+        #generally, only one of these should be 1 when this statement comes up
         if(capture_start==1):
             initialize=1
             return stateA #first step in capturing is resetting the arms
         if(initialize==1):
             return stateA #in this case, we are just resetting
         if(moving_arm==1):
-            return stateC
+            return stateC #we are entering the moving arm state
         if(rotating_arm==1):
-            return stateD
+            return stateD #we are rotating the arm by some amount
         if(detecting_distance==1):
-            return stateF
+            return stateF #we are going to be detecting the distance
         if(detecting_object==1):
-            return stateG
+            return stateG #we will be using CV to detect the object
         if(program_quit==1):
-            return stateQ
+            return stateQ #the program is exiting
     
 #Moving_Arm
-#we either come here when initializing, capturing, or just moving the arm.
+#we either come here when initializing, capturing, moving an amount, opening, or closing
 def stateC():
+    global new_status
+    global status_UART
     #when initializing, we need to move both arms, pair_select is set to 2 previously
     #otherwise, if capturing, pair select will be updated in the data analysis
-    #final option is deciding via UART< in which case pair select is still set
+    #final option is deciding via UART in which case pair select is still set
+    OFFSET=pair_select
+    #when we select O or C in UART we also set the move_amount
+    lin_ARD_Write(lin_ard_add, OFFSET, move_amount)
+    #moving arm is set to 1 in the UART thread, or the capture start or initialize, 
     
-    lin_ARD_Write(lin_ard_add, pair_select, move_amount)
+    #we are going to want to incldicate that we are going to move the arm, and in doing so update the status
+    status_UART+=f"Moving arms\r\n\tpair_select={pair_select}\r\n"
+    new_status=1
+    
     
     #we automatically go to the ARD_Wait state after this one
     return stateE
 
 #Rotating_Arm
+#we wither come here when initializing, capturing, rotating an amount, =, or + configuration
 def stateD():
-    global rot_ard_add
-    global rotate_amount
-    OFFSET=0 #this doesn't/won't really matter I think, maybe it could be offsets for + vs = vs moveamount configuration
-    ARD_Write(rot_ard_add, OFFSET, rotate_amount)
+    global new_status
+    global status_UART
+    #OFFSET is 0 when we are rotating a specific amount
+    #OFFSET is 1 when we are going to = configuration
+    #OFFSET is 2 when we are going to + configuration
+    
+    #funny enough, configuring_arm + arm_configuration = OFFSET here.
+    OFFSET=0 + configuring_arm + arm_configuration
+    
+    #if we get here, we at least know that we are in the rotating_arm section
+    rot_ARD_Write(rot_ard_add, OFFSET, rotate_amount)
+    
+    #we are going to indiciate that we are going to rotate the arm, and in doing so update the status
+    status_UART+=f"Rotating arms"
+    #add to it if we are actually configuring the arms
+    if(configuring_arm==1):
+        if(arm_configuration==0):
+            status_UART+=" to = configuration"
+        elif(arm_configuration==1):
+            status_UART+=" to + configuration"
+    status_UART+="\r\n"
+    new_status=1
+
+    #we will automatically go to ARD_Wait here.
     return stateE
 
 #ARD_Wait
+#this state is gone to after stateC (move) or stateD (rotate)
 def stateE():
+    #oh boy, this is gonna be a doozy
+    
     #here, what happens is based on whether we are rotating or moving the arm
     #note that when opening, moving comes before rotating
     #but when closing, rotating comes before moving

@@ -142,6 +142,7 @@ def UART():
                 ser.write(b"Starting capture process\r\n")
                 #this is a global flag that will be established, so that the other threaded process will know to start the process
                 capture_start=1
+                new_status=0 #we need to make sure that the current status isn't considered
                 #it will be set back to 0 once capture is complete, at which point this while loop will stop
                 while(capture_start==1):
                     sleep(0.1)
@@ -160,6 +161,7 @@ def UART():
                 #this case corresponds to the system being reset to its default, theoretically after a capture or on start up
                 ser.write(b"Initializing system\r\n")
                 initialize=1
+                new_status=0 #we need to make sure that the current status isn't considered
                 #now we wait for it to be finished initializng, which does include it going through a few states
                 while(initialize==1):
                     sleep(0.1)
