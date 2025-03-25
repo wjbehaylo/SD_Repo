@@ -71,7 +71,7 @@ Messages: These will communicate the status of the current operation, from Ardui
 LINEAR MESSAGES:
 ADDRESS: lin_ard_add (15)
 
-SENDING: things that will be written in the ARD_Write function
+SENDING: things that will be written in the ARD_Write function, this is receiving on the arduino's side
 OFFSET:
     **Note that for any of these, either arms movement will be stopped by its respective end stops being contacted, or the force sensors**
     0:
@@ -180,15 +180,28 @@ lin_ard_add = 15
 
 #OFFSET determines which pair we are moving: 0 is pair0, 1 is pair1, 2 is both pairs
 #The message is just going to be passed from the value in the global variable move amount
+#if this function returns a '1', it means the data wasn't written
+#if it returns a 0, it was successfully written
 def lin_ARD_Write(OFFSET, MESSAGE):
-    
-    return
+    global lin_ard_add
+    #initialize the bus
+    i2c_arduino=SMBus(1)
+    #here message will be an integer, and we need to convert it into an array of 4 binary bytes the arduino will then interpret
+    linear_array=Generate_IEEE_vector(MESSAGE)
+    #OFFSET=0 means we are writing to pair0, OFFSET=1 means we are writing to pair1, OFFSET=2 means we are writing to both pairs.
+    try:
+        i2c_arduino.write_i2c_block_data(lin_ard_add, OFFSET, linear_array)
+        sleep(0.1)
+    except IOError:
+        print("Could not write data to the Arduino")
+        return 1
+    return 0
 
-def lin_ARD_Read(OFFSET, MESSAGE):
+def lin_ARD_Read(OFFSET):
     return
 
 #we are writing to the rotational arduino
-#
+
 def rot_ARD_Write(OFFSET, MESSAGE):
     i2c_arduino=SMBus(1)
     
@@ -202,7 +215,7 @@ def main():
     OFFSET = 0  # reading the general status (OFFSET 0)
     
     while True:
-        ieee_vector = lin_ARD_Read(OFFSET, MESSAGE)
+        linear_result = lin_ARD_Read(OFFSET)
         if ieee_vector:
             print(f"IEEE Vector: {ieee_vector}")
         
