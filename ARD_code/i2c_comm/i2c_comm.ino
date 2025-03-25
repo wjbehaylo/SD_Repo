@@ -46,7 +46,8 @@ void printReceived() {
   }
   Serial.println("");
 }
-// function called when an I2C interrupt event happens
+// function called when an I2C interrupt event happens  
+//when arduino is receiving a command
 void receive() {
   // Set the offset, this will always be the first byte.
   offset = Wire.read();

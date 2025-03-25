@@ -28,7 +28,7 @@ This is a python file with the ARDUINO communication protocol written out. One f
 Rotational Messages:
 ADDRESS: rot_ard_add (8)
 
-SENDING: these are things that will be written in the ARD_Write function
+SENDING: these are things that will be written in the ARD_Write function. This happens in the Arduino's 'Receive' routine
 OFFSET:
     0:
         rotate a number of degrees, specified in 'rotate_amount' global variable
@@ -40,7 +40,7 @@ OFFSET:
         send it to + configuration
         so the content shouldn't matter again
     
-REQUESTING: every second or so, the Pi will try to read the arduino's register 0 to get the status
+REQUESTING: every second or so, the Pi will try to read the arduino's register 0 to get the status. This is the arduino's 'Request' routine
 OFFSET:
 0:
     we decided offset 0 is for general status, and there is enough flexibility to get many messages

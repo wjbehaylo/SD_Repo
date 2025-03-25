@@ -239,12 +239,7 @@ def UART():
                     print(x,end='')
                     
                     while(x!="\r"):
-                        if(x=="\b" or ord(x)==8):
-                            #-2 because we don't want to include the last thing
-                            print("backspace!")
-                            move_message=move_message[0:len(move_message)-2]
-                        else:
-                            move_message+=x
+                        move_message+=x
                         x_bytes=ser.readline(1)
                         x=x_bytes.decode('utf-8')
                         ser.write(x_bytes)
@@ -341,10 +336,7 @@ def UART():
                     print(r,end='')
                     
                     while(r!="\r"):
-                        if(r=="\b"):
-                            degree_message=degree_message[:-1]
-                        else:
-                            degree_message+=r
+                        degree_message+=r
                         r_bytes=ser.readline(1)
                         r=r_bytes.decode('utf-8')
                         ser.write(r_bytes)
