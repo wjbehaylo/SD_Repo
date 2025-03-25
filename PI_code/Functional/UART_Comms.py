@@ -116,7 +116,7 @@ def UART():
     ser.write(b"Connection Established\r\n")
     #we only want messages of one bit at a time. We will have switch statement and output the confirmed message based on the input
     #We need the message in bytes, the message reinterpretted, and to send the message back
-    message_bytes=ser.readline(1)
+    message_bytes=ser.read_until(b"\r")
     message=message_bytes.decode('utf-8')
     ser.write(message_bytes+b"\r\n")
 
@@ -317,21 +317,33 @@ def UART():
             case 'R':
                 #this state has the motor move by a certain amount
                 
-                while (True):
-                    ser.write(b"Input an integer to specify number of degrees\r\n")
-                    
-                    x = ser.read_until(b"\n").strip()  # Read input and remove any whitespace/newline
+                ser.write(b"Input an integer to specify number of degrees\r\n")
+                degree_message=""
+                r_bytes=ser.readline(1)
+                r=r_bytes.decode('utf-8')
+                ser.write(r_bytes)
+                print(r,end='')
+                
+                while(r!="\r"):
+                    degree_message+=r
+                    r_bytes=ser.readline(1)
+                    r=r_bytes.decode('utf-8')
+                    ser.write(r_bytes)
+                    print(r,end='')
+                #for newline
+                ser.write(b"\r\n")
+                print()
 
-                    try:
-                        x_int = int(x.decode('utf-8'))  # Convert input to integer   
-                        #that line was where the error would be, so at this point we know it was a proper thing
-                        ser.write(b"Rotating " + x + b" degrees\r\n")
-                        rotating_arm_arm = 1
-                        rotate_amount = x_int
-                        break  # Exit loop since we got a valid integer
-                    except ValueError:
-                        #if we couldn't convert to int, we gotta do it again
-                        ser.write(b"Invalid input. Please enter an integer.\r\n")
+                try:
+                    x_int = int(move_message)  # Convert input to integer   
+                    #that line was where the error would be, so at this point we know it was a proper thing
+                    ser.write(b"Moving " + move_message.encode('utf-8') + b" steps\r\n")
+                    moving_arm = 1
+                    move_amount = x_int
+                    break  # Exit loop since we got a valid integer
+                except ValueError:
+                    #if we couldn't convert to int, we gotta do it again
+                    ser.write(b"Invalid input. Please enter an integer.\r\n")
                 
                 #now we wait for it to no longer be rotating
                 while(rotating_arm==1 and test==1):
@@ -368,7 +380,7 @@ def UART():
             case _:
                 ser.write(b"Command "+message_bytes+b" not supported.\r\n Please make a valid selection ('?' for help)\r\n")
         
-        message_bytes=ser.readline(1)
+        message_bytes=ser.read_until(b"\r")
         message=message_bytes.decode('utf-8')
         print(message)
         ser.write(message_bytes+b"\r\n")
