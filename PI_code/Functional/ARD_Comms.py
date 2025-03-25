@@ -10,7 +10,6 @@
 from smbus2 import SMBus #this is to get the I2C connection functionality we want. We will need to run 
 from time import sleep
 import numpy as np
-import serial 
 
 #the I2C connection will be established in the main function, and accessed globally here
 #This function just writes a message to the Arduinos
@@ -198,6 +197,33 @@ def lin_ARD_Write(OFFSET, MESSAGE):
     return 0
 
 def lin_ARD_Read(OFFSET):
+    global lin_ard_add
+    i2c_arduino = SMBus(1)
+    while True:
+        try:
+            #read block of data from arduino reg based on arduino's offset
+            if OFFSET == 0 or OFFSET == 1:
+                status = i2c_arduino.read_block_data(lin_ard_add, 0, 1)
+                status = status[0] #extract first byte
+                print(f"Pair {OFFSET} Status: {status}")
+
+                #interpret the status 
+                if status == 0:
+                    print(f"Pair {OFFSET} Still moving/completing task")
+                elif status == 1:
+                    print(f"Pair {OFFSET} Movement complete, no end stops or force sensors")
+                elif status == 2:
+                    print(f"Pair {OFFSET} Fully open, end stop triggered")
+                elif status == 3:
+                    print(f"Pair {OFFSET} Fully closed, end stop triggered")
+                elif status == 4:
+                    print(f"Pair {OFFSET} Force sensor triggered")
+                elif status == 5:
+                    print(f"Pair {OFFSET} Unrecognized movement command")
+                else:
+                    print(f"Pair {OFFSET} Unknown status")
+
+
     return
 
 #we are writing to the rotational arduino
