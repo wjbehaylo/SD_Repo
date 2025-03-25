@@ -178,7 +178,7 @@ def Generate_IEEE_vector(value):
 
 #OFFSET determines which pair we are moving: 0 is pair0, 1 is pair1, 2 is both pairs. Passed in from global pair_select
 #MESSAGE is just going to be passed from the value in the global variable move amount
-#if this function returns a '1', it means the data wasn't written
+#if this function returns a -1, it means the data wasn't written
 #if it returns a 0, it was successfully written
 def lin_ARD_Write(OFFSET, MESSAGE):
     #here message will be an integer, and we need to convert it into an array of 4 binary bytes the arduino will then interpret
@@ -190,7 +190,7 @@ def lin_ARD_Write(OFFSET, MESSAGE):
         sleep(0.1)
     except IOError:
         print("Could not write data to the Arduino")
-        return 1
+        return -1
     return 0
 
 def lin_ARD_Read(OFFSET):
@@ -251,15 +251,45 @@ def rot_ARD_Write(OFFSET, MESSAGE):
         sleep(0.1)
     except IOError:
         print("Could not write data to the Arduino")
-        return 1
+        return -1
     return 0
     
     
-
+#OFFSET here will always be 0, since there weren't enough other locations to warant it
+#This returns -1 on failure, 0 on success
 def rot_ARD_Read(OFFSET):
-    
-    MESSAGE=""
-    return MESSAGE
+    try:
+        while True:
+            sleep(1)
+            if(OFFSET==0):
+                status=i2c_arduino.read_byte_data(rot_ard_add, OFFSET)
+                print(f"Status: {status}")
+                if(status==0):
+                    print("Still rotating")
+                    continue
+                elif(status==1):
+                    print("Rotation success")
+                elif(status==2):
+                    print("Configuration success")
+                elif(status==3):
+                    print("0 degrees, endstop triggered")
+                elif(status==4):
+                    print("90 degrees, endstop triggered")
+                elif(status==5):
+                    print("Unrecognized command")
+                else:
+                    print("Unknown status")
+                #if we get here, the movement has finished
+                break
+            else:
+                print("Unknown offset")
+                break
+        return status
+    except IOError:
+        print("Could not read data from the Arduino")
+        return -1
+
+        
 
 def main():
     OFFSET = 0  # reading the general status (OFFSET 0)
