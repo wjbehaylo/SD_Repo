@@ -173,7 +173,7 @@ def Generate_IEEE_vector(value):
 rot_ard_add = 8
 lin_ard_add = 15
 
-OFFSET = 
+
 
 #OFFSET determines which pair we are moving: 0 is pair0, 1 is pair1, 2 is both pairs
 #The message is just going to be passed from the value in the global variable move amount
