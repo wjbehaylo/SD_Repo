@@ -224,8 +224,20 @@ def UART():
                 #I decided they will move the same, so you can't move each motor a different amount simultaneously.
                 while (True):
                     ser.write(b"Input an integer to specify number of steps (+ is closing, - is opening)\r\n")
+                    move_message=""
+                    x_bytes=ser.readline(1)
+                    x=x_bytes.decode('utf-8')
+                    ser.write(x_bytes+b"\r\n")
+                    print(x,end='')
                     
-                    x = ser.read_until(b"\n").strip()  # Read input and remove any whitespace/newline
+                    while(x!="\n"):
+                        move_message+=x
+                        x_bytes=ser.readline(1)
+                        x=x_bytes.decode('utf-8')
+                        ser.write(x_bytes+b"\r\n")
+                        print(x,end='')
+                    #for newline
+                    print()
 
                     try:
                         x_int = int(x.decode('utf-8'))  # Convert input to integer   
