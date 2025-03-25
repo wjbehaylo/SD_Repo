@@ -70,6 +70,8 @@ status_UART=""
 #so when going through the states, if capture_start==1, then they will set 'new_status'=1 to signal that something needs to be sent out.
 #after it is sent out over the ser_write stuff, new_status will be set back to 0
 new_status=0
+#Flag to control main loop
+is_running = True
 
 def UART():
     #global variables
@@ -354,3 +356,14 @@ def main():
     while(UART_thread.is_alive()):
         sleep(0.1)
     print("UART thread finished")
+
+    sleep(1)
+    try:
+        while is_running:
+
+            time.sleep(0.1)  # Main thread can handle other tasks if necessary
+    except KeyboardInterrupt:
+        is_running = False
+
+if __name__ == "__main__":
+    main()
