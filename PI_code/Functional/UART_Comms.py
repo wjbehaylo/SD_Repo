@@ -230,7 +230,7 @@ def UART():
                     ser.write(x_bytes)
                     print(x,end='')
                     
-                    while(x!="\n"):
+                    while(x!="\r"):
                         move_message+=x
                         x_bytes=ser.readline(1)
                         x=x_bytes.decode('utf-8')
