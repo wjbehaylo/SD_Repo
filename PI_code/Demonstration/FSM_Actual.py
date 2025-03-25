@@ -14,6 +14,8 @@
 from smbus2 import SMBus #this is to get the I2C connection functionality we want. We will need to run 
 from time import sleep
 from UART_Comms import UART #to get our UART Function
+from ARD_Comms import * #importing all the ard functions
+from Generate_Status import Generate_Status #for generating our status we will output
 
 #Time of Flight, note that different I2C methods might be problematic
 import board
@@ -69,29 +71,20 @@ i2c_arduino=SMBus(1)
 rot_ard_add=8
 lin_ard_add=15
 
-
-
-#This threaded function, which may later be separated so that it isn't had here, contains the UART functionality
- 
-#This function will be called when it is desired that information is written to the Arduino(s)
-def ARD_Write(ADDRESS, OFFSET, MESSAGE):
-    print("Writing to Arduino")
-
-#This function will be called when it is desired that information (like status) is read from the Arduinos
-def ARD_Read(ADDRESS, OFFSET):
-    print("Reading from Arduino")
-    MESSAGE=""
-    return MESSAGE
-
 #These functions represent each of the states, with their transition logic present
 #Note that in the state functions, all that matters is the transition logic, not the actual work.
 #The actual work is done outside of this stuff, in the state machine
+
+#Generally, when resetting you open first, then un rotate. When capturing, you rotate first, then close
+
 #Initializing
 def stateA():
     global moving_arm
+    global pair_select
     global move_amount
     global configuring_arm
     global arm_configuration
+    pair_select=2 #opening both pairs of arms
     moving_arm=1 #moving arm
     move_amount=1000000 #all the way open
     configuring_arm=1 #configuring arm
@@ -134,11 +127,15 @@ def stateB():
             return stateQ
     
 #Moving_Arm
+#we either come here when initializing, capturing, or just moving the arm.
 def stateC():
-    global lin_ard_add
-    global move_amount
-    OFFSET=0 #undetermined for now, theoretically it could relate to which pair of arms is moving
-    ARD_Write(lin_ard_add, OFFSET, move_amount)
+    #when initializing, we need to move both arms, pair_select is set to 2 previously
+    #otherwise, if capturing, pair select will be updated in the data analysis
+    #final option is deciding via UART< in which case pair select is still set
+    
+    lin_ARD_Write(lin_ard_add, pair_select, move_amount)
+    
+    #we automatically go to the ARD_Wait state after this one
     return stateE
 
 #Rotating_Arm
