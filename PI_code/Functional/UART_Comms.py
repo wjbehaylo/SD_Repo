@@ -335,11 +335,11 @@ def UART():
                 print()
 
                 try:
-                    x_int = int(move_message)  # Convert input to integer   
+                    r_int = int(degree_message)  # Convert input to integer   
                     #that line was where the error would be, so at this point we know it was a proper thing
-                    ser.write(b"Moving " + move_message.encode('utf-8') + b" steps\r\n")
-                    moving_arm = 1
-                    move_amount = x_int
+                    ser.write(b"Moving " + degree_message.encode('utf-8') + b" steps\r\n")
+                    rotating_arm = 1
+                    rotate_amount = r_int
                     break  # Exit loop since we got a valid integer
                 except ValueError:
                     #if we couldn't convert to int, we gotta do it again
@@ -357,7 +357,7 @@ def UART():
                 ser.write(b"Rotating claw into = configuration\r\n")
                 rotating_arm=1
                 configuring_arm=1
-                arm_configuration=0 #this is the configuration for the -
+                arm_configuration=0 #this is the configuration for the =
                 while(rotating_arm==1 and test==1):
                     sleep(0.1)
                 test=1
