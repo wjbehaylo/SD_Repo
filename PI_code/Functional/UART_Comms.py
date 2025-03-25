@@ -241,6 +241,7 @@ def UART():
                     while(x!="\r"):
                         if(x=="\b" or ord(x)==8):
                             #-2 because we don't want to include the last thing
+                            print("backspace!")
                             move_message=move_message[0:len(move_message)-2]
                         else:
                             move_message+=x
