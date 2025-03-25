@@ -174,7 +174,7 @@ def UART():
                 ser.write(b"Intialization process finished\r\n")
                 
                 #I don't think we need this here because we kind of gave out the status already?
-                #ser.write(status_UART.encode("utf-8")+b"\r\n")
+                ser.write(status_UART.encode("utf-8")+b"\r\n")
                 
             case 'Q':
                 #this state, however infrequenctly used, will be to termiante the program's functionality and end the while loops
@@ -213,7 +213,7 @@ def UART():
                     arm_sel_bytes=ser.readline(1)
                     arm_sel=arm_sel_bytes.decode('utf-8')
                     ser.write(arm_sel_bytes+b"\r\n")
-                    if(arm_sel!="0" or arm_sel!="1" or arm_sel!="2"):
+                    if(arm_sel!="0" and arm_sel!="1" and arm_sel!="2"):
                         ser.write(b"Invalid input\r\n")
                         continue
                     #if we are here, we know we have a valid selection and we can convert it to integer and move on
@@ -255,7 +255,7 @@ def UART():
                     arm_sel_bytes=ser.readline(1)
                     arm_sel=arm_sel_bytes.decode('utf-8')
                     ser.write(arm_sel_bytes+b"\r\n")
-                    if(arm_sel!="0" or arm_sel!="1" or arm_sel!="2"):
+                    if(arm_sel!="0" and arm_sel!="1" and arm_sel!="2"):
                         ser.write(b"Invalid input\r\n")
                         continue
                     #if we are here, we know we have a valid selection and we can convert it to integer and move on
@@ -282,7 +282,7 @@ def UART():
                     arm_sel_bytes=ser.readline(1)
                     arm_sel=arm_sel_bytes.decode('utf-8')
                     ser.write(arm_sel_bytes+b"\r\n")
-                    if(arm_sel!="0" or arm_sel!="1" or arm_sel!="2"):
+                    if(arm_sel!="0" and arm_sel!="1" and arm_sel!="2"):
                         ser.write(b"Invalid input\r\n")
                         continue
                     #if we are here, we know we have a valid selection and we can convert it to integer and move on
