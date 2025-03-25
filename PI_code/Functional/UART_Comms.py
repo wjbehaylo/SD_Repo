@@ -239,7 +239,8 @@ def UART():
                     print(x,end='')
                     
                     while(x!="\r"):
-                        move_message+=x
+                        if(x!="\b"):
+                            move_message+=x
                         x_bytes=ser.readline(1)
                         x=x_bytes.decode('utf-8')
                         ser.write(x_bytes)
@@ -336,7 +337,8 @@ def UART():
                     print(r,end='')
                     
                     while(r!="\r"):
-                        degree_message+=r
+                        if(r!="\b"):
+                            degree_message+=r
                         r_bytes=ser.readline(1)
                         r=r_bytes.decode('utf-8')
                         ser.write(r_bytes)
