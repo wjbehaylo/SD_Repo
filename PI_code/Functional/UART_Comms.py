@@ -240,7 +240,8 @@ def UART():
                     
                     while(x!="\r"):
                         if(x=="\b" or ord(x)==8):
-                            move_message=move_message[0:-1]
+                            #-2 because we don't want to include the last thing
+                            move_message=move_message[0:len(move_message)-2]
                         else:
                             move_message+=x
                         x_bytes=ser.readline(1)
