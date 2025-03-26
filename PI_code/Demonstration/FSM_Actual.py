@@ -113,6 +113,8 @@ def stateB():
         #generally, only one of these should be 1 when this statement comes up
         if(capture_start==1):
             initialize=1
+            detecting_distance=1
+            detecting_object=1
             return stateA #first step in capturing is resetting the arms
         if(initialize==1):
             return stateA #in this case, we are just resetting
@@ -179,20 +181,176 @@ def stateD():
 
 #ARD_Wait
 #this state is gone to after stateC (move) or stateD (rotate)
+#we could go from here to UART_Wait, move, rotate, or detectDistance
 def stateE():
-    #oh boy, this is gonna be a doozy
-    
-    
-    
-    #first, we need to check if we are initializing
-    global initialize
-    global lin_ard_add
-    global rot_ard_add
+    #global variables that will be modified:
     global moving_arm
     global rotating_arm
     global configuring_arm
+    global new_status
+    global status_UART
+    global initialize
+    global capture_start
+    #set the offsets that will be read from in either scenario
+    MOVE_OFFSET=pair_select
+    ROTATE_OFFSET=0+configuring_arm+arm_configuration
+    #I think we need to consider initializing, then capturing, then pure movement
+    '''
+    Initializing:
+        The entire system starts with initializing, as does the capture start
+        We could be here after the move (first) or the rotate (second)
+            If moving_arm==1, we are still moving, so we are reading linear and waiting on lin_ARD_read
+            Because we move, then rotate, moving takes priority. 
+                After this, we need to set moving_arm=0
+            If moving_arm==0, we must just be waiting on the rotating.
+                If rotating_arm==1, we wait on rot_ARD_read
+                    After this, we set rotating_arm=0, same with configuring arm
+                    Then, we move onto UART_wait
+    '''
+    '''
+    Capturing:
+        If we move here and initializing is 0 but capturing is 1, rotation takes priority over moving
+        if rotating_arm==1 we wait on rot_ARD_read, move rotating_arm to 0 after. Same with configuring_arm=0.
+        If rotating_arm==0, we are moving
+            If moving_arm==1, we wait on lin_ARD_read, setting moving_arm to 0 after
+                After this, we will have finished our capture.
+                Theoretically here, what state we move to next will be based on the status returned from lin_ARD_read,
+                    This is because whats next depends on why stopped stopped (unknown command, end stops, force sensors(preferred))    
+    '''
+    '''
+    Pure Linear:
+        If moving_arm==1 and initializing==0 and capture_start==0, we are just moving
+        So we wait on lin_ARD_read(), setting the outputs status and whatnot, as well as setting moving_arm=0 after
+    Pure Rotational:
+        If rotating_arm==1 and intializing==0 and capture_start==0, we are just rotating
+        This might be capturing, which effects what's being sent. 
+            Based on the return status, it effects our output
+    '''
     
     if(initialize==1):
+        if(moving_arm==1):
+            #remember that lin_ARD_Read returns an array of two integers
+            move_status=lin_ARD_Read(MOVE_OFFSET)
+            
+            #In UART_Comms, we print out the status to UART, so we just need to update it based on what's returned
+            #if pair0 and pair1 did stuff, we add that to the status_UART
+            if(move_status[0]!=0):
+                status_UART+=Generate_Status(move_status[0])+"\r\n"
+            if(move_status[1]!=0):
+                status_UART+=Generate_Status(move_status[1])+"\r\n"
+            new_status=1            
+            moving_arm=0 #need to set this back to 0 so we don't come here again
+            
+            #if either status is -1 it is a fatal error so we will exit this program
+            if(move_status[0]==-1 or move_status[1]==-1):
+                return stateQ
+            
+            #if it didn't fail, we move into the rotating state
+            return stateD
+        #if we get here, we must be rotating the arm
+        elif(rotating_arm==1):
+            rotate_status=rot_ARD_Read(ROTATE_OFFSET)
+            #If we get here, we know status isn't gonna just be 0. Add it to the status buffer
+            status_UART+=Generate_Status(rotate_status)+"\r\n"
+            new_status=1 #we have new status
+            rotating_arm=0 #we are done rotating
+            configuring_arm=0 #we are done configuring
+            initialize=0 #we are done intiializing
+            #if it errors, we need to exit to stateQ
+            if(rotate_status==-1):
+                return stateQ
+            #if we are capturing, it's time to start analyzing the debris
+            if(capture_start==1):
+                #so we go to the distance detection
+                return stateF
+            #if we aren't capturing, we must be plain initializing 
+            else:
+                #so we are good to move on to UART_Wait
+                return stateB
+        else:
+            print("Initialization failure in stateE: ARD_Wait")
+            return stateQ
+    elif(capture_start==1):
+        #in the capture sequence, we first rotate, then close. So that is the priority
+        if(rotating_arm==1):
+            rotate_status=rot_ARD_Read(ROTATE_OFFSET)
+            #If we get here, we know status isn't gonna just be 0. Add it to the status buffer
+            status_UART+=Generate_Status(rotate_status)+"\r\n"
+            new_status=1 #we have new status
+            rotating_arm=0 #we are done rotating
+            configuring_arm=0 #we are done configuring
+            #if it errors, we need to exit to stateQ
+            if(rotate_status==-1):
+                return stateQ
+            #if we are capturing, we now need to close the claw
+            return stateC
+        elif(moving_arm==1):
+            #remember that lin_ARD_Read returns an array of two integers
+            move_status=lin_ARD_Read(MOVE_OFFSET)
+            
+            #In UART_Comms, we print out the status to UART, so we just need to update it based on what's returned
+            #if pair0 and pair1 did stuff, we add that to the status_UART
+            if(move_status[0]!=0):
+                status_UART+=Generate_Status(move_status[0])+"\r\n"
+            if(move_status[1]!=0):
+                status_UART+=Generate_Status(move_status[1])+"\r\n"
+            new_status=1            
+            moving_arm=0 #need to set this back to 0 so we don't come here again
+            capture_start=0 #we are done capturing!
+            #if either status is -1 it is a fatal error so we will exit this program
+            if(move_status[0]==-1 or move_status[1]==-1):
+                return stateQ
+            
+            #if it didn't fail, we should've successfully captured the thing and we should be done, moving into UART_Wait
+            return stateB
+        else:
+            print("Failure during capture in stateE: ARD_Wait")
+            return stateQ
+    elif(moving_arm==1):
+        #remember that lin_ARD_Read returns an array of two integers
+        move_status=lin_ARD_Read(MOVE_OFFSET)
+        
+        #In UART_Comms, we print out the status to UART, so we just need to update it based on what's returned
+        #if pair0 and pair1 did stuff, we add that to the status_UART
+        if(move_status[0]!=0):
+            status_UART+=Generate_Status(move_status[0])+"\r\n"
+        if(move_status[1]!=0):
+            status_UART+=Generate_Status(move_status[1])+"\r\n"
+        new_status=1            
+        moving_arm=0 #need to set this back to 0 so we don't come here again
+        
+        #if either status is -1 it is a fatal error so we will exit this program
+        if(move_status[0]==-1 or move_status[1]==-1):
+            return stateQ
+        
+        #if it didn't fail, we move back to UART_Wait
+        return stateB
+    elif(rotating_arm==1):
+        #lets get this rotate status
+        rotate_status=rot_ARD_Read(ROTATE_OFFSET)
+        #If we get here, we know status isn't gonna just be 0. Add it to the status buffer
+        status_UART+=Generate_Status(rotate_status)+"\r\n"
+        new_status=1 #we have new status
+        rotating_arm=0 #we are done rotating
+        configuring_arm=0 #we are done configuring
+        #if it errors, we need to exit to stateQ
+        if(rotate_status==-1):
+            return stateQ
+        #otherwise, we go back to UART_Wait
+        return stateB
+    else:
+        #if we get here, we must've messed up somewhere with our flags being set.
+        print("ERROR: Ard_Wait failed if elif statements")
+        status_UART+=Generate_Status(-1)+"\r\n"
+        new_status=1
+    return stateQ
+            
+
+#Detecting_Distance
+#I believe we just either go here from UART_Wait or from ARD_Wait, ARD_Wait if we are in capture_start==1
+def stateF():        
+    global detecting_distance
+    
         
         
     
