@@ -351,7 +351,12 @@ def stateE():
 def stateF():        
     global detecting_distance
     
-        
+    if(capture_start==1):
+        return stateG
+    else:
+        return stateB    
+
+#Detecting_Object
         
     
 #At this point, we are actually in the program that will be running to execute it all.
