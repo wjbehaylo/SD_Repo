@@ -1,7 +1,8 @@
 #include <AccelStepper.h>
 
-#define dirPin_g1 7
-#define stepPin_g1 6
+#define STEPPER3_STEP_PIN 6
+#define STEPPER3_DIR_PIN 7
+#define ROT_ARD_ADD 8
 
 /* COM NOTES
 General: PI Probes ARD for value, sends int response based on status
@@ -13,7 +14,7 @@ const int steps_rev = 400; // 1/2 microstep
 // Lead/Revolution = 2mm
 // Steps/Rev = 200 (no microstep)
 
-AccelStepper stepper_gear1(1,stepPin_g1,dirPin_g1);
+AccelStepper stepper_gear1(1,STEPPER3_STEP_PIN,STEPPER3_DIR_PIN);
 
 void setup() {
   // Declare pins as output
@@ -23,7 +24,7 @@ void setup() {
 }
 
 void loop() {
-
+  
   stepper_moveMM(stepper_gear1, 2);
   delay(1000);
   stepper_moveMM(stepper_gear1, 0);
