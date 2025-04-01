@@ -1,7 +1,7 @@
-/* Purpose: This is a functional file to set up the Arduino as an I2C Slave 
-         for receiving movement commands from the Raspberry Pi and 
+/* Purpose: This is a functional file to set up the Rotational Arduino as an I2C Slave 
+         for receiving rotational commands from the Raspberry Pi and 
          controlling stepper motors for linear and rotational motion.
-Contributors: Angela
+Contributors: Walter
 Sources: SEED_LAB repository for previous examples
          IEEE 754 float conversion reference
          Arduino Wire Library Documentation (https://www.arduino.cc/reference/en/libraries/wire/)
@@ -22,15 +22,7 @@ Libraries to be included:
 
 // ============================ I2C ADDRESSES ============================
 // These addresses must match the ones used in the Raspberry Pi code.
-#define LIN_ARD_ADD 15  // I2C Address linear movement
 #define ROT_ARD_ADD 8   // I2C Address rotational movement
-
-// ============================ STEPPER MOTOR SETUP ============================
-// Define motor pins for linear motion 
-#define STEPPER1_STEP_PIN 2
-#define STEPPER1_DIR_PIN 3
-#define STEPPER2_STEP_PIN 5
-#define STEPPER2_DIR_PIN 4
 
 // Define motor pins for rotational motion 
 #define STEPPER3_DIR_PIN 7
