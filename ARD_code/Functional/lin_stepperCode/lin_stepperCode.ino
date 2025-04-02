@@ -19,21 +19,17 @@ const int steps_rev = 400; // 1/2 microstep
 
 AccelStepper stepper_lin1(1,stepPin_l1,dirPin_l1);
 AccelStepper stepper_lin2(1,stepPin_l2,dirPin_l2);
-// AccelStepper stepper_gear1(1,stepPin_g1,dirPin_g1);
 
 MultiStepper steppers_lin;
+int numSteppers = 2; // Number of steppers in MultiStepper
 
 void setup() {
-    // Declare pins as output:
+   // Declare pins as output:
   stepper_lin1.setMaxSpeed(1000); // Set max speed stepper
-  stepper_lin1.setAcceleration(500); // Set max accel for stepper
+  // Accel not supported for AccelStepper
   stepper_lin1.setCurrentPosition(0); // Set current position for stepper
   stepper_lin2.setMaxSpeed(1000);
-  stepper_lin2.setAcceleration(500);
   stepper_lin2.setCurrentPosition(0);
-  // stepper_gear1.setMaxSpeed(1000);
-  // stepper_gear1.setAcceleration(500);
-  // stepper_gear1.setCurrentPosition(0);
 
   steppers_lin.addStepper(stepper_lin1);
   steppers_lin.addStepper(stepper_lin2);
@@ -41,19 +37,10 @@ void setup() {
 
 void loop() {
 
-  long positions[2];
-  positions[0] = 400;
-  positions[1] = 400;
-  
-  steppers_lin.moveTo(positions);
-  steppers_lin.runSpeedToPosition(); // If you dont want blocking consider using run() instead.
+  steppers_moveMM(steppers_lin, 2, numSteppers);
   delay(1000);
 
-  positions[0] = 0;
-  positions[1] = 0;
-  
-  steppers_lin.moveTo(positions);
-  steppers_lin.runSpeedToPosition();
+  steppers_moveMM(steppers_lin, 0, numSteppers);
   delay(1000);
 }
 
@@ -63,9 +50,12 @@ void stepper_moveMM (AccelStepper &stepper, float mm) {
   stepper.runToPosition();
 }
 
-// Doesn't work yet
-// void steppers_moveMM (MultiStepper &steppers, float mm) {
-//   int steps = (mm*steps_rev)/(200*lead_step);
-//   steppers.moveTo(steps);
-//   steppers.runSpeedToPosition();
-// }
+void steppers_moveMM (MultiStepper &steppers, float mm, int numSteppers) {
+  long positions[numSteppers];
+  float steps = (mm*steps_rev)/(200*lead_step);
+  for (int i = 0; i < numSteppers; i++) {
+    positions[i] = steps;
+  }
+  steppers.moveTo(positions);
+  steppers.runSpeedToPosition();
+}
