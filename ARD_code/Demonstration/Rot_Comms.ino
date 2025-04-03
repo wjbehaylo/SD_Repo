@@ -77,6 +77,7 @@ Libraries to be included:
   volatile float targetAngle; //angle that we should move to.
   volatile uint8_t executionStatus=20; //the status of the capturing execution
   volatile uint8_t messageReceived=0; //1 if the Pi has prompted the non 20 status, indicating that 'DONE' state is done
+  volatile bool configuring = false;
   short ctrlBusy=0; //whether or not the control system is actively busy or not
   short ctrlDone=0; //whether or not the control system is done (1) or not.
   volatile bool triggered0 = false;
@@ -176,7 +177,7 @@ Libraries to be included:
         //if we are not actively controlling the system, 
         if(ctrlBusy==0){
           //here we add in whatever move function
-          
+
           ctrlBusy=1;
           //============MOVE FUNCTION=================
           state=MOVING;
@@ -211,10 +212,53 @@ Libraries to be included:
 
   }
   
-  void stepper_moveMM (AccelStepper &stepper, float mm) {
-    float steps = (mm*steps_rev)/(200*lead_step);
-    stepper.moveTo(steps);
-    stepper.runToPosition();
+  //the move function will need to work in a manner that uses a while loop which ends when end stops are triggered or actual position meets target position
+  void stepper_moveMM (AccelStepper &stepper) {
+    //for the output status part I think I need to differentiate between configuring and rotating for when the move is finished.
+
+    //we go here if we will be rotating negatively
+    if(targetAngle<currentAngle){
+      while(targetAngle<currentAngle && !triggered0 && !triggered90){
+        //now we will move by 0.1 degree in the negative direction, and update current angle
+      }
+    }
+    //we go here if we will be rotating positively
+    else if (targetAngle>currentAngle){
+      while(targetAngle>currentAngle && !triggered0 && !triggered90){
+        //now we will move by 0.1 degree in the positive direction, and update current angle
+      }
+    }
+    else {
+      Serial.println("target angle = current angle");
+    }
+    //control is no longer busy and is now done
+    ctrlBusy=0;
+    ctrlDone=1;
+
+    //now we need to determine our output status based on what flags are set
+    if(triggered0){
+      executionStatus = 23;
+      return;
+    }
+    else if(triggered90){
+      executionStatus = 24;
+      return;
+    }
+    else if(targetAngle == currentAngle){
+      if(configuring == true){
+        executionStatus = 22;
+        return;
+      }
+      else {
+        executionStatus = 21;
+        return;
+      }
+    }
+    else{ // if we get here it broke somehow or something
+      Serial.println("Movement Failure");
+      executionStatus=25;
+      return;
+    }
   }
 
   //this is our ISR for when the Pi sends data
@@ -235,13 +279,16 @@ Libraries to be included:
       byteFloat.bytes[2] = instruction[1];
       byteFloat.bytes[3] = instruction[0];
       targetAngle=byteFloat.floatValue + currentAngle;
+      configuring = false;
     }
     //if offset ==1, target Angle just becomes the angle of = configuration
     else if(offset==1){
       targetAngle=configurationEquals; //0 degrees
+      configuring = true; //for status output
     }
     else if(offset==2){
       targetAngle=configurationPlus; //45 degrees
+      configuring = true;
     }
     else{
       Serial.println("Unknown offset");
