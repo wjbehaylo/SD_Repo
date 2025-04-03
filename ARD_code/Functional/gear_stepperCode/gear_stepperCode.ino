@@ -32,6 +32,10 @@ void loop() {
   delay(1000);
 }
 
+//How many steps is it to move the upper part 1 degree? 0.1 degree?
+//400 steps per revolution of small gear. 
+//X number of small gear revolutions per big gear revolution
+//Stepper steps -> degrees rotated = 400 steps/360 degrees small * xdegrees small/ydegrees big
 void stepper_moveTheta (AccelStepper &stepper, float theta) {
   float steps = theta*steps_rev/360;
   stepper.moveTo(steps);

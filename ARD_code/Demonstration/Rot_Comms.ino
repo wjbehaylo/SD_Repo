@@ -115,8 +115,6 @@ Libraries to be included:
       byteFloat.bytes[3] = instruction[0];
       recivedAngle = byteFloat.floatValue;
   */
-
-
   AccelStepper stepper_gear1(1,STEPPER3_STEP_PIN,STEPPER3_DIR_PIN);
   
   void setup() {
