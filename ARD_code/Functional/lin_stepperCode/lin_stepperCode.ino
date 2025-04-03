@@ -4,18 +4,14 @@
 #define stepPin_l1 3
 #define dirPin_l2 12
 #define stepPin_l2 11
-// #define dirPin_g1 7
-// #define stepPin_g1 6
 
 /* COM NOTES
 General: PI Probes ARD for value, sends int response based on status
 Rotational: Rotate to end stop, set position to 0. Get degrees from PI and rotate. Rotate to "plus" from anywhere
 */ 
 
-const float lead_step = 0.01; // 0.01mm
-const int steps_rev = 400; // 1/2 microstep
-// Lead/Revolution = 2mm
-// Steps/Rev = 200 (no microstep)
+const float lead_step = 0.01; // 0.01mm: Lead/Revolution = 2mm
+const int steps_rev = 400; // 1/2 microstep: Steps/Rev = 200 (no microstep)
 
 AccelStepper stepper_lin1(1,stepPin_l1,dirPin_l1);
 AccelStepper stepper_lin2(1,stepPin_l2,dirPin_l2);
