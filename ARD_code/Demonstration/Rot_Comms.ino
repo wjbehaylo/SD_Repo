@@ -70,6 +70,7 @@ Libraries to be included:
         send it to + configuration
         so the content shouldn't matter again
   */
+
   volatile uint8_t instruction[32] = {0}; //content of the message
   volatile uint8_t messageLength=0; //length of the message sent
   volatile uint8_t newMessage=0; //1 when we have a message to interpret
@@ -78,6 +79,8 @@ Libraries to be included:
   volatile uint8_t messageReceived=0; //1 if the Pi has prompted the non 20 status, indicating that 'DONE' state is done
   short ctrlBusy=0; //whether or not the control system is actively busy or not
   short ctrlDone=0; //whether or not the control system is done (1) or not.
+  volatile bool triggered0 = false;
+  volatile bool triggered90 = false;
   /*
   STATUSES:
   status == 20:
@@ -104,7 +107,7 @@ Libraries to be included:
 
 
   /* This is how to use this FloatUnion to convert from the IEEE to integer ish form
-  byteFloat.bytes[0] = instruction[7];
+      byteFloat.bytes[0] = instruction[7];
       byteFloat.bytes[1] = instruction[6];
       byteFloat.bytes[2] = instruction[5];
       byteFloat.bytes[3] = instruction[4];
@@ -128,6 +131,16 @@ Libraries to be included:
     pinMode(ENDSTOP_0_SIGNAL_PIN, INPUT_PULLUP);
     pinMode(ENDSTOP_90_SIGNAL_PIN, INPUT_PULLUP);
     
+    //I am declaring those pins as interrupts so that they can set global flags that will stop movement
+    /*
+    note a slight concern I am having is that if the movement is started when one is triggered it might be immediately stopped, functionally trapping us there. 
+    this could be fixed maybe by calculating if the desired angle after math will extend beyond 90/0 degrees
+    */
+    //RISING because the end stops are active high
+    attachInterrupt(digitalPinToInterrupt(ENDSTOP_0_SIGNAL_PIN), triggered0Interrupt, RISING);
+    attachInterrupt(digitalPinToInterrupt(ENDSTOP_90_SIGNAL_PIN), triggered90Interrupt, RISING);
+
+
     //initialize the I2C slave
     Wire.begin(ROT_ARD_ADD); 
     Wire.onReceive(PiDataReceive); //this is triggered when Raspberry Pi sends data
@@ -163,6 +176,7 @@ Libraries to be included:
         //if we are not actively controlling the system, 
         if(ctrlBusy==0){
           //here we add in whatever move function
+          
           ctrlBusy=1;
           //============MOVE FUNCTION=================
           state=MOVING;
@@ -250,4 +264,13 @@ Libraries to be included:
       executionStatus=20;
       messageReceived=1;
     }
+  }
+
+  //this is what will happen when the 0 end stop is triggered
+  void triggered0Interrupt(){
+    triggered0=true;
+  }
+
+  void triggered90Interrupt(){
+    triggered90=true;
   }
