@@ -155,7 +155,7 @@ Libraries to be included:
   void loop() {
     //what we need here is to just wait to see if new thing to rotate to has been sent or not
     static int state = WAIT; //our state we are initializing to. Could be moving or done alternatively
-
+    static int lastState0 = HIGH, lastState90 = HIGH;
     //based on what we get from 'on receive', we might change states
 
     //the functionality varies depending on what we are actively doing
