@@ -156,7 +156,6 @@ Libraries to be included:
   void loop() {
     //what we need here is to just wait to see if new thing to rotate to has been sent or not
     static int state = WAIT; //our state we are initializing to. Could be moving or done alternatively
-    static int lastState0 = HIGH, lastState90 = HIGH;
     //based on what we get from 'on receive', we might change states
 
     //the functionality varies depending on what we are actively doing
@@ -179,7 +178,7 @@ Libraries to be included:
           //here we add in whatever move function
 
           ctrlBusy=1;
-          //============MOVE FUNCTION=================
+          stepper_rotate(stepper_gear1);
           state=MOVING;
           break;
         }
@@ -213,7 +212,7 @@ Libraries to be included:
   }
   
   //the move function will need to work in a manner that uses a while loop which ends when end stops are triggered or actual position meets target position
-  void stepper_moveMM (AccelStepper &stepper) {
+  void stepper_rotate(AccelStepper &stepper) {
     //for the output status part I think I need to differentiate between configuring and rotating for when the move is finished.
 
     //we go here if we will be rotating negatively
@@ -238,14 +237,17 @@ Libraries to be included:
     //now we need to determine our output status based on what flags are set
     if(triggered0){
       executionStatus = 23;
+      triggered0=false; //reset this
       return;
     }
     else if(triggered90){
       executionStatus = 24;
+      triggered90=false; reset this as well
       return;
     }
     else if(targetAngle == currentAngle){
       if(configuring == true){
+        configuring=false; //lower this now that it is finished configuring
         executionStatus = 22;
         return;
       }
