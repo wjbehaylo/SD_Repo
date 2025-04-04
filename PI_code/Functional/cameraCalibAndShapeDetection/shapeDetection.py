@@ -6,7 +6,7 @@
 #   Based on programming used in SEED_LAB for object detection
 # Relevant files: camera_calib.py, camera_matrix.npy, distortion_coeffs.npy, and relevant png checker board images from the camera
 
-import cv as cv2
+import cv2
 import numpy as np
 import time
 from smbus2 import SMBus
@@ -21,12 +21,21 @@ HEIGHT = 480
 camera_matrix = np.load("camera_matrix.npy")
 distortion_coeffs = np.load("dist_coeffs.npy")
 
-# 3D Models for different objects (these are placeholder values, adjust when values are confirmed)
-object_models = {
-    "CubeSat": np.array([[-0.5, -0.5, 0], [0.5, -0.5, 0], [0.5, 0.5, 0], [-0.5, 0.5, 0], [-0.5, -0.5, 1], [0.5, -0.5, 1], [0.5, 0.5, 1], [-0.5, 0.5, 1]], dtype=np.float32),
-    "Starlink": np.array([[-1.0, -0.5, 0], [1.0, -0.5, 0], [1.0, 0.5, 0], [-1.0, 0.5, 0], [-1.0, -0.5, 1], [1.0, -0.5, 1], [1.0, 0.5, 1], [-1.0, 0.5, 1]], dtype=np.float32),
-    "Rocket Body": np.array([[-0.5, -0.5, 0], [0.5, -0.5, 0], [0.5, 0.5, 0], [-0.5, 0.5, 0], [-0.5, -0.5, 10], [0.5, -0.5, 10], [0.5, 0.5, 10], [-0.5, 0.5, 10]], dtype=np.float32)
+# Extract focal length from camera matrix
+FOCAL_LENGTH = camera_matrix[0, 0]  # fx
+
+# Define known widths for each object type (in meters)
+KNOWN_WIDTHS = {
+    "CubeSat": 0.1,  # 1U CubeSat width
+    "Starlink": 1.4,  # Approximate deployed width
+    "Rocket Body": 1.27  # Minotaur upper stage diameter
 }
+
+# Function to estimate distance based on object type
+def estimate_distance(perceived_width, object_type):
+    if perceived_width == 0 or object_type not in KNOWN_WIDTHS:
+        return None
+    return (KNOWN_WIDTHS[object_type] * FOCAL_LENGTH) / perceived_width
 
 # Initialize the camera
 def initialize_camera():
@@ -41,91 +50,65 @@ def initialize_camera():
     camera.set(cv2.CAP_PROP_FPS, 120)
     return camera
 
-def calculate_distance_with_pose_estimation(object_points, image_points, camera_matrix, distortion_coeffs):
-    """
-    Function to calculate the distance to an object using pose estimation.
-    """
-    success, rvec, tvec = cv2.solvePnP(object_points, image_points, camera_matrix, distortion_coeffs)
-    
-    if not success:
-        return None, None  # If solvePnP fails
+# Function to classify objects
+def classify_object(contour):
+    x, y, w, h = cv2.boundingRect(contour)
+    aspect_ratio = float(w) / h  
 
-    # Calculate the Euclidean distance using the translation vector
-    distance = np.linalg.norm(tvec)
-    
-    # Project the 3D object points back to the 2D image plane
-    projected_points, _ = cv2.projectPoints(object_points, rvec, tvec, camera_matrix, distortion_coeffs)
-    
-    return distance, projected_points
+    # Contour approximation to count corners
+    perimeter = cv2.arcLength(contour, True)
+    approx = cv2.approxPolyDP(contour, 0.02 * perimeter, True)
+    num_vertices = len(approx)
 
-def debris_detect(frame, camera_matrix, distortion_coeffs, object_models):
-    global detected_object, detected_object_type
-    
-    # Convert frame to grayscale and find contours
-    gray_image = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-    _, thresh = cv2.threshold(gray_image, 127, 255, 0)
-    contours, _ = cv2.findContours(thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+    # Classification logic
+    if 0.9 <= aspect_ratio <= 1.1 and num_vertices >= 4:
+        return "CubeSat"
+    elif aspect_ratio > 2.0 and num_vertices > 4:
+        return "Starlink"
+    else:
+        return "Rocket Body"
 
-    detected_object = False
-    detected_object_type = None
+# Initialize camera
+camera = initialize_camera()
+
+while camera.isOpened():
+    ret, frame = camera.read()
+    if not ret:
+        break
+
+    # **Apply camera calibration to remove distortion**
+    frame_undistorted = cv2.undistort(frame, camera_matrix, distortion_coeffs)
+
+    # Convert to grayscale and process
+    gray = cv2.cvtColor(frame_undistorted, cv2.COLOR_BGR2GRAY)
+    blurred = cv2.GaussianBlur(gray, (5, 5), 0)
+    edges = cv2.Canny(blurred, 50, 150)
+
+    # Find contours
+    contours, _ = cv2.findContours(edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
     for contour in contours:
-        area = cv2.contourArea(contour)
-        if area < 100:  # Ignore small contours
-            continue
+        if cv2.contourArea(contour) > 500:  # Filter small objects
+            x, y, w, h = cv2.boundingRect(contour)
+            perceived_width = w  # Use width of bounding box
 
-        # Use bounding box for pose estimation
-        x, y, w, h = cv2.boundingRect(contour)
-        image_points = np.array([[x, y], [x + w, y], [x + w, y + h], [x, y + h]], dtype=np.float32)
+            # Classify object
+            object_type = classify_object(contour)
 
-        # Match object based on area (adjust thresholds if necessary)
-        if area < 1500:
-            detected_object_type = "CubeSat"
-            object_points = object_models["CubeSat"]
-        elif area < 3000:
-            detected_object_type = "Starlink"
-            object_points = object_models["Starlink"]
-        else:
-            detected_object_type = "Rocket Body"
-            object_points = object_models["Rocket Body"]
+            # Estimate distance using appropriate known width
+            distance = estimate_distance(perceived_width, object_type)
 
-        # Get distance and projected points using pose estimation
-        distance, projected_points = calculate_distance_with_pose_estimation(object_points, image_points, camera_matrix, distortion_coeffs)
+            # Draw bounding box and label
+            cv2.rectangle(frame_undistorted, (x, y), (x + w, y + h), (0, 255, 0), 2)
+            label = f"{object_type} - {distance:.2f} m" if distance else object_type
+            cv2.putText(frame_undistorted, label, (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
 
-        if distance is not None:
-            detected_object = True
-            print(f"Detected {detected_object_type} at distance: {distance:.2f} meters")
+    # Show the result
+    cv2.imshow("Object Classification", frame_undistorted)
 
-            # Draw projected points and bounding box on the frame
-            for point in projected_points:
-                cv2.circle(frame, tuple(point[0].astype(int)), 5, (0, 0, 255), -1)
+    # Press 'q' to exit
+    if cv2.waitKey(1) & 0xFF == ord('q'):
+        break
 
-            cv2.putText(frame, f'{detected_object_type}: {distance:.2f}m', (x, y - 10),
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
-
-            break  # Exit after detecting the first object
-
-    cv2.imshow("Detected Objects and Distance", frame)
-
-# Main loop
-if __name__ == "__main__":
-    camera = initialize_camera()
-    time.sleep(1)
-
-    while True:
-        ret, frame = camera.read()
-        if not ret:
-            break
-
-        # Undistort the captured frame
-        frame = cv2.undistort(frame, camera_matrix, distortion_coeffs)
-
-        # Detect debris
-        debris_detect(frame, camera_matrix, distortion_coeffs, object_models)
-
-        # Exit loop if 'q' is pressed
-        if cv2.waitKey(1) & 0xFF == ord('q'):
-            break
-
-    camera.release()
-    cv2.destroyAllWindows()
+camera.release()
+cv2.destroyAllWindows()
