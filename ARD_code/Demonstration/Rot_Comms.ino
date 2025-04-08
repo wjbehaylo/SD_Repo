@@ -41,12 +41,11 @@ Libraries to be included:
   */ 
   
   //Constants to be used
-  const float lead_step = 0.01; // 0.01mm
-  const int steps_rev = 400; // 1/2 microstep
+  const int steps_rev = 400; // Steps/Rev = 200 (no microstep)?
+  const int gear_ratio = 3; // Base gear ratio
+  const float increment = 0.1; // Stepper theta increment
   const int configurationPlus = 45; //target degrees for plus configuration
   const int configurationEquals = 0; //target degrees for equal configuration
-  // Lead/Revolution = 2mm
-  // Steps/Rev = 200 (no microstep)
   
   //this is for the FSM states
   //WAIT is while the Arduino is on and waiting for instructions
@@ -123,8 +122,8 @@ Libraries to be included:
   
   void setup() {
     // Declare pins as output for the motor
-    stepper_gear1.setMaxSpeed(1000);
-    stepper_gear1.setAcceleration(500);
+    stepper_gear1.setMaxSpeed(100);
+    stepper_gear1.setAcceleration(50);
     stepper_gear1.setCurrentPosition(0);
 
     //declare pins for the end stops
@@ -219,12 +218,16 @@ Libraries to be included:
     if(targetAngle<currentAngle){
       while(targetAngle<currentAngle && !triggered0 && !triggered90){
         //now we will move by 0.1 degree in the negative direction, and update current angle
+        stepper_moveTheta(&stepper, current angle - increment); // need to test direction (+/-)
+        currentAngle = currentTheta(&stepper);
       }
     }
     //we go here if we will be rotating positively
     else if (targetAngle>currentAngle){
       while(targetAngle>currentAngle && !triggered0 && !triggered90){
         //now we will move by 0.1 degree in the positive direction, and update current angle
+        stepper_moveTheta(&stepper, current angle + increment); // need to test direction (+/-)
+        currentAngle = currentTheta(&stepper);
       }
     }
     else {
@@ -322,4 +325,14 @@ Libraries to be included:
 
   void triggered90Interrupt(){
     triggered90=true;
+  }
+
+  void stepper_moveTheta (AccelStepper &stepper, float theta) {
+    float steps = gear_ratio*theta*steps_rev/360;
+    stepper.moveTo(steps);
+    stepper.runToPosition();
+  }
+
+  float currentTheta(AccelStepper &stepper) {
+    return float(stepper.currentPosition()*360/steps_rev);
   }

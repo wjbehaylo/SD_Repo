@@ -18,8 +18,8 @@ AccelStepper stepper_gear1(1,STEPPER3_STEP_PIN,STEPPER3_DIR_PIN);
 
 void setup() {
   // Declare pins as output
-  stepper_gear1.setMaxSpeed(100);
-  stepper_gear1.setAcceleration(50);
+  stepper_gear1.setMaxSpeed(500);
+  stepper_gear1.setAcceleration(500);
   stepper_gear1.setCurrentPosition(0);
 }
 
