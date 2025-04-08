@@ -218,7 +218,7 @@ Libraries to be included:
     if(targetAngle<currentAngle){
       while(targetAngle<currentAngle && !triggered0 && !triggered90){
         //now we will move by 0.1 degree in the negative direction, and update current angle
-        stepper_moveTheta(&stepper, current angle - increment); // need to test direction (+/-)
+        stepper_moveTheta(&stepper, currentAngle - increment); // need to confirm direction (+/-)
         currentAngle = currentTheta(&stepper);
       }
     }
@@ -226,7 +226,7 @@ Libraries to be included:
     else if (targetAngle>currentAngle){
       while(targetAngle>currentAngle && !triggered0 && !triggered90){
         //now we will move by 0.1 degree in the positive direction, and update current angle
-        stepper_moveTheta(&stepper, current angle + increment); // need to test direction (+/-)
+        stepper_moveTheta(&stepper, currentAngle + increment); // need to confirm direction (+/-)
         currentAngle = currentTheta(&stepper);
       }
     }

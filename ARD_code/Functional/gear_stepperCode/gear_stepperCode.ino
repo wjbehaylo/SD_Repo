@@ -12,7 +12,9 @@ Rotational: Rotate to end stop, set position to 0. Get degrees from PI and rotat
 // Steps/Rev = 200 (no microstep)
 const int steps_rev = 400; // 1/2 microstep
 const int gear_ratio = 3; // Base gear ratio
-long theta = 0; // Angle tracker
+const float increment = 0.1; // Stepper theta increment
+float theta_d = 0; // Desired theta
+float theta = 0; // Angle tracker
 
 AccelStepper stepper_gear1(1,STEPPER3_STEP_PIN,STEPPER3_DIR_PIN);
 
@@ -25,14 +27,12 @@ void setup() {
 
 void loop() {
   
-  stepper_moveTheta(stepper_gear1, 90);
-  theta = currentTheta(stepper_gear1);
-  Serial.println(theta);
+  theta_d = 90;
+  stepper_rotate(stepper_gear1);
   delay(1000);
 
-  stepper_moveTheta(stepper_gear1, 0);
-  theta = currentTheta(stepper_gear1);
-  
+  theta_d = 0;
+  stepper_rotate(stepper_gear1);
   delay(1000);
 }
 
@@ -46,6 +46,12 @@ void stepper_moveTheta (AccelStepper &stepper, float theta) {
   stepper.runToPosition();
 }
 
-long currentTheta (AccelStepper &stepper) {
-  return long(stepper.currentPosition()*360/steps_rev);
+float currentTheta (AccelStepper &stepper) {
+  return float(stepper.currentPosition()*360/steps_rev);
+}
+
+void stepper_rotate(AccelStepper &stepper) {
+  //now we will move by 0.1 degree in the negative direction, and update current angle
+  stepper_moveTheta(&stepper, theta - increment); // need to test direction (+/-)
+  theta = currentTheta(&stepper);
 }
