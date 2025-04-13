@@ -1,5 +1,5 @@
 /**
- * @file endstop_control.cpp
+ * @file linear_endstop.cpp
  * @brief
  *   Implements the logic for detecting state changes from 4 limit switches.
  *   Stops motion if any are triggered.

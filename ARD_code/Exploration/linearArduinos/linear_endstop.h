@@ -1,5 +1,5 @@
 /**
- * @file endstop_control.h
+ * @file linear_endstop.h
  * @brief 
  *   Header for managing 4 limit switches on the Linear Arduino (Arduino A).
  *   Each switch halts stepper movement when pressed.

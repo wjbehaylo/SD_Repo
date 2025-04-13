@@ -1,11 +1,11 @@
 /**
- * @file rotation_endstop_control.cpp
+ * @file rotation_endstop.cpp
  * @brief
  *   Implements debounced input from 2 end stops to limit rotation.
  *   Designed for Arduino B handling 180° sweep control.
  */
 
- #include "rotation_endstop_control.h"
+ #include "rotation_endstop.h"
 
  static int lastLeftState = HIGH, lastRightState = HIGH;
  static unsigned long lastDebounceTime = 0;

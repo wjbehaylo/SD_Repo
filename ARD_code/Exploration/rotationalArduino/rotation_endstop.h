@@ -1,5 +1,5 @@
 /**
- * @file rotation_endstop_control.h
+ * @file rotation_endstop.h
  * @brief
  *   Header for managing 2 end stops on the Rotational Arduino (Arduino B).
  *   These define the angular boundaries of rotation (e.g. 0° and 180°).
