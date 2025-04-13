@@ -22,16 +22,21 @@
  */
 
 #include "rotation_control.h"
+#include "rotation_endstop.h"
 
 void setup() {
   Serial.begin(9600);
-  Serial.println("[ROTATION] Rotation Control Initialized");
-
   setupRotationStepper();
+  setupRotationEndstops();
   Wire.begin(ROTATION_I2C_ADDRESS);
   Wire.onReceive(receiveRotationEvent);
 }
 
 void loop() {
-  updateRotationStepper();
+  if (rotationEndstopPressed()) {
+    Serial.println("Rotation end stop triggered — halting motor");
+    rotateStepper.stop();
+  } else {
+    updateRotationStepper();
+  }
 }

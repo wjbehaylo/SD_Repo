@@ -5,17 +5,17 @@
  *   Declares pin configurations, stepper settings, I2C address, and shared state variables.
  *
  * Description:
- *   - Receives `distance_byte` from Raspberry Pi via I2C
+ *   - Receives distance_byte from Raspberry Pi via I2C
  *   - Maps the byte (0–255) to a vertical range using `MAX_LIFT_STEPS`
  *   - Controls two AccelStepper objects (left + right lift motors)
  *
  * Hardware:
  *   - Lift Stepper 1:
+ *       STEP → pin 2
+ *       DIR  → pin 3
+ *   - Lift Stepper 2:
  *       STEP → pin 4
  *       DIR  → pin 5
- *   - Lift Stepper 2:
- *       STEP → pin 6
- *       DIR  → pin 7
  *   - I2C:
  *       Address: 0x08
  *       SDA (A4), SCL (A5), GND shared with Raspberry Pi
@@ -31,10 +31,10 @@
 #include <Wire.h>
 
 // === Pin Definitions ===
-#define LIFT1_STEP_PIN  4
-#define LIFT1_DIR_PIN   5
-#define LIFT2_STEP_PIN  6
-#define LIFT2_DIR_PIN   7
+#define LIFT1_STEP_PIN  2
+#define LIFT1_DIR_PIN   3
+#define LIFT2_STEP_PIN  4
+#define LIFT2_DIR_PIN   5
 
 #define I2C_ADDRESS 0x08  // I2C address Arduino listens on
 

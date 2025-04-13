@@ -10,6 +10,9 @@
  *     - SDA → A4
  *     - SCL → A5
  *     - GND shared with Raspberry Pi
+ * - ENDSTOPS :
+ *     - LIMIT_SWITCH_1 → pin D11, GND, 5V
+ *     - LIMIT_SWITCH_2 → pin D12, GND, 5V
  *
  * Functionality:
  * - Receives one byte via I2C: [angle_byte]
