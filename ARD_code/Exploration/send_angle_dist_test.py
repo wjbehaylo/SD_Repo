@@ -58,15 +58,15 @@ with SMBus(1) as bus:
     try:
         # Send to linear Arduino
         bus.write_i2c_block_data(LINEAR_ADDR, 0, [angle_byte, distance_byte])
-        print(f"✔ Sent to Linear Arduino (0x08): angle={angle_byte}, distance={distance_byte}")
+        print(f"Sent to Linear Arduino (0x08): angle={angle_byte}, distance={distance_byte}")
     except Exception as e:
-        print(f"❌ Error sending to Linear Arduino: {e}")
+        print(f"Error sending to Linear Arduino: {e}")
 
     time.sleep(0.1)  # short delay between transmissions
 
     try:
         # Send to rotation Arduino
         bus.write_i2c_block_data(ROTATION_ADDR, 0, [angle_byte])
-        print(f"✔ Sent to Rotation Arduino (0x09): angle={angle_byte}")
+        print(f"Sent to Rotation Arduino (0x09): angle={angle_byte}")
     except Exception as e:
-        print(f"❌ Error sending to Rotation Arduino: {e}")
+        print(f"Error sending to Rotation Arduino: {e}")
