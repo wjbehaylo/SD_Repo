@@ -9,30 +9,29 @@
 import cv2
 import numpy as np
 import time
-from smbus2 import SMBus
+#from smbus2 import SMBus
 from time import sleep
 import math
 import threading
 
 # Constants
 ARUINO_I2C_ADDRESS = 8
-WIDTH = 1920
-HEIGHT = 1080
-
-# Initialize SMBus library for I2C communication (using bus 1)
-#i2c_bus = SMBus(1)
+WIDTH = 1920 #may need to play around with these values
+HEIGHT = 1080 #may need to play around with values 
 
 # Load Camera Calibration Data
 camera_matrix = np.load("camera_matrix.npy")
 distortion_coeffs = np.load("distortion_coeffs.npy")
 
-# Extract focal length from camera matrix
 FOCAL_LENGTH = [camera_matrix[0, 0], camera_matrix[1, 1]]  # fx
+fx = camera_matrix[0, 0]  # focal length in pixels (x-axis)
+HFOV_rad = 2 * np.arctan(WIDTH / (2 * fx))
+HFOV_deg = np.degrees(HFOV_rad)
 
-# Current frame captured from camera
-current_frame = None
 #Flag to control main loop
 is_running = True
+#Flag for detected object
+detected_object = None
 
 # Define known dimensions for each object type (in meters)
 KNOWN_DIMENSIONS = {
@@ -128,16 +127,31 @@ def classify_object(contour):
     # If nothing matches, return Unknown
     return "Unknown"
 
+#Function for I2C data writter
+def write_data(angle, distance):
+    if detected_object is not None:
+        angle_sent = (-angle+HFOV_deg/2)*(255/HFOV_deg)
+        angle_sent = int(angle_sent)
+        distance = int(np.round(distance))
+        try:
+            i2c_bus = SMBus(1)
+            i2c_bus.write_byte_data(ARUINO_I2C_ADDRESS, angle_sent, distance)
+            print("angle: ", angle_sent)
+            print("dist: ", distance)
+        except OSError:
+            print("Unable to write.")
 
+#Frame Processing Loop
 def object_dect_and_distance(camera):
-    global is_running
+    global detected_object
+    detected_object = object_type
     while True:
         ret, frame = camera.read()
         if not ret:
             print("Failed to capture image!")
             break
 
-        # **Apply camera calibration to remove distortion**
+        # Apply camera calibration to remove distortion**
         frame_undistorted = cv2.undistort(frame, camera_matrix, distortion_coeffs)
 
         # Convert to grayscale and process
@@ -145,9 +159,8 @@ def object_dect_and_distance(camera):
         # Improve lighting conditions
         adaptive_thresh = cv2.adaptiveThreshold(gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
                                                cv2.THRESH_BINARY, 11, 2)
-        blurred = cv2.GaussianBlur(gray, (5, 5), 0)
+        blurred = cv2.GaussianBlur(adaptive_thresh, (5, 5), 0)
         edges = cv2.Canny(blurred, 50, 150)
-
         # Use morphological operations to clean up the edges
         kernel = np.ones((5, 5), np.uint8)
         processed_image = cv2.morphologyEx(edges, cv2.MORPH_CLOSE, kernel)
@@ -159,17 +172,15 @@ def object_dect_and_distance(camera):
 
 
         for contour in contours:
-            # Draw the contour for debugging
-            cv2.drawContours(frame_undistorted, [contour], -1, (0, 0, 255), 2)
-
             # Get bounding box and classify
             x, y, w, h = cv2.boundingRect(contour)
             object_type = classify_object(contour)
+            detected_object = object_type
 
+            # Draw the contour for debugging
+            cv2.drawContours(frame_undistorted, [contour], -1, (0, 0, 255), 2)
             # Draw bounding box for classified objects
             cv2.rectangle(frame_undistorted, (x, y), (x + w, y + h), (0, 255, 0), 2)
-
-            label = f"{object_type}" if object_type != "Unknown" else f"Unknown"
             cv2.putText(frame_undistorted, label, (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
 
             corners = [
@@ -178,9 +189,8 @@ def object_dect_and_distance(camera):
                 (x + w, y + h),       # Bottom-right
                 (x, y + h)            # Bottom-left
             ]
-
             distance = estimate_distance(corners, object_type)
-
+            label = f"{object_type}" if object_type != "Unknown" else f"Unknown"
             # Estimate angle using solvePnP
             if object_type != "Unknown":
                 object_points = np.array([
@@ -203,7 +213,7 @@ def object_dect_and_distance(camera):
 
                     cv2.putText(frame_undistorted, f"Angle: {angle_deg:.1f} deg", (x, y + h + 20),
                                 cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 0), 2)
-                    
+                    write_data(angle_deg, distance)      
                 else:
                     print(f"solvePnP failed for object: {object_type}")
 
@@ -225,10 +235,12 @@ def main():
     global is_running
     #init camera
     camera = cv2.VideoCapture(0)
-
-    # Set up camera properties (optional)
+    # Set up camera properties
+    camera.set(cv2.CAP_PROP_FPS, 30) # Set camera frames per second to 30
     camera.set(cv2.CAP_PROP_FRAME_WIDTH, WIDTH)
     camera.set(cv2.CAP_PROP_FRAME_HEIGHT, HEIGHT)
+
+    sleep(1) #allow camera to warm up
 
     # Start the processing thread
     process_thread = threading.Thread(target=object_dect_and_distance, args=(camera,))
