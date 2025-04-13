@@ -14,8 +14,11 @@ from time import sleep
 import math
 import threading
 
-# Constants
-ARUINO_I2C_ADDRESS = 8
+# I2C addresses
+LINEAR_ADDR = 0x08      # Arduino controlling lift
+ROTATION_ADDR = 0x09    # Arduino controlling rotation
+
+#Constants
 WIDTH = 1920 #may need to play around with these values
 HEIGHT = 1080 #may need to play around with values 
 
@@ -133,13 +136,29 @@ def write_data(angle, distance):
         angle_sent = (-angle+HFOV_deg/2)*(255/HFOV_deg)
         angle_sent = int(angle_sent)
         distance = int(np.round(distance))
+
+        # Convert to byte format
+        angle_byte = int((angle_sent / 180.0) * 255)
+        distance_byte = int((distance / 1.0) * 255)
+        
+        #initalize i2c
+        i2c_bus = SMBus(1)
+
         try:
-            i2c_bus = SMBus(1)
-            i2c_bus.write_byte_data(ARUINO_I2C_ADDRESS, angle_sent, distance)
-            print("angle: ", angle_sent)
-            print("dist: ", distance)
-        except OSError:
-            print("Unable to write.")
+            # Send to linear Arduino (sends both angle and distance, but only distance is used)
+            i2c_bus.write_i2c_block_data(LINEAR_ADDR, 0, [angle_byte, distance_byte])
+            print(f"Sent to LINEAR Arduino: angle={angle_byte}, distance={distance_byte}")
+        except Exception as e:
+            print(f"Error sending to Linear Arduino: {e}")
+        
+        time.sleep(0.1)  # slight delay between devices
+
+        # Send to rotation Arduino (only angle is used)
+        try:
+            i2c_bus.write_i2c_block_data(ROTATION_ADDR, 0, [angle_byte])
+            print(f"Sent to ROTATION Arduino: angle={angle_byte}")
+        except Exception as e:
+            print(f"Error sending to Rotation Arduino: {e}")
 
 #Frame Processing Loop
 def object_dect_and_distance(camera):
