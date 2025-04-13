@@ -16,8 +16,8 @@ import threading
 
 # Constants
 ARUINO_I2C_ADDRESS = 8
-WIDTH = 640
-HEIGHT = 480
+WIDTH = 1920
+HEIGHT = 1080
 
 # Initialize SMBus library for I2C communication (using bus 1)
 #i2c_bus = SMBus(1)
@@ -153,7 +153,7 @@ def object_dect_and_distance(camera):
         processed_image = cv2.morphologyEx(edges, cv2.MORPH_CLOSE, kernel)
 
         # Find contours
-        contours, _ = cv2.findContours(edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        contours, _ = cv2.findContours(processed_image, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         min_contour_area = 100  # minimum area for a contour to be considered
         contours = [cnt for cnt in contours if cv2.contourArea(cnt) > min_contour_area]
 
@@ -171,6 +171,41 @@ def object_dect_and_distance(camera):
 
             label = f"{object_type}" if object_type != "Unknown" else f"Unknown"
             cv2.putText(frame_undistorted, label, (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
+
+            corners = [
+                (x, y),               # Top-left
+                (x + w, y),           # Top-right
+                (x + w, y + h),       # Bottom-right
+                (x, y + h)            # Bottom-left
+            ]
+
+            distance = estimate_distance(corners, object_type)
+
+            # Estimate angle using solvePnP
+            if object_type != "Unknown":
+                object_points = np.array([
+                    [-KNOWN_DIMENSIONS[object_type]["width"] / 2, -KNOWN_DIMENSIONS[object_type]["length"] / 2, 0],
+                    [KNOWN_DIMENSIONS[object_type]["width"] / 2, -KNOWN_DIMENSIONS[object_type]["length"] / 2, 0],
+                    [KNOWN_DIMENSIONS[object_type]["width"] / 2, KNOWN_DIMENSIONS[object_type]["length"] / 2, 0],
+                    [-KNOWN_DIMENSIONS[object_type]["width"] / 2, KNOWN_DIMENSIONS[object_type]["length"] / 2, 0]
+                ], dtype=np.float32)
+
+                image_points = np.array(corners, dtype=np.float32)
+                success, rvec, tvec = cv2.solvePnP(object_points, image_points, camera_matrix, distortion_coeffs)
+
+                if success:
+                    # Convert rotation vector to rotation matrix
+                    rotation_matrix, _ = cv2.Rodrigues(rvec)
+
+                    # Get orientation
+                    angle_rad = math.atan2(rotation_matrix[1, 0], rotation_matrix[0, 0])
+                    angle_deg = np.degrees(angle_rad)
+
+                    cv2.putText(frame_undistorted, f"Angle: {angle_deg:.1f} deg", (x, y + h + 20),
+                                cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 0), 2)
+                    
+                else:
+                    print(f"solvePnP failed for object: {object_type}")
 
             # Show the center of the object for debugging
             cx = x + w // 2
