@@ -92,7 +92,8 @@ def classify_object(contour):
     
     x, y, w, h = cv2.boundingRect(contour)
     aspect_ratio = float(w) / h  # Width / Height
-    
+    object_width = w
+    object_length = h
 
     # Debug: Show aspect ratio, area, width, and height
     print(f"Aspect Ratio: {aspect_ratio:.2f}, Area: {area:.2f}, Width: {object_width}, Height: {object_length}")
@@ -105,8 +106,6 @@ def classify_object(contour):
 
     # Starlink
     starlink_area = KNOWN_DIMENSIONS["Starlink"]["width"] * KNOWN_DIMENSIONS["Starlink"]["height"]
-    if aspect_ratio >= 1.6 and starlink_area * 0.3 <= area <= starlink_area * 1.5:
-        return "Starlink"
     if aspect_ratio >= 1.6 and area >= KNOWN_DIMENSIONS["Starlink"]["width"] * KNOWN_DIMENSIONS["Starlink"]["height"] * 0.3:
         return "Starlink"
 
