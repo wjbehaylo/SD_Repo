@@ -41,11 +41,12 @@ Libraries to be included:
   */ 
   
   //Constants to be used
-  const int steps_rev = 400; // Steps/Rev = 200 (no microstep)?
-  const int gear_ratio = 3; // Base gear ratio
-  const float increment = 0.1; // Stepper theta increment
+  const float lead_step = 0.01; // 0.01mm
+  const int steps_rev = 400; // 1/2 microstep
   const int configurationPlus = 45; //target degrees for plus configuration
   const int configurationEquals = 0; //target degrees for equal configuration
+  // Lead/Revolution = 2mm
+  // Steps/Rev = 200 (no microstep)
   
   //this is for the FSM states
   //WAIT is while the Arduino is on and waiting for instructions
@@ -54,7 +55,7 @@ Libraries to be included:
   typedef enum {WAIT, MOVING, DONE} state;
 
   //STATICS are for tracking state information, since they can change between function calls
-  static float currentAngle; //actual angle in degrees
+  static float currentAngle; //actual angle in degrees, maybe I should initialize it to 0?
   //VOLATILES are for things that could change outside of standard execution from like interrupts
   //I2C
   volatile uint8_t offset = 0; //offset of the message
@@ -122,8 +123,8 @@ Libraries to be included:
   
   void setup() {
     // Declare pins as output for the motor
-    stepper_gear1.setMaxSpeed(100);
-    stepper_gear1.setAcceleration(50);
+    stepper_gear1.setMaxSpeed(1000);
+    stepper_gear1.setAcceleration(500);
     stepper_gear1.setCurrentPosition(0);
 
     //declare pins for the end stops
@@ -137,8 +138,8 @@ Libraries to be included:
     this could be fixed maybe by calculating if the desired angle after math will extend beyond 90/0 degrees
     */
     //RISING because the end stops are active high
-    attachInterrupt(digitalPinToInterrupt(ENDSTOP_0_SIGNAL_PIN), triggered0Interrupt, RISING);
-    attachInterrupt(digitalPinToInterrupt(ENDSTOP_90_SIGNAL_PIN), triggered90Interrupt, RISING);
+    attachInterrupt(digitalPinToInterrupt(ENDSTOP_0_SIGNAL_PIN), triggered0Interrupt, CHANGE);
+    attachInterrupt(digitalPinToInterrupt(ENDSTOP_90_SIGNAL_PIN), triggered90Interrupt, CHANGE);
 
 
     //initialize the I2C slave
@@ -155,6 +156,7 @@ Libraries to be included:
   void loop() {
     //what we need here is to just wait to see if new thing to rotate to has been sent or not
     static int state = WAIT; //our state we are initializing to. Could be moving or done alternatively
+    static int lastState0 = HIGH, lastState90 = HIGH;
     //based on what we get from 'on receive', we might change states
 
     //the functionality varies depending on what we are actively doing
@@ -177,7 +179,8 @@ Libraries to be included:
           //here we add in whatever move function
 
           ctrlBusy=1;
-          stepper_rotate(stepper_gear1);
+          //============MOVE FUNCTION=================
+          stepper_rotate(stepper_gear1); //this has all the movement in it
           state=MOVING;
           break;
         }
@@ -211,14 +214,15 @@ Libraries to be included:
   }
   
   //the move function will need to work in a manner that uses a while loop which ends when end stops are triggered or actual position meets target position
-  void stepper_rotate(AccelStepper &stepper) {
+  void stepper_rotate (AccelStepper &stepper) {
     //for the output status part I think I need to differentiate between configuring and rotating for when the move is finished.
 
     //we go here if we will be rotating negatively
     if(targetAngle<currentAngle){
       while(targetAngle<currentAngle && !triggered0 && !triggered90){
         //now we will move by 0.1 degree in the negative direction, and update current angle
-        stepper_moveTheta(&stepper, currentAngle - increment); // need to confirm direction (+/-)
+        stepper_moveTheta(&stepper, currentAngle - increment); // need to confirm direction (+/-),
+        //currentAngle-increment is in degrees though, so we need to maintain it in degrees
         currentAngle = currentTheta(&stepper);
       }
     }
@@ -227,7 +231,7 @@ Libraries to be included:
       while(targetAngle>currentAngle && !triggered0 && !triggered90){
         //now we will move by 0.1 degree in the positive direction, and update current angle
         stepper_moveTheta(&stepper, currentAngle + increment); // need to confirm direction (+/-)
-        currentAngle = currentTheta(&stepper);
+        //currentAngle = currentTheta(&stepper); //updating in moveTheta right now, rather than elsewhere
       }
     }
     else {
@@ -240,17 +244,14 @@ Libraries to be included:
     //now we need to determine our output status based on what flags are set
     if(triggered0){
       executionStatus = 23;
-      triggered0=false; //reset this, I'm not gonna reset this since it only changes on edges, so we need it to stay high while its triggered
       return;
     }
     else if(triggered90){
       executionStatus = 24;
-      triggered90=false; //reset this as well
       return;
     }
     else if(targetAngle == currentAngle){
       if(configuring == true){
-        configuring=false; //lower this now that it is finished configuring
         executionStatus = 22;
         return;
       }
@@ -320,19 +321,37 @@ Libraries to be included:
 
   //this is what will happen when the 0 end stop is triggered
   void triggered0Interrupt(){
-    triggered0=true;
+    if(digitalRead(ENDSTOP_0_SIGNAL_PIN)==HIGH){
+      triggered0=true;
+    }
+    else{
+      triggered0=false;
+    }
   }
 
   void triggered90Interrupt(){
-    triggered90=true;
+    if(digitalRead(ENDSTOP_90_SIGNAL_PIN)==HIGH){
+      triggered90=true;
+    }
+    else{
+      triggered90=false;
+    }  
   }
 
+  //this function should have an input of the stepper to be moved, as well as the amount to move it.
   void stepper_moveTheta (AccelStepper &stepper, float theta) {
+    //steps represents the number of steps that need to be moved
     float steps = gear_ratio*theta*steps_rev/360;
-    stepper.moveTo(steps);
-    stepper.runToPosition();
+
+    stepper.moveTo(steps); //this is the absolute target to move to, not the number of steps
+    stepper.runToPosition(); //this is a blocking statement to move it the desired amount
+    //maybe I just update the angle here...?
+    currentAngle=theta; //I like this more than the currentTheta function since I feel like that just adds complexity
   }
 
   float currentTheta(AccelStepper &stepper) {
+    //
     return float(stepper.currentPosition()*360/steps_rev);
   }
+
+  
