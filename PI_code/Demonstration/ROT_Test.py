@@ -94,7 +94,7 @@ while(True):
     elif(command == "Y"):
         while(True):
             try:
-                rotate_amount= float(input("Enter a number of degrees to rotate"))
+                rotate_amount= float(input("Enter a number of degrees to rotate: "))
             except:
                 print("Enter an actual number")
                 continue
