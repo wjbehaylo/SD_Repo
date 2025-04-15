@@ -56,6 +56,7 @@ Libraries to be included:
 
   //STATICS are for tracking state information, since they can change between function calls
   static float currentAngle; //actual angle in degrees, maybe I should initialize it to 0?
+
   //VOLATILES are for things that could change outside of standard execution from like interrupts
   //I2C
   volatile uint8_t offset = 0; //offset of the message
@@ -78,8 +79,8 @@ Libraries to be included:
   volatile uint8_t executionStatus=20; //the status of the capturing execution
   volatile uint8_t messageReceived=0; //1 if the Pi has prompted the non 20 status, indicating that 'DONE' state is done
   volatile bool configuring = false;
-  short ctrlBusy=0; //whether or not the control system is actively busy or not
-  short ctrlDone=0; //whether or not the control system is done (1) or not.
+  volatile short ctrlBusy=0; //whether or not the control system is actively busy or not
+  volatile short ctrlDone=0; //whether or not the control system is done (1) or not.
   volatile bool triggered0 = false;
   volatile bool triggered90 = false;
   /*
@@ -175,6 +176,12 @@ Libraries to be included:
         }
       case MOVING:
         //if we are not actively controlling the system, 
+        if(ctrlDone==1){
+          //if we are done moving, we will go to the next state, and set the value of 'execution status' to the resulf of our move.
+          ctrlDone=0;
+          state=DONE;
+          break;
+        }
         if(ctrlBusy==0){
           //here we add in whatever move function
 
@@ -184,12 +191,7 @@ Libraries to be included:
           state=MOVING;
           break;
         }
-        if(ctrlDone==1){
-          //if we are done moving, we will go to the next state, and set the value of 'execution status' to the resulf of our move.
-          ctrlDone=0;
-          state=DONE;
-          break;
-        }
+        
         //if we are here we haven't just started or just finished moving
         Serial.println("Still Moving");
         break;
@@ -219,16 +221,16 @@ Libraries to be included:
 
     //we go here if we will be rotating negatively
     if(targetAngle<currentAngle){
-      while(targetAngle<currentAngle && !triggered0 && !triggered90){
+      while(targetAngle<currentAngle && !triggered0){
         //now we will move by 0.1 degree in the negative direction, and update current angle
         stepper_moveTheta(&stepper, currentAngle - increment); // need to confirm direction (+/-),
         //currentAngle-increment is in degrees though, so we need to maintain it in degrees
-        currentAngle = currentTheta(&stepper);
+        // currentAngle = currentTheta(&stepper); //updating in moveTheta right now, rather than elsewhere
       }
     }
     //we go here if we will be rotating positively
     else if (targetAngle>currentAngle){
-      while(targetAngle>currentAngle && !triggered0 && !triggered90){
+      while(targetAngle>currentAngle && !triggered90){
         //now we will move by 0.1 degree in the positive direction, and update current angle
         stepper_moveTheta(&stepper, currentAngle + increment); // need to confirm direction (+/-)
         //currentAngle = currentTheta(&stepper); //updating in moveTheta right now, rather than elsewhere
@@ -265,7 +267,7 @@ Libraries to be included:
       executionStatus=25;
       return;
     }
-  }
+  } 
 
   //this is our ISR for when the Pi sends data
   void PiDataReceive(){
