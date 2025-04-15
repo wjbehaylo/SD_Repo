@@ -183,6 +183,7 @@ def Generate_IEEE_vector(value):
 #if this function returns a '-1', it means the data wasn't written
 #if it returns a 0, it was successfully written
 def lin_ARD_Write(OFFSET, MESSAGE):
+    global i2c_arduino
     #here message will be an integer, and we need to convert it into an array of 4 binary bytes the arduino will then interpret
     linear_array=Generate_IEEE_vector(MESSAGE)
     #OFFSET=0 means we are writing to pair0, OFFSET=1 means we are writing to pair1, OFFSET=2 means we are writing to both pairs.
@@ -198,6 +199,7 @@ def lin_ARD_Write(OFFSET, MESSAGE):
 #This function reads from the target offset of the Arduino
 #It will return the status of the movement
 def lin_ARD_Read(OFFSET):
+    global i2c_arduino
     status={0,0}
     try:
         while True:
@@ -253,6 +255,7 @@ def lin_ARD_Read(OFFSET):
 #if it returns a 0, data was written successfully
 def rot_ARD_Write(OFFSET, MESSAGE):
     #first we need to convert the integer message
+    global i2c_arduino #maybe because we're editing it?
     rotational_array=Generate_IEEE_vector(MESSAGE)
     try:
         i2c_arduino.write_i2c_block_data(rot_ard_add, OFFSET, rotational_array)
@@ -265,6 +268,8 @@ def rot_ARD_Write(OFFSET, MESSAGE):
     
 #OFFSET will always be 0 here, if this works correctly
 def rot_ARD_Read(OFFSET):
+    #maybe because we're editing it we need to describe i2c_arduino
+    global i2c_arduino
     try:
         while True:
             sleep(1)
