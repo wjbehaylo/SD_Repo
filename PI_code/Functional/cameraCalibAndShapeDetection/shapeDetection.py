@@ -35,6 +35,7 @@ HFOV_deg = np.degrees(HFOV_rad)
 is_running = True
 #Flag for detected object
 detected_object = None
+object_type = None
 
 # Define known dimensions for each object type (in meters)
 KNOWN_DIMENSIONS = {
@@ -42,45 +43,6 @@ KNOWN_DIMENSIONS = {
     "Starlink": {"width": 0.7, "length": 1.4, "height": 0.1},  # Approximate deployed width, length, and height
     "Rocket Body": {"diameter": 0.62}  # Minotaur upper stage diameters
 }
-
-# Function to estimate distance based on object type
-def estimate_distance(corners, object_type):
-    if object_type not in KNOWN_DIMENSIONS:
-        return None
-
-    if object_type == "Rocket Body":
-        # For Rocket Body, we only have a diameter
-        diameter = KNOWN_DIMENSIONS["Rocket Body"]["diameter"]
-        known_width = diameter
-        known_length = diameter  # Use diameter as both width and height
-    else:
-        # CubeSat and Starlink
-        known_width = KNOWN_DIMENSIONS[object_type]["width"]
-        known_length = KNOWN_DIMENSIONS[object_type]["length"]
-
-    # Define object points in 3D space (assuming object is flat and on Z=0 plane)
-    object_points = np.array([
-        [-known_width / 2, -known_length / 2, 0],
-        [known_width / 2, -known_length / 2, 0],
-        [known_width / 2, known_length / 2, 0],
-        [-known_width / 2, known_length / 2, 0]
-    ], dtype=np.float32)
-
-        # Corners from the bounding box of the detected object (in 2D image coordinates)
-    image_points = np.array([
-        [corners[0][0], corners[0][1]],  # Top-left
-        [corners[1][0], corners[1][1]],  # Top-right
-        [corners[2][0], corners[2][1]],  # Bottom-right
-        [corners[3][0], corners[3][1]]   # Bottom-left
-    ], dtype=np.float32)
-
-
-    # SolvePnP to get the rotation and translation vectors
-    _, rvec, tvec = cv2.solvePnP(object_points, image_points, camera_matrix, distortion_coeffs)
-
-    # Calculate the distance based on the tvec (translation vector)
-    distance = np.linalg.norm(tvec)
-    return distance
 
 # Function to classify objects
 def classify_object(contour):
@@ -130,8 +92,56 @@ def classify_object(contour):
     # If nothing matches, return Unknown
     return "Unknown"
 
+# Function to estimate distance based on object type
+def estimate_distance(corners, object_type):
+    if object_type not in KNOWN_DIMENSIONS:
+        return None
+
+    if object_type == "Rocket Body":
+        # For Rocket Body, we only have a diameter
+        diameter = KNOWN_DIMENSIONS["Rocket Body"]["diameter"]
+        known_width = diameter
+        known_length = diameter  # Use diameter as both width and height
+    else:
+        # CubeSat and Starlink
+        known_width = KNOWN_DIMENSIONS[object_type]["width"]
+        known_length = KNOWN_DIMENSIONS[object_type]["length"]
+
+    # Define object points in 3D space (assuming object is flat and on Z=0 plane)
+    object_points = np.array([
+        [-known_width / 2, -known_length / 2, 0],
+        [known_width / 2, -known_length / 2, 0],
+        [known_width / 2, known_length / 2, 0],
+        [-known_width / 2, known_length / 2, 0]
+    ], dtype=np.float32)
+
+        # Corners from the bounding box of the detected object (in 2D image coordinates)
+    image_points = np.array([
+        [corners[0][0], corners[0][1]],  # Top-left
+        [corners[1][0], corners[1][1]],  # Top-right
+        [corners[2][0], corners[2][1]],  # Bottom-right
+        [corners[3][0], corners[3][1]]   # Bottom-left
+    ], dtype=np.float32)
+
+
+    # SolvePnP to get the rotation and translation vectors
+    _, rvec, tvec = cv2.solvePnP(object_points, image_points, camera_matrix, distortion_coeffs)
+
+    # Calculate the distance based on the tvec (translation vector)
+    distance = np.linalg.norm(tvec)
+    return distance
+
+def initialize_camera():
+    #init camera
+    camera = cv2.VideoCapture(0)
+    # Set up camera properties
+    camera.set(cv2.CAP_PROP_FPS, 30) # Set camera frames per second to 30
+    camera.set(cv2.CAP_PROP_FRAME_WIDTH, WIDTH)
+    camera.set(cv2.CAP_PROP_FRAME_HEIGHT, HEIGHT)
+    return camera
+
 #Function for I2C data writter
-def write_data(angle, distance):
+'''def write_data(angle, distance):
     if detected_object is not None:
         angle_sent = (-angle+HFOV_deg/2)*(255/HFOV_deg)
         angle_sent = int(angle_sent)
@@ -158,17 +168,16 @@ def write_data(angle, distance):
             i2c_bus.write_i2c_block_data(ROTATION_ADDR, 0, [angle_byte])
             print(f"Sent to ROTATION Arduino: angle={angle_byte}")
         except Exception as e:
-            print(f"Error sending to Rotation Arduino: {e}")
+            print(f"Error sending to Rotation Arduino: {e}")'''
 
 #Frame Processing Loop
 def object_dect_and_distance(camera):
-    global detected_object
-    detected_object = object_type
-    while True:
-        ret, frame = camera.read()
-        if not ret:
-            print("Failed to capture image!")
-            break
+    global is_running
+    while camera.isOpened():
+        while True:
+            ret, frame = camera.read()
+            if not ret:
+                print("Failed to capture image!")
 
         # Apply camera calibration to remove distortion**
         frame_undistorted = cv2.undistort(frame, camera_matrix, distortion_coeffs)
@@ -191,17 +200,16 @@ def object_dect_and_distance(camera):
 
 
         for contour in contours:
-            # Get bounding box and classify
-            x, y, w, h = cv2.boundingRect(contour)
-            object_type = classify_object(contour)
-            detected_object = object_type
 
             # Draw the contour for debugging
             cv2.drawContours(frame_undistorted, [contour], -1, (0, 0, 255), 2)
+
+            # Get bounding box and classify
+            x, y, w, h = cv2.boundingRect(contour)
+            object_type = classify_object(contour)
+            
             # Draw bounding box for classified objects
             cv2.rectangle(frame_undistorted, (x, y), (x + w, y + h), (0, 255, 0), 2)
-            cv2.putText(frame_undistorted, label, (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
-
             corners = [
                 (x, y),               # Top-left
                 (x + w, y),           # Top-right
@@ -210,6 +218,8 @@ def object_dect_and_distance(camera):
             ]
             distance = estimate_distance(corners, object_type)
             label = f"{object_type}" if object_type != "Unknown" else f"Unknown"
+            cv2.putText(frame_undistorted, label, (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
+
             # Estimate angle using solvePnP
             if object_type != "Unknown":
                 object_points = np.array([
@@ -247,31 +257,32 @@ def object_dect_and_distance(camera):
         # Press 'q' to exit
         if key == ord('q'):
             is_running = False
-            break
+            quit()
 
 def main():
     #Main function to start capturing and processing frames
-    global is_running
-    #init camera
+    global is_running, detected_object, object_type
+    camera = initialize_camera()
     camera = cv2.VideoCapture(0)
-    # Set up camera properties
-    camera.set(cv2.CAP_PROP_FPS, 30) # Set camera frames per second to 30
-    camera.set(cv2.CAP_PROP_FRAME_WIDTH, WIDTH)
-    camera.set(cv2.CAP_PROP_FRAME_HEIGHT, HEIGHT)
 
     sleep(1) #allow camera to warm up
 
     # Start the processing thread
+    capture_thread = threading.Thread(target=initialize_camera)
+    capture_thread.start()
     process_thread = threading.Thread(target=object_dect_and_distance, args=(camera,))
+
     process_thread.start()
 
     try:
         while is_running:
-            time.sleep(0.1)  # Main thread can handle other tasks if necessary
+            time.sleep(1)  # Main thread can handle other tasks if necessary
     except KeyboardInterrupt:
         is_running = False
 
+    capture_thread.join()
     process_thread.join()
+    
     camera.release()
     cv2.destroyAllWindows()
 
