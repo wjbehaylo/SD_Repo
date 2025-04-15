@@ -87,6 +87,7 @@ def estimate_distance(corners, object_type):
 # Function to classify objects
 def classify_object(contour):
     area = cv2.contourArea(contour)
+    print(area)
     if cv2.contourArea(contour) < 30000:
         return "Unknown"
     
@@ -94,10 +95,6 @@ def classify_object(contour):
     aspect_ratio = float(w) / h  # Width / Height
     object_width = w
     object_length = h
-<<<<<<< Updated upstream
-=======
-    
->>>>>>> Stashed changes
 
     # Debug: Show aspect ratio, area, width, and height
     print(f"Aspect Ratio: {aspect_ratio:.2f}, Area: {area:.2f}, Width: {object_width}, Height: {object_length}")
@@ -139,14 +136,13 @@ def object_dect_and_distance(camera):
             break
         # Apply camera calibration to remove distortion**
         frame_undistorted = cv2.undistort(frame, camera_matrix, distortion_coeffs)
-        #copy of current frame
         # Convert to grayscale and process
         gray = cv2.cvtColor(frame_undistorted, cv2.COLOR_BGR2GRAY)
         # Improve lighting conditions
         adaptive_thresh = cv2.adaptiveThreshold(gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
                                                cv2.THRESH_BINARY, 11, 2)
         processed_image = cv2.GaussianBlur(adaptive_thresh, (5, 5), 0)
-        frame_display = processed_image.copy()
+        frame_display = cv2.cvtColor(frame_undistorted.copy(), cv2.COLOR_BGR2RGB)
 
         #processed_image = cv2.Canny(blurred, 50, 150)
         # Use morphological operations to clean up the edges
@@ -155,10 +151,15 @@ def object_dect_and_distance(camera):
 
         # Find contours
         contours, _ = cv2.findContours(processed_image, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        print(f"Total contours found: {len(contours)}")
+        for c in contours:
+            print(f"Contour area: {cv2.contourArea(c)}")
+
         min_contour_area = 30000 # minimum area for a contour to be considered
         contours = [cnt for cnt in contours if cv2.contourArea(cnt) > min_contour_area]
 
 
+        cv2.drawContours(frame_display, contours, -1, (255, 0, 0), 2)
 
         for contour in contours:
             # Get bounding box and classify
