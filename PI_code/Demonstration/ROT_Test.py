@@ -107,7 +107,7 @@ while(True):
         rot_ARD_Write(0, rotate_amount)
         
         #debugging
-        print("Wrote "+ rotate_amount + " to Arduino")
+        print("Wrote "+ str(rotate_amount) + " to Arduino")
         
         result = rot_ARD_Read(0)
         #now that we've written to it and read from it, result should store the non '20' output
