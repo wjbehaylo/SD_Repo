@@ -16,8 +16,8 @@ import threading
 
 # Constants
 ARUINO_I2C_ADDRESS = 8
-WIDTH = 640
-HEIGHT = 480
+WIDTH = 1920
+HEIGHT = 1080
 
 # Initialize SMBus library for I2C communication (using bus 1)
 #i2c_bus = SMBus(1)
@@ -34,11 +34,11 @@ current_frame = None
 #Flag to control main loop
 is_running = True
 
-# Define known dimensions for each object type (in meters)
+# Define known dimensions for each object type, converted from m to in
 KNOWN_DIMENSIONS = {
-    "CubeSat": {"width": 0.1, "length": 0.38, "height": 0.1},  # 1U CubeSat width, length, and height
-    "Starlink": {"width": 0.7, "length": 1.4, "height": 0.1},  # Approximate deployed width, length, and height
-    "Rocket Body": {"diameter": 0.62}  # Minotaur upper stage diameters
+    "CubeSat": {"width": 3.937, "length": 14.96, "height": 3.937},  # 1U CubeSat width, length, and height
+    "Starlink": {"width": 27.559, "length": 55.118, "height": 3.937},  # Approximate deployed width, length, and height
+    "Rocket Body": {"diameter": 24.2}  # Minotaur upper stage diameters
 }
 
 # Function to estimate distance based on object type
@@ -85,7 +85,7 @@ def classify_object(contour):
     x, y, w, h = cv2.boundingRect(contour)
     aspect_ratio = float(w) / h  # Width / Height
     
-    # Get the object length and width
+    # Get the object length and width from bounding rect
     object_length = h  # Assuming height is the length
     object_width = w   # Assuming width is the width
     area = cv2.contourArea(contour)
@@ -154,7 +154,7 @@ def object_dect_and_distance(camera):
 
         # Find contours
         contours, _ = cv2.findContours(edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-        min_contour_area = 100  # minimum area for a contour to be considered
+        min_contour_area = 1000  # minimum area for a contour to be considered
         contours = [cnt for cnt in contours if cv2.contourArea(cnt) > min_contour_area]
 
 
