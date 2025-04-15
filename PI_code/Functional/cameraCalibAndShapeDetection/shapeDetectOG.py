@@ -16,8 +16,8 @@ import threading
 
 # Constants
 ARUINO_I2C_ADDRESS = 8
-WIDTH = 1920
-HEIGHT =  1080
+WIDTH = 640
+HEIGHT = 480
 
 # Initialize SMBus library for I2C communication (using bus 1)
 #i2c_bus = SMBus(1)
@@ -28,23 +28,17 @@ distortion_coeffs = np.load("distortion_coeffs.npy")
 
 # Extract focal length from camera matrix
 FOCAL_LENGTH = [camera_matrix[0, 0], camera_matrix[1, 1]]  # fx
-fx = camera_matrix[0,0] #focal length in pixels
-HFOV_rad = 2*np.arctan(WIDTH /(2*fx))
-HFOV_deg = np.degrees(HFOV_rad)
-
 
 # Current frame captured from camera
 current_frame = None
 #Flag to control main loop
 is_running = True
-#Flag for detected object
-#detected_object = None
 
 # Define known dimensions for each object type (in meters)
 KNOWN_DIMENSIONS = {
-    "CubeSat": {"width": 640, "length": 480, "height": 480},  # 1U CubeSat width, length, and height
-    "Starlink": {"width": 640, "length": 1400, "height": 100},  # Approximate deployed width, length, and height
-    "Rocket Body": {"diameter": 620}  # Minotaur upper stage diameters
+    "CubeSat": {"width": 0.1, "length": 0.38, "height": 0.1},  # 1U CubeSat width, length, and height
+    "Starlink": {"width": 0.7, "length": 1.4, "height": 0.1},  # Approximate deployed width, length, and height
+    "Rocket Body": {"diameter": 0.62}  # Minotaur upper stage diameters
 }
 
 # Function to estimate distance based on object type
@@ -54,7 +48,9 @@ def estimate_distance(corners, object_type):
 
     if object_type == "Rocket Body":
         # For Rocket Body, we only have a diameter
-        known_width = known_length = KNOWN_DIMENSIONS["Rocket Body"]["diameter"]
+        diameter = KNOWN_DIMENSIONS["Rocket Body"]["diameter"]
+        known_width = diameter
+        known_length = diameter  # Use diameter as both width and height
     else:
         # CubeSat and Starlink
         known_width = KNOWN_DIMENSIONS[object_type]["width"]
@@ -86,41 +82,48 @@ def estimate_distance(corners, object_type):
 
 # Function to classify objects
 def classify_object(contour):
-    area = cv2.contourArea(contour)
-    print(area)
-    if cv2.contourArea(contour) < 30000:
-        return "Unknown"
-    
     x, y, w, h = cv2.boundingRect(contour)
     aspect_ratio = float(w) / h  # Width / Height
-    object_width = w
-    object_length = h
+    
+    # Get the object length and width
+    object_length = h  # Assuming height is the length
+    object_width = w   # Assuming width is the width
+    area = cv2.contourArea(contour)
 
     # Debug: Show aspect ratio, area, width, and height
     print(f"Aspect Ratio: {aspect_ratio:.2f}, Area: {area:.2f}, Width: {object_width}, Height: {object_length}")
 
     # Classification logic
-    #Cubesat
-    cube_sat_area = KNOWN_DIMENSIONS["CubeSat"]["width"] * KNOWN_DIMENSIONS["CubeSat"]["height"]
-    if 0.9 <= aspect_ratio <= 1.5 and area <= cube_sat_area * 2:
-        return "CubeSat"
 
-    # Starlink
-    starlink_area = KNOWN_DIMENSIONS["Starlink"]["width"] * KNOWN_DIMENSIONS["Starlink"]["height"]
-    if aspect_ratio >= 1.6 and area >= KNOWN_DIMENSIONS["Starlink"]["width"] * KNOWN_DIMENSIONS["Starlink"]["height"] * 0.3:
-        return "Starlink"
+    # CubeSat: Small rectangular object
+    cube_sat_area = KNOWN_DIMENSIONS["CubeSat"]["width"] * KNOWN_DIMENSIONS["CubeSat"]["length"]
+    if aspect_ratio >= 0.8 and aspect_ratio <= 1.2 and \
+       object_length >= KNOWN_DIMENSIONS["CubeSat"]["height"] and \
+       object_width >= KNOWN_DIMENSIONS["CubeSat"]["width"] and \
+       area <= cube_sat_area * 2:  # Allow some variation in area
+            return "CubeSat"
+        #testing on cubesat sideview image, Aspect Ratio: 1.27, Area: 239706.00, Width: 569, Height: 448
 
-    # Rocket Body
-    if 0.85 <= aspect_ratio <= 1.15:
+    # Starlink: Larger rectangular object
+    starlink_area = KNOWN_DIMENSIONS["Starlink"]["width"] * KNOWN_DIMENSIONS["Starlink"]["length"]
+    if aspect_ratio >= 2.0 and \
+       object_width >= KNOWN_DIMENSIONS["Starlink"]["width"] and \
+       object_length >= KNOWN_DIMENSIONS["Starlink"]["height"] and \
+       area >= starlink_area * 0.5 and area <= starlink_area * 2:  # Allow some variation in area
+            return "Starlink"
+        #testing on starlink top view image, i got Aspect Ratio: 1.79, Area: 156171.00, Width: 550, Height: 307
+
+    # Rocket Body: Circular object
+    if aspect_ratio >= 0.9 and aspect_ratio <= 1.1:
         diameter = KNOWN_DIMENSIONS["Rocket Body"]["diameter"]
-        estimated_diameter = w
-        expected_area = np.pi * (diameter / 2) ** 2
-        if abs(estimated_diameter - diameter) <= 0.1 * diameter and expected_area * 0.5 <= area <= expected_area * 1.5:
-            return "Rocket Body"
-        
-    #testing on cubesat sideview image, Aspect Ratio: 1.27, Area: 239706.00, Width: 569, Height: 448
-    #testing on starlink top view image, i got Aspect Ratio: 1.79, Area: 156171.00, Width: 550, Height: 307
-    #testing on minotaur bottom view, i got AR: 0.95, area: 117105.50, width: 380, height: 395
+        estimated_diameter = object_width
+
+        diameter_tolerance = 0.05
+        if abs(estimated_diameter - diameter) <= diameter_tolerance:
+            expected_area = np.pi * (diameter / 2) ** 2
+            if area >= expected_area * 0.5 and area <= expected_area * 1.5:
+                return "Rocket Body"
+            #testing on minotaur bottom view, i got AR: 0.95, area: 117105.50, width: 380, height: 395
 
     # If nothing matches, return Unknown
     return "Unknown"
@@ -128,56 +131,53 @@ def classify_object(contour):
 
 def object_dect_and_distance(camera):
     global is_running
-
-    while is_running:
+    while True:
         ret, frame = camera.read()
         if not ret:
             print("Failed to capture image!")
             break
-        # Apply camera calibration to remove distortion**
+
+        # **Apply camera calibration to remove distortion**
         frame_undistorted = cv2.undistort(frame, camera_matrix, distortion_coeffs)
+
         # Convert to grayscale and process
         gray = cv2.cvtColor(frame_undistorted, cv2.COLOR_BGR2GRAY)
         # Improve lighting conditions
         adaptive_thresh = cv2.adaptiveThreshold(gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
                                                cv2.THRESH_BINARY, 11, 2)
-        processed_image = cv2.GaussianBlur(adaptive_thresh, (5, 5), 0)
-        frame_display = cv2.cvtColor(frame_undistorted.copy(), cv2.COLOR_BGR2RGB)
+        blurred = cv2.GaussianBlur(gray, (5, 5), 0)
+        edges = cv2.Canny(blurred, 50, 150)
 
-        #processed_image = cv2.Canny(blurred, 50, 150)
         # Use morphological operations to clean up the edges
-        #kernel = np.ones((5, 5), np.uint8)
-        #processed_image = cv2.morphologyEx(edges, cv2.MORPH_CLOSE, kernel)
+        kernel = np.ones((5, 5), np.uint8)
+        processed_image = cv2.morphologyEx(edges, cv2.MORPH_CLOSE, kernel)
 
         # Find contours
-        contours, _ = cv2.findContours(processed_image, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-        print(f"Total contours found: {len(contours)}")
-        for c in contours:
-            print(f"Contour area: {cv2.contourArea(c)}")
-
-        min_contour_area = 30000 # minimum area for a contour to be considered
+        contours, _ = cv2.findContours(edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        min_contour_area = 100  # minimum area for a contour to be considered
         contours = [cnt for cnt in contours if cv2.contourArea(cnt) > min_contour_area]
 
 
-        cv2.drawContours(frame_display, contours, -1, (255, 0, 0), 2)
-
         for contour in contours:
+            # Draw the contour for debugging
+            cv2.drawContours(frame_undistorted, [contour], -1, (0, 0, 255), 2)
+
             # Get bounding box and classify
             x, y, w, h = cv2.boundingRect(contour)
             object_type = classify_object(contour)
 
             # Draw bounding box for classified objects
-            cv2.rectangle(frame_display, (x, y), (x + w, y + h), (0, 255, 0), 2)
+            cv2.rectangle(frame_undistorted, (x, y), (x + w, y + h), (0, 255, 0), 2)
+
             label = f"{object_type}" if object_type != "Unknown" else f"Unknown"
-            cv2.putText(frame_display, label, (x, y - 10), 
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
+            cv2.putText(frame_undistorted, label, (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
 
             # Show the center of the object for debugging
             cx = x + w // 2
             cy = y + h // 2
-            cv2.circle(frame_display, (cx, cy), 5, (0, 0, 255), -1)
+            cv2.circle(frame_undistorted, (cx, cy), 5, (0, 0, 255), -1)
 
-        cv2.imshow("Object Classification", frame_display)
+        cv2.imshow("Object Classification", frame_undistorted)
 
         key = cv2.waitKey(1) & 0xFF
         # Press 'q' to exit
