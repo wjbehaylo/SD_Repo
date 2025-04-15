@@ -94,6 +94,10 @@ def classify_object(contour):
     aspect_ratio = float(w) / h  # Width / Height
     object_width = w
     object_length = h
+<<<<<<< Updated upstream
+=======
+    
+>>>>>>> Stashed changes
 
     # Debug: Show aspect ratio, area, width, and height
     print(f"Aspect Ratio: {aspect_ratio:.2f}, Area: {area:.2f}, Width: {object_width}, Height: {object_length}")
@@ -136,13 +140,14 @@ def object_dect_and_distance(camera):
         # Apply camera calibration to remove distortion**
         frame_undistorted = cv2.undistort(frame, camera_matrix, distortion_coeffs)
         #copy of current frame
-        frame_display = frame_undistorted.copy()
         # Convert to grayscale and process
         gray = cv2.cvtColor(frame_undistorted, cv2.COLOR_BGR2GRAY)
         # Improve lighting conditions
         adaptive_thresh = cv2.adaptiveThreshold(gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
                                                cv2.THRESH_BINARY, 11, 2)
         processed_image = cv2.GaussianBlur(adaptive_thresh, (5, 5), 0)
+        frame_display = processed_image.copy()
+
         #processed_image = cv2.Canny(blurred, 50, 150)
         # Use morphological operations to clean up the edges
         #kernel = np.ones((5, 5), np.uint8)
@@ -186,10 +191,6 @@ def main():
     camera = cv2.VideoCapture(0)
 
     # Set up camera properties (optional)
-    actual_width = int(camera.get(cv2.CAP_PROP_FRAME_WIDTH))
-    actual_height = int(camera.get(cv2.CAP_PROP_FRAME_HEIGHT))
-    print(f"[INFO] Defaulting to: {actual_width} x {actual_height}")
-
     camera.set(cv2.CAP_PROP_FRAME_WIDTH, WIDTH)
     camera.set(cv2.CAP_PROP_FRAME_HEIGHT, HEIGHT)
 
