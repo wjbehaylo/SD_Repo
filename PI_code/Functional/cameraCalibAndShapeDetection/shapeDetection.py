@@ -34,8 +34,8 @@ HFOV_deg = np.degrees(HFOV_rad)
 #Flag to control main loop
 is_running = True
 #Flag for detected object
-detected_object = None
-object_type = None
+#detected_object = None
+#object_type = None
 
 # Define known dimensions for each object type (in meters)
 KNOWN_DIMENSIONS = {
