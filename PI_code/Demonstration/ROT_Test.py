@@ -84,6 +84,9 @@ new_status=0
 
 
 #I know that UART runs by itself, so what I'm gonna do right now is not yet thread it, but just try to have the Pi send to the Arduino the amount to rotate
+
+#
+
 while(True):
     command = input("Enter Y to start, or Q to quit: ")
     while(command != "Y" and command != "Q"):

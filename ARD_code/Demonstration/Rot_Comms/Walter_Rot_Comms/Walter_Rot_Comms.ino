@@ -163,6 +163,12 @@ Libraries to be included:
     //based on what we get from 'on receive', we might change states
 
     //the functionality varies depending on what we are actively doing
+
+    //debugging
+    Serial.println(state);
+    delay(1000); //wait 1 second between this, just for debugging
+
+    
     switch(state){
       case WAIT:
         Serial.println("Waiting for message");
