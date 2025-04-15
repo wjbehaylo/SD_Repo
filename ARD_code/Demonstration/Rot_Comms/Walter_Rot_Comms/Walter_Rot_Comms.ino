@@ -183,6 +183,12 @@ Libraries to be included:
           break;
         }
       case MOVING:
+        //debugging:
+        Serial.print("ctrlDone: ");
+        Serial.println(ctrlDone);
+        Serial.print("ctrlBusy: ");
+        Serial.println(ctrlBusy);
+
         //if we are not actively controlling the system, 
         if(ctrlDone==1){
           //if we are done moving, we will go to the next state, and set the value of 'execution status' to the resulf of our move.
@@ -228,6 +234,14 @@ Libraries to be included:
     //for the output status part I think I need to differentiate between configuring and rotating for when the move is finished.
 
     //we go here if we will be rotating negatively
+
+    //debugging
+    Serial.println("Entering stepper_rotate");
+    Serial.print("Current angle: ");
+    Serial.println(currentAngle);
+    Serial.print("Target angle: ");
+    Serial.println(targetAngle);
+
     if(targetAngle<currentAngle){
       while(targetAngle<currentAngle && !triggered0){
         //now we will move by 0.1 degree in the negative direction, and update current angle
@@ -279,7 +293,16 @@ Libraries to be included:
 
   //this is our ISR for when the Pi sends data
   void PiDataReceive(){
+    //debugging
+    Serial.println("Entering PiDataReceive, so pi sent data");
+
+
     offset = Wire.read(); //this is the offset of the data
+
+
+    //debugging
+    Serial.print("We got offset: "):
+    Serial.println(offset);
 
     //now we want the rest of the message
     while(Wire.available()){
@@ -319,6 +342,9 @@ Libraries to be included:
   //this is what we will send when Pi requests data. This is typically to get the current status of what's happening.
   //on the Arduino's side I don't think it cares about the offset or anything.
   void PiDataRequest(){
+    //debugging
+    Serial.println("Entering PiDataRequest");
+
     Wire.write(executionStatus);  // Send the last updated status
     Serial.print("Sending Status: ");
     Serial.println(executionStatus);
@@ -350,8 +376,20 @@ Libraries to be included:
 
   //this function should have an input of the stepper to be moved, as well as the amount to move it.
   void stepper_moveTheta (AccelStepper &stepper, float theta) {
+    //debugging
+    Serial.print("Trying to move to a total of degrees theta: ");
+    Serial.println(theta);
+
+    //debugging
+    Serial.print("Current angle is: ");
+    Serial.println(currentAngle);
+
     //steps represents the number of steps that need to be moved
     float steps = gear_ratio*theta*steps_rev/360;
+
+    //debugging
+    Serial.print("This translates to a total of steps: ");
+    Serial.println(steps);
 
     stepper.moveTo(steps); //this is the absolute target to move to, not the number of steps
     stepper.runToPosition(); //this is a blocking statement to move it the desired amount
