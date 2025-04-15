@@ -90,6 +90,7 @@ while(True):
         command = input("Enter Y to start, or Q to quit: ")
     if(command == "Q"):
         print("Entered Q, exiting test")
+        break
     elif(command == "Y"):
         while(True):
             try:
