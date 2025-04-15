@@ -16,8 +16,8 @@ import threading
 
 # Constants
 ARUINO_I2C_ADDRESS = 8
-WIDTH = 640
-HEIGHT =  480
+WIDTH = 1920
+HEIGHT =  1080
 
 # Initialize SMBus library for I2C communication (using bus 1)
 #i2c_bus = SMBus(1)
