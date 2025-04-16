@@ -7,7 +7,7 @@ import os
 TEMPLATE_DIR = "templates"       # e.g. contains CubeSat/, Minotaur/, Starlink/ subfolders
 VIDEO_SOURCE  = 0                # 0 = default webcam, or replace with "your_video.mp4"
 MATCH_METHOD  = cv2.TM_CCOEFF_NORMED
-THRESHOLD     = 0.8              # tune between 0.6–0.95 depending on your templates
+THRESHOLD     = 0.6             # tune between 0.6–0.95 depending on your templates
 FONT          = cv2.FONT_HERSHEY_SIMPLEX
 # ────────────────────────────────────────────────────────────────────────────────
 
@@ -38,6 +38,7 @@ while True:
             # find all matches above threshold
             loc = np.where(res >= THRESHOLD)
             for pt in zip(*loc[::-1]):  # switch x,y
+                score = res[pt[1], pt[0]]
                 top_left     = pt
                 bottom_right = (pt[0] + w, pt[1] + h)
                 cv2.rectangle(frame, top_left, bottom_right, (0,255,0), 2)
@@ -46,6 +47,7 @@ while True:
                             (pt[0], pt[1]-10),
                             FONT, 0.6, (0,255,0), 1,
                             cv2.LINE_AA)
+                print(f"Match: {label}@{pt}, score={score:.2f}")
 
     cv2.imshow("Live Template Matching", frame)
     if cv2.waitKey(1) & 0xFF == ord('q'):

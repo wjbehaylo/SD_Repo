@@ -16,8 +16,8 @@ import threading
 
 # Constants
 ARUINO_I2C_ADDRESS = 8
-WIDTH = 640
-HEIGHT = 480
+WIDTH = 1920
+HEIGHT = 1080
 
 # Initialize SMBus library for I2C communication (using bus 1)
 #i2c_bus = SMBus(1)
@@ -36,9 +36,9 @@ is_running = True
 
 # Define known dimensions for each object type (in meters)
 KNOWN_DIMENSIONS = {
-    "CubeSat": {"width": 0.1, "length": 0.38, "height": 0.1},  # 1U CubeSat width, length, and height
-    "Starlink": {"width": 0.7, "length": 1.4, "height": 0.1},  # Approximate deployed width, length, and height
-    "Rocket Body": {"diameter": 0.62}  # Minotaur upper stage diameters
+    "CubeSat": {"width": 100, "length": 380, "height": 100},  # 1U CubeSat width, length, and height
+    "Starlink": {"width": 700, "length": 140, "height": 100},  # Approximate deployed width, length, and height
+    "Rocket Body": {"diameter": 620}  # Minotaur upper stage diameters
 }
 
 # Function to estimate distance based on object type
@@ -154,7 +154,7 @@ def object_dect_and_distance(camera):
 
         # Find contours
         contours, _ = cv2.findContours(edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-        min_contour_area = 100  # minimum area for a contour to be considered
+        min_contour_area = 1000  # minimum area for a contour to be considered
         contours = [cnt for cnt in contours if cv2.contourArea(cnt) > min_contour_area]
 
 
