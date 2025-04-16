@@ -37,7 +37,7 @@ current_frame = None
 is_running = True
 
 #chessboard square size in m
-conversion_factor = 1 / 0.025 
+#conversion_factor = 1 / 0.025 
 
 # Define known dimensions for each object type in m, multiplied by conversion factor
 KNOWN_DIMENSIONS = {

@@ -4,25 +4,26 @@ import glob
 
 # Define the chessboard size
 chessboard_size = (10, 7)  # Number of inner corners per a chessboard row and column
+square_size = 0.025 # in meters
 
 #define criteria
 criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001)
 
 # Prepare object points (0,0,0), (1,0,0), ..., (8,5,0)
 object_points = np.zeros((1, chessboard_size[0] * chessboard_size[1], 3), np.float32)
-object_points[0, :,:2] = np.mgrid[0:chessboard_size[0], 0:chessboard_size[1]].T.reshape(-1, 2)
+object_points[0, :,:2] = np.mgrid[0:chessboard_size[0], 0:chessboard_size[1]].T.reshape(-1, 2)*square_size
 
 # Arrays to store object points and image points from all the images
 obj_points = []  # 3d point in real world space
 img_points = []  # 2d points in image plane
 
 # Load calibration images
-images = glob.glob('/home/sd-group50/SD_Repo/PI_code/Camera_Calib/*.png')
+images = glob.glob('/home/sd-group50/SD_Repo/PI_code/Functional/cameraCalibAndShapeDetection/*.png')
 
 for image in images:
     img = cv2.imread(image)
-    #cv2.imshow("Image", img)
-    #cv2.waitKey(2000)
+    cv2.imshow("Image", img)
+    cv2.waitKey(2000)
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
     # Find the chessboard corners
@@ -34,12 +35,12 @@ for image in images:
         obj_points.append(object_points)
         corners2 = cv2.cornerSubPix(gray, corners, (11,11), (-1, -1), criteria)
         img_points.append(corners2)
+        #Draw and display corners
+        cv2.drawChessboardCorners(img, chessboard_size, corners2,ret)
 print(gray)
 #print("Object Points: ", object_points)
 
-#Draw and display corners
-cv2.drawChessboardCorners(img, chessboard_size, corners2,ret)
-
+cv2.drawChessboardCorners(img, chessboard_size, corners2, ret)
 #resize image
 origHeight, origWidth = img.shape[:2] #get current image dimensions
 displayRescaleFactor = 640 / origWidth
