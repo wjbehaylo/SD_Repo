@@ -22,8 +22,8 @@ images = glob.glob('/home/sd-group50/SD_Repo/PI_code/Functional/cameraCalibAndSh
 
 for image in images:
     img = cv2.imread(image)
-    cv2.imshow("Image", img)
-    cv2.waitKey(2000)
+    #cv2.imshow("Image", img)
+    #cv2.waitKey(2000)
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
     # Find the chessboard corners
@@ -43,7 +43,7 @@ print(gray)
 cv2.drawChessboardCorners(img, chessboard_size, corners2, ret)
 #resize image
 origHeight, origWidth = img.shape[:2] #get current image dimensions
-displayRescaleFactor = 640 / origWidth
+displayRescaleFactor = 1920 / origWidth
 img = cv2.resize(img, (0, 0), fx = displayRescaleFactor, fy = displayRescaleFactor, interpolation = cv2.INTER_AREA)
 
 # Camera calibration
