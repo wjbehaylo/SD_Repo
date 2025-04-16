@@ -4,7 +4,6 @@ import glob
 import os
 
 # ─── PARAMETERS ───────────────────────────────────────────────────────────────
-TEMPLATE_DIR = "templates"       # e.g. contains CubeSat/, Minotaur/, Starlink/ subfolders
 VIDEO_SOURCE  = 0                # 0 = default webcam, or replace with "your_video.mp4"
 MATCH_METHOD  = cv2.TM_CCOEFF_NORMED
 THRESHOLD     = 0.6             # tune between 0.6–0.95 depending on your templates
@@ -12,6 +11,11 @@ FONT          = cv2.FONT_HERSHEY_SIMPLEX
 # ────────────────────────────────────────────────────────────────────────────────
 
 # 1. Load templates into a dict: { label: gray_image }
+TEMPLATE_DIR = {
+    "CubeSat": "templates/CubeSat/*.png",
+    "Minotaur": "templates/Minotaur/*.png",
+    "Starlink": "templates/Starlink/*.png"
+}
 templates = {}
 for tpl_path in glob.glob(os.path.join(TEMPLATE_DIR, "*", "*.png")):
     label = os.path.basename(os.path.dirname(tpl_path))  # folder name as label
