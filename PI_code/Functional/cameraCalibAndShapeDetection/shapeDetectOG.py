@@ -39,11 +39,11 @@ is_running = True
 #chessboard square size in m
 #conversion_factor = 1 / 0.025 
 
-# Define known dimensions for each object type in m, multiplied by conversion factor
+# Define known dimensions for each object type in cm
 KNOWN_DIMENSIONS = {
-    "CubeSat": {"width": 0.1*conversion_factor, "length": 0.38*conversion_factor, "height": 0.38*conversion_factor},  # 3U CubeSat width, length, and height
-    "Starlink": {"width": 0.7*conversion_factor, "length": 1.4*conversion_factor, "height": 0.1},  # Approximate deployed width, length, and height
-    "Rocket Body": {"diameter": 0.62*conversion_factor}  # Minotaur upper stage diameters
+    "CubeSat": {"width": 10, "length": 38, "height": 38},  # 3U CubeSat width, length, and height
+    "Starlink": {"width": 70, "length": 14, "height": 10},  # Approximate deployed width, length, and height
+    "Rocket Body": {"diameter": 62}  # Minotaur upper stage diameters
 }
 
 # Function to estimate distance based on object type
@@ -186,7 +186,7 @@ def object_dect_and_distance(camera, backSub):
 
         
         # apply global threshold to remove shadows
-        retval, mask_thresh = cv2.threshold( fg_mask, 180, 255, cv2.THRESH_BINARY)
+        retval, mask_thresh = cv2.threshold(fg_mask, 180, 255, cv2.THRESH_BINARY)
         print(f"Frame {frame_count}: Threshold applied. Return value: {retval}")
 
         # set the kernal
@@ -194,16 +194,17 @@ def object_dect_and_distance(camera, backSub):
         # Apply erosion with an elliptical kernel
         mask_eroded = cv2.morphologyEx(mask_thresh, cv2.MORPH_OPEN, kernel)
         print(f"Frame {frame_count}: Morphological open operation applied.")
+        frame_out = mask_eroded.copy
 
         #filtering contours based on minimum area threshold
-        min_contour_area = 300  # minimum area for a contour to be considered
+        min_contour_area = 3000  # minimum area for a contour to be considered
         initial_contours_count = len(contours)
         contours = [cnt for cnt in contours if cv2.contourArea(cnt) > min_contour_area]
         print(f"Frame {frame_count}: {len(contours)} contours remain after filtering (from {initial_contours_count}).")
 
 
         #draw bounding boxes on each contour
-        frame_out = frame_undistorted.copy()
+        #frame_out = frame_cv.copy()
         if contours:
             for cnt in contours:
                 # Get bounding box and classify
@@ -227,6 +228,7 @@ def object_dect_and_distance(camera, backSub):
         #cv2.imshow("Processed Image", processed_image)
 
         #displaying resulting frame with bounding box
+        #testing broke here when i changed frame_out = frame_cv.copy to frame_out = mask_eroded.copy
         cv2.imshow("Object Classification", frame_out)
 
         key = cv2.waitKey(1) & 0xFF
