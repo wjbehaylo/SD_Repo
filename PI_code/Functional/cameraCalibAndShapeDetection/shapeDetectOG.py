@@ -10,11 +10,11 @@
 import cv2
 import numpy as np
 import time
-from smbus2 import SMBus
+#from smbus2 import SMBus
 from time import sleep
 import math
 import threading
-import gradio as gp
+#import gradio as gp
 
 # Constants
 ARUINO_I2C_ADDRESS = 8
@@ -36,11 +36,14 @@ current_frame = None
 #Flag to control main loop
 is_running = True
 
-# Define known dimensions for each object type, converted from m to in
+#chessboard square size in m
+conversion_factor = 1 / 0.025 
+
+# Define known dimensions for each object type in m, multiplied by conversion factor
 KNOWN_DIMENSIONS = {
-    "CubeSat": {"width": 3.937, "length": 14.96, "height": 3.937},  # 1U CubeSat width, length, and height
-    "Starlink": {"width": 27.559, "length": 55.118, "height": 3.937},  # Approximate deployed width, length, and height
-    "Rocket Body": {"diameter": 24.2}  # Minotaur upper stage diameters
+    "CubeSat": {"width": 0.1*conversion_factor, "length": 0.38*conversion_factor, "height": 0.38*conversion_factor},  # 3U CubeSat width, length, and height
+    "Starlink": {"width": 0.7*conversion_factor, "length": 1.4*conversion_factor, "height": 0.1},  # Approximate deployed width, length, and height
+    "Rocket Body": {"diameter": 0.62*conversion_factor}  # Minotaur upper stage diameters
 }
 
 # Function to estimate distance based on object type
@@ -76,10 +79,12 @@ def estimate_distance(corners, object_type):
 
 
     # SolvePnP to get the rotation and translation vectors
-    _, rvec, tvec = cv2.solvePnP(object_points, image_points, camera_matrix, distortion_coeffs)
+    ret, rvec, tvec = cv2.solvePnP(object_points, image_points, camera_matrix, distortion_coeffs)
+    print("SolvePnP ret:", ret, "Rotation Vector:", rvec.T, "Translation Vector:", tvec.T)
 
     # Calculate the distance based on the tvec (translation vector)
     distance = np.linalg.norm(tvec)
+    print("Estimated distance:", distance)
     return distance
 
 # Function to classify objects
@@ -92,8 +97,8 @@ def classify_object(contour):
     object_width = w   # Assuming width is the width
     area = cv2.contourArea(contour)
 
-    # Debug: Show aspect ratio, area, width, and height
-    print(f"Aspect Ratio: {aspect_ratio:.2f}, Area: {area:.2f}, Width: {object_width}, Height: {object_length}")
+    # Debug
+    print(f"Contour: x={x}, y={y}, w={w}, h={h}, Aspect Ratio: {aspect_ratio:.2f}, Area: {area:.2f}")
 
     # Classification logic
 
@@ -101,7 +106,7 @@ def classify_object(contour):
     cube_sat_area = KNOWN_DIMENSIONS["CubeSat"]["width"] * KNOWN_DIMENSIONS["CubeSat"]["length"]
     print("Cube Sat Area", cube_sat_area)
 
-    if aspect_ratio >= 0.8 and aspect_ratio <= 1.2 and \
+    if 0.8 <= aspect_ratio <= 1.2 and \
        object_length >= KNOWN_DIMENSIONS["CubeSat"]["height"] and \
        object_width >= KNOWN_DIMENSIONS["CubeSat"]["width"] and \
        area <= cube_sat_area * 2:  # Allow some variation in area
@@ -141,13 +146,18 @@ def classify_object(contour):
 
 def object_dect_and_distance(camera, backSub):
     global is_running
+    frame_count = 0
     while True:
         ret, frame = camera.read()
+        frame_count += 1
         if ret:
+            print(f"Frame {frame_count} captured.")
             #undistort the frame
             frame_undistorted = cv2.undistort(frame, camera_matrix, distortion_coeffs)
+            print(f"Frame {frame_count} undistorted. Shape: {frame_undistorted.shape}")
             #apply background subtraction
             fg_mask = backSub.apply(frame_undistorted)
+            print(f"Frame {frame_count}: Background subtraction applied.")
         else:
             print("Failed to capture image!")
             break
@@ -168,39 +178,56 @@ def object_dect_and_distance(camera, backSub):
 
         # Find contours
         contours, _ = cv2.findContours(fg_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        print(f"Frame {frame_count}: {len(contours)} contours found before filtering.")
+
+        #Draw all found contours on a copy of the undistorted frame
         frame_cv = cv2.drawContours(frame_undistorted, contours, -1, (0, 255, 0), 2)
-        cv2.imshow('Frame_final', frame_ct)
+        cv2.imshow('Frame_final', frame_cv)
+
         
+        # apply global threshold to remove shadows
+        retval, mask_thresh = cv2.threshold( fg_mask, 180, 255, cv2.THRESH_BINARY)
+        print(f"Frame {frame_count}: Threshold applied. Return value: {retval}")
+
+        # set the kernal
+        kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
+        # Apply erosion with an elliptical kernel
+        mask_eroded = cv2.morphologyEx(mask_thresh, cv2.MORPH_OPEN, kernel)
+        print(f"Frame {frame_count}: Morphological open operation applied.")
+
+        #filtering contours based on minimum area threshold
         min_contour_area = 300  # minimum area for a contour to be considered
+        initial_contours_count = len(contours)
         contours = [cnt for cnt in contours if cv2.contourArea(cnt) > min_contour_area]
+        print(f"Frame {frame_count}: {len(contours)} contours remain after filtering (from {initial_contours_count}).")
 
+
+        #draw bounding boxes on each contour
         frame_out = frame_undistorted.copy()
+        if contours:
+            for cnt in contours:
+                # Get bounding box and classify
+                x, y, w, h = cv2.boundingRect(cnt)
+                frame_out = cv2.rectangle(frame_undistorted, (x, y), (x+w, y+h), (0, 0, 200), 3)
+                object_type = classify_object(cnt)
+                label = f"{object_type}" if object_type != "Unknown" else f"Unknown"
+                cv2.putText(frame_out, label, (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
+                # Show the center of the object for debugging
+                cx = x + w // 2
+                cy = y + h // 2
+                cv2.circle(frame_out, (cx, cy), 5, (0, 0, 255), -1)
+                print(f"Detected object type: {object_type}")
+        else:
+            print("No contours found in the current frame.")
 
-
-        for cnt in contours:
-            # Get bounding box and classify
-            x, y, w, h = cv2.boundingRect(cnt)
-            frame_out = cv2.rectangle(frame_undistorted, (x, y), (x+w, y+h), (0, 0, 200), 3)
- 
-        # Display the resulting frame
-        cv2.imshow('Frame_final', frame_out)
-
-        object_type = classify_object(cnt)
-
-        label = f"{object_type}" if object_type != "Unknown" else f"Unknown"
-        cv2.putText(frame_out, label, (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
-
-        # Show the center of the object for debugging
-        cx = x + w // 2
-        cy = y + h // 2
-        cv2.circle(frame_out, (cx, cy), 5, (0, 0, 255), -1)
-        print(f"Detected object type: {object_type}")
             
         # Debug display windows
-        cv2.imshow("Gray", gray)
-        cv2.imshow("Edges", edges)
-        cv2.imshow("Processed Image", processed_image)
-        cv2.imshow("Object Classification", frame_undistorted)
+        #cv2.imshow("Gray", gray)
+        #cv2.imshow("Edges", edges)
+        #cv2.imshow("Processed Image", processed_image)
+
+        #displaying resulting frame with bounding box
+        cv2.imshow("Object Classification", frame_out)
 
         key = cv2.waitKey(1) & 0xFF
         # Press 'q' to exit
@@ -208,24 +235,30 @@ def object_dect_and_distance(camera, backSub):
             is_running = False
             break
         elif key == ord('s'):
-            cv2.imwrite(f"snapshot_{int(time.time())}.png", frame_undistorted)
+            filename = f"snapshot_{int(time.time())}.png"
+            cv2.imwrite(filename, frame_undistorted)
+            print(f"Snapshot saved as {filename}.")
         elif key == ord('c'):
+            print("Clearing contours.")
             contours = []
 
 def main():
     #Main function to start capturing and processing frames
     global is_running
     #init camera
+    print("Starting video capture on camera index 0.")
     camera = cv2.VideoCapture(0)
     backSub = cv2.createBackgroundSubtractorMOG2()
 
     # Set up camera properties (optional)
     camera.set(cv2.CAP_PROP_FRAME_WIDTH, WIDTH)
     camera.set(cv2.CAP_PROP_FRAME_HEIGHT, HEIGHT)
+    print("Camera properties set: Width =", WIDTH, "Height =", HEIGHT)
 
     # Start the processing thread
-    process_thread = threading.Thread(target=object_dect_and_distance, args=(camera,))
+    process_thread = threading.Thread(target=object_dect_and_distance, args=(camera,backSub))
     process_thread.start()
+    print("Processing thread started.")
 
     try:
         while is_running:
@@ -234,6 +267,7 @@ def main():
         is_running = False
 
     process_thread.join()
+    print("Thread joined. Releasing camera resources and closing windows.")
     camera.release()
     cv2.destroyAllWindows()
 
