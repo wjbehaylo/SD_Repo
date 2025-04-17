@@ -285,7 +285,7 @@ def rot_ARD_Read(OFFSET):
                     print("Still rotating")
                     continue
                 else:
-                    print(Generate_Status(status[OFFSET]))
+                    print(Generate_Status(status))
                 #if we get here, the movement has finished
                 break
             else:

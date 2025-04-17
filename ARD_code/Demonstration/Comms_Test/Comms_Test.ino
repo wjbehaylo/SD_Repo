@@ -184,10 +184,10 @@ Libraries to be included:
         }
       case MOVING:
         //debugging:
-        //Serial.print("ctrlDone: ");
-        //Serial.println(ctrlDone);
-        //Serial.print("ctrlBusy: ");
-        //Serial.println(ctrlBusy);
+        Serial.print("ctrlDone: ");
+        Serial.println(ctrlDone);
+        Serial.print("ctrlBusy: ");
+        Serial.println(ctrlBusy);
 
         //if we are not actively controlling the system, 
         if(ctrlDone==1){
@@ -214,7 +214,8 @@ Libraries to be included:
             if (input.length() > 0) {
               Serial.print("You typed: ");
               Serial.println(input);
-              ctrlDone = true; //so it moves until there is used input
+              ctrlDone = 1; //so it moves until there is used input
+              ctrlBusy = 0;
               executionStatus = 21;
             }
         }
