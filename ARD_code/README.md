@@ -3,10 +3,15 @@
 The ARD_code is split into four directories.
 
 ARD_code/
+
   Demonstration/              (Comms_Test/, Rot_Comms/)
+  
   Exploration/               (linearArduinos/, rotationalArduino/, pi_proto/)
+  
   Functional/                (endStopControlCode/, forceSensorCode/, gear_stepperCode/, i2c_comm/, lin_stepperCode/)
+  
   PI_Comms/                  (PI_Comms.ino)
+  
 
 ## Project Board
 **Demonstration**
