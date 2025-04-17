@@ -42,7 +42,7 @@ Libraries to be included:
   
   //Constants to be used
   const float lead_step = 0.01; // 0.01mm
-  const int steps_rev = 400; // this is the number of steps per full STEPPER rotation, not 100% on if it is correct though
+  const int steps_rev = 1600; // this is the number of steps per full STEPPER rotation, not 100% on if it is correct though
   const int configurationPlus = 45; //target degrees for plus configuration
   const int configurationEquals = 0; //target degrees for equal configuration
   const float increment = 0.1; //the amount to increment per loop, one degree each time for now, might have to be changed if it isn't sensitive enough
@@ -134,8 +134,6 @@ Libraries to be included:
     stepper_gear1.moveTo(20);
     stepper_gear1.runToPosition();
     delay(1000);
-    stepper_gear1.moveTo(0);
-    stepper_gear1.runToPosition();
 
     
     //declare pins for the end stops
@@ -305,12 +303,16 @@ Libraries to be included:
       while((stepper_gear1.distanceToGo() != 0) && !triggered90 && !triggered0){
         //note that here we are moving in the positive direction, so we can run 'run' normally
         //currentAngle will end up going up by like 0.3 or whatever each time right now
+        
         currentAngle+=360/(steps_rev)/gear_ratio; //currentAngle will go up by small degrees/step / (small degrees/big degrees)
         
         //debugging
+        /*
+        Serial.print("Increase on currentAngle: ");
+        Serial.println(360/steps_rev/gear_ratio);
         Serial.print("currentAngle, inside loop: ");
         Serial.println(currentAngle);
-
+        */
         stepper_gear1.run(); //I think 'run' can go in the negative direction too?
 
         /*This might be outdated
