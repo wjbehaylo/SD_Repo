@@ -126,9 +126,12 @@ Libraries to be included:
   
   void setup() {
     // Declare pins as output for the motor
-    stepper_gear1.setMaxSpeed(1000);
-    stepper_gear1.setAcceleration(500);
+    stepper_gear1.setMaxSpeed(100);
+    stepper_gear1.setAcceleration(100);
     stepper_gear1.setCurrentPosition(0);
+    //debugging
+    stepper_gear1.moveTo(20);
+    stepper_gear1.runToPosition();
 
     
     //declare pins for the end stops
@@ -209,7 +212,7 @@ Libraries to be included:
           //============MOVE FUNCTION=================
           //debugging
           Serial.println("Starting moving!");
-          stepper_rotate(stepper_gear1); //this has all the movement in it
+          stepper_rotate(); //this has all the movement in it.
           state=MOVING;
           break;
         }
@@ -241,7 +244,7 @@ Libraries to be included:
   }
   
   //the move function will need to work in a manner that uses a while loop which ends when end stops are triggered or actual position meets target position
-  void stepper_rotate (AccelStepper &stepper) {
+  void stepper_rotate () {
     //for the output status part I think I need to differentiate between configuring and rotating for when the move is finished.
 
     //we go here if we will be rotating negatively
@@ -257,7 +260,7 @@ Libraries to be included:
       Serial.println("Entering targetAngle<currentAngle");
       while(targetAngle<currentAngle && !triggered0){
         //now we will move by 0.1 degree in the negative direction, and update current angle
-        stepper_moveTheta(&stepper, currentAngle - increment); // need to confirm direction (+/-),
+        stepper_moveTheta(currentAngle - increment); // need to confirm direction (+/-),
         //currentAngle-increment is in degrees though, so we need to maintain it in degrees
         // currentAngle = currentTheta(&stepper); //updating in moveTheta right now, rather than elsewhere
       }
@@ -267,7 +270,7 @@ Libraries to be included:
       Serial.println("entering targetAngle>currentAngle");
       while(targetAngle>currentAngle && !triggered90){
         //now we will move by 0.1 degree in the positive direction, and update current angle
-        stepper_moveTheta(&stepper, currentAngle + increment); // need to confirm direction (+/-)
+        stepper_moveTheta(currentAngle + increment); // need to confirm direction (+/-)
         //currentAngle = currentTheta(&stepper); //updating in moveTheta right now, rather than elsewhere
       }
     }
@@ -390,7 +393,7 @@ Libraries to be included:
   }
 
   //this function should have an input of the stepper to be moved, as well as the amount to move it.
-  void stepper_moveTheta (AccelStepper &stepper, float theta) {
+  void stepper_moveTheta (float theta) {
     //debugging
     Serial.print("Trying to move to a total of degrees theta: ");
     Serial.println(theta);
@@ -401,14 +404,14 @@ Libraries to be included:
 
 
     //steps represents the number of steps that need to be moved
-    float steps = gear_ratio*theta*steps_rev/360;
+    int steps = gear_ratio*theta*steps_rev/360;
 
     //debugging
     Serial.print("This translates to a total of steps: ");
     Serial.println(steps);
 
-    stepper.moveTo(steps); //this is the absolute target to move to, not the number of steps
-    stepper.runToPosition(); //this is a blocking statement to move it the desired amount, in theory
+    stepper_gear1.moveTo(steps); //this is the absolute target to move to, not the number of steps
+    stepper_gear1.runToPosition(); //this is a blocking statement to move it the desired amount, in theory
     //maybe I just update the angle here...?
     currentAngle=currentTheta(stepper); //I like this more than the currentTheta function since I feel like that just adds complexity
   }
