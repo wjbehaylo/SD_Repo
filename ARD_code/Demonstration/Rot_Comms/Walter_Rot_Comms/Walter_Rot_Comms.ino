@@ -27,10 +27,10 @@ Libraries to be included:
  #include <AccelStepper.h>
  #include <Wire.h>
  
- #define STEPPER3_DIR_PIN 8
- #define STEPPER3_STEP_PIN 9
- #define ENDSTOP_0_SIGNAL_PIN 2
- #define ENDSTOP_90_SIGNAL_PIN 3
+ #define STEPPER3_DIR_PIN 2
+ #define STEPPER3_STEP_PIN 3
+ #define ENDSTOP_0_SIGNAL_PIN 11
+ #define ENDSTOP_90_SIGNAL_PIN 12
  
  #define ROT_ARD_ADD 8
  
@@ -42,7 +42,7 @@ Libraries to be included:
  
  //Constants to be used
  const float lead_step = 0.01; // 0.01mm
- const int steps_rev = 400; // this is the number of steps per full STEPPER rotation
+ const int steps_rev = 1600; // this is the number of steps per full STEPPER rotation
  const int configurationPlus = 45; //target degrees for plus configuration
  const int configurationEquals = 0; //target degrees for equal configuration
  const float increment = 0.1; //the amount to increment per loop, one degree each time for now, might have to be changed if it isn't sensitive enough
@@ -146,8 +146,10 @@ Libraries to be included:
     this could be fixed maybe by calculating if the desired angle after math will extend beyond 90/0 degrees
     */
  //RISING because the end stops are active high
- attachInterrupt(digitalPinToInterrupt(ENDSTOP_0_SIGNAL_PIN), triggered0Interrupt, CHANGE);
- attachInterrupt(digitalPinToInterrupt(ENDSTOP_90_SIGNAL_PIN), triggered90Interrupt, CHANGE);
+
+ //you can't have interrupts on the pins we're using, so this is gone
+ //attachInterrupt(digitalPinToInterrupt(ENDSTOP_0_SIGNAL_PIN), triggered0Interrupt, CHANGE);
+ //attachInterrupt(digitalPinToInterrupt(ENDSTOP_90_SIGNAL_PIN), triggered90Interrupt, CHANGE);
  
  
  //initialize the I2C slave
@@ -259,7 +261,7 @@ void stepper_rotate () {
   
   if(targetAngle<currentAngle){
     Serial.println("Entering targetAngle<currentAngle");
-    while(targetAngle<currentAngle && !triggered0 && !triggered90){
+    while(targetAngle<currentAngle && digitalRead(ENDSTOP_0_SIGNAL_PIN)==LOW){
       //now we will move by 0.1 degree in the negative direction, and update current angle
       stepper_moveTheta(currentAngle - increment); // need to confirm direction (+/-),
       //currentAngle-increment is in degrees though, so we need to maintain it in degrees
@@ -271,7 +273,7 @@ void stepper_rotate () {
   //we go here if we will be rotating positively
   else if (targetAngle>currentAngle){
     Serial.println("entering targetAngle>currentAngle");
-    while(targetAngle>currentAngle && !triggered90 && !triggered0){
+    while(targetAngle>currentAngle && digitalRead(ENDSTOP_90_SIGNAL_PIN)==LOW){
       //now we will move by 0.1 degree in the positive direction, and update current angle
       stepper_moveTheta(currentAngle + increment); // need to confirm direction (+/-)
       currentAngle = currentAngle + increment; //updating in moveTheta right now, rather than elsewhere
@@ -321,45 +323,45 @@ void stepper_rotate () {
  //this is our ISR for when the Pi sends data
 void PiDataReceive(){
   //debugging
-  Serial.println("Entering PiDataReceive, so pi sent data");
+  //Serial.println("Entering PiDataReceive, so pi sent data");
   
   offset = Wire.read(); //this is the offset of the data
   
   //debugging
-  Serial.print("We got offset: ");
-  Serial.println(offset);
+  //Serial.print("We got offset: ");
+  //Serial.println(offset);
   
   //now we want the rest of the message
   while(Wire.available()){
-  instruction[messageLength] = Wire.read(); //get the next byte of info
-  messageLength++;
+    instruction[messageLength] = Wire.read(); //get the next byte of info
+    messageLength++;
   }
   //based on the offset it determines how we interpret the message, next will be 4 bytes of data
   //if offset==0, the next 4 bytes of data will be how much farther to rotate
   //so we will set target angle to be current angle + new angle. OBviously rotation stops when it hits end stops
   if(offset==0){
-  byteFloat.bytes[0] = instruction[3];
-  byteFloat.bytes[1] = instruction[2];
-  byteFloat.bytes[2] = instruction[1];
-  byteFloat.bytes[3] = instruction[0];
-  targetAngle=byteFloat.floatValue + currentAngle;
-  
-  configuring = false;
+    byteFloat.bytes[0] = instruction[3];
+    byteFloat.bytes[1] = instruction[2];
+    byteFloat.bytes[2] = instruction[1];
+    byteFloat.bytes[3] = instruction[0];
+    targetAngle=byteFloat.floatValue + currentAngle;
+    
+    configuring = false;
   }
   //if offset ==1, target Angle just becomes the angle of = configuration
   else if(offset==1){
-  targetAngle=configurationEquals; //0 degrees
-  configuring = true; //for status output
+    targetAngle=configurationEquals; //0 degrees
+    configuring = true; //for status output
   }
   else if(offset==2){
-  targetAngle=configurationPlus; //45 degrees
-  configuring = true;
+    targetAngle=configurationPlus; //45 degrees
+    configuring = true;
   }
   else{
-  Serial.println("Unknown offset");
+    Serial.println("Unknown offset");
   } 
   //debugging check tbh
-  Serial.println("Rotating to angle: " + String(targetAngle));
+  //Serial.println("Rotating to angle: " + String(targetAngle));
   //now we have interpretted the message, so we have to signal that we have a new message so our FSM can progress
   newMessage=1;
   messageLength=0; //we don't need this anymore
@@ -369,19 +371,23 @@ void PiDataReceive(){
  //on the Arduino's side I don't think it cares about the offset or anything.
 void PiDataRequest(){
   //debugging
-  Serial.println("Entering PiDataRequest");
+  //Serial.println("Entering PiDataRequest");
   
   Wire.write(executionStatus);  // Send the last updated status
-  Serial.print("Sending Status: ");
-  Serial.println(executionStatus);
+
+  //debugging
+  //Serial.print("Sending Status: ");
+  //Serial.println(executionStatus);
   //now we need to clear the executionStatus back to 20 if it wasn't because we have finished
   if(executionStatus!=20){
     executionStatus=20;
     messageReceived=1;
   }
-  Serial.println("Exiting PiDataRequest");
+  //debugging
+  //Serial.println("Exiting PiDataRequest");
 }
  
+/*Not doing interrupts in this way
  //this is what will happen when the 0 end stop is triggered
 void triggered0Interrupt(){
   if(digitalRead(ENDSTOP_0_SIGNAL_PIN)==HIGH){
@@ -395,7 +401,8 @@ void triggered0Interrupt(){
     triggered0=false;
   }
 }
- 
+*/
+/* not doing interrupts in this way 
 void triggered90Interrupt(){
   if(digitalRead(ENDSTOP_90_SIGNAL_PIN)==HIGH){
     //debugging
@@ -408,6 +415,7 @@ void triggered90Interrupt(){
     triggered90=false;
   }  
 }
+*/
  
  //this function should have an input of the stepper to be moved, as well as the amount to move it.
  void stepper_moveTheta (float theta) {
