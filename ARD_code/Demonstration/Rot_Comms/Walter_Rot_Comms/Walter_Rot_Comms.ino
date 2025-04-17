@@ -126,12 +126,11 @@ Libraries to be included:
   
   void setup() {
     // Declare pins as output for the motor
-    stepper_gear1.setSpeed(1000);
+    stepper_gear1.setMaxSpeed(1000);
     stepper_gear1.setAcceleration(500);
     stepper_gear1.setCurrentPosition(0);
 
-
-
+    
     //declare pins for the end stops
     //I'm not sure what Input_Pullup is, I think it is that if input is 1 (pressed) it sets the logic to 1
     pinMode(ENDSTOP_0_SIGNAL_PIN, INPUT_PULLUP);
@@ -409,9 +408,9 @@ Libraries to be included:
     Serial.println(steps);
 
     stepper.moveTo(steps); //this is the absolute target to move to, not the number of steps
-    stepper.runSpeedToPosition(); //this is a blocking statement to move it the desired amount, in theory
+    stepper.runToPosition(); //this is a blocking statement to move it the desired amount, in theory
     //maybe I just update the angle here...?
-    currentAngle=theta; //I like this more than the currentTheta function since I feel like that just adds complexity
+    currentAngle=currentTheta(stepper); //I like this more than the currentTheta function since I feel like that just adds complexity
   }
 
   float currentTheta(AccelStepper &stepper) {

@@ -1,7 +1,7 @@
 #include <AccelStepper.h>
 
-#define STEPPER3_STEP_PIN 6
-#define STEPPER3_DIR_PIN 7
+#define STEPPER3_STEP_PIN 3
+#define STEPPER3_DIR_PIN 2
 #define ROT_ARD_ADD 8
 #define joyxPin A0
 
@@ -18,7 +18,7 @@ const int maxSpeed = 100;
 const int maxAccel = 100;
 
 // Steps/Rev = 200 (no microstep)
-const int steps_rev = 400; // 1/2 microstep
+const int steps_rev = 2000; // 1/2 microstep
 const int gear_ratio = 3; // Base gear ratio
 const float increment = 0.1; // Stepper theta increment
 float theta_d = 0; // Desired theta
