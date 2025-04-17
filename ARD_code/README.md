@@ -3,24 +3,10 @@
 The ARD_code is split into four directories.
 
 ARD_code/
-├── Demonstration/           # Proof‑of‑concept sketches
-│   ├── Comms_Test/          # ‑‑> Comms_Test.ino
-│   └── Rot_Comms/           # ‑‑> Rot_Comms.ino
-│
-├── Exploration/             # Rapid‑prototype experiments
-│   ├── linearArduinos/      # linear_main.ino + *.h/*.cpp
-│   ├── rotationalArduino/   # rotational_main.ino + *.h/*.cpp
-│   └── pi_proto/            # send_angle_distance.py
-│
-├── Functional/              # Focused hardware tests
-│   ├── endStopControlCode/
-│   ├── forceSensorCode/
-│   ├── gear_stepperCode/
-│   ├── i2c_comm/
-│   └── lin_stepperCode/
-│
-├── PI_Comms/                # Full system integration
-│   └── PI_Comms.ino
+  Demonstration/              (Comms_Test/, Rot_Comms/)
+  Exploration/               (linearArduinos/, rotationalArduino/, pi_proto/)
+  Functional/                (endStopControlCode/, forceSensorCode/, gear_stepperCode/, i2c_comm/, lin_stepperCode/)
+  PI_Comms/                  (PI_Comms.ino)
 
 ## Project Board
 **Demonstration**
