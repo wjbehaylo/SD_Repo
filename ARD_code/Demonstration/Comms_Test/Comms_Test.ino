@@ -125,6 +125,7 @@ Libraries to be included:
   AccelStepper stepper_gear1(1,STEPPER3_STEP_PIN,STEPPER3_DIR_PIN);
   
   void setup() {
+    /*
     // Declare pins as output for the motor
     stepper_gear1.setMaxSpeed(1000);
     stepper_gear1.setAcceleration(500);
@@ -136,15 +137,15 @@ Libraries to be included:
     pinMode(ENDSTOP_90_SIGNAL_PIN, INPUT_PULLUP);
     
     //I am declaring those pins as interrupts so that they can set global flags that will stop movement
-    /*
-    note a slight concern I am having is that if the movement is started when one is triggered it might be immediately stopped, functionally trapping us there. 
-    this could be fixed maybe by calculating if the desired angle after math will extend beyond 90/0 degrees
-    */
+    
+    //note a slight concern I am having is that if the movement is started when one is triggered it might be immediately stopped, functionally trapping us there. 
+    //this could be fixed maybe by calculating if the desired angle after math will extend beyond 90/0 degrees
+    
     //RISING because the end stops are active high
     attachInterrupt(digitalPinToInterrupt(ENDSTOP_0_SIGNAL_PIN), triggered0Interrupt, CHANGE);
     attachInterrupt(digitalPinToInterrupt(ENDSTOP_90_SIGNAL_PIN), triggered90Interrupt, CHANGE);
 
-
+    */
     //initialize the I2C slave
     Wire.begin(ROT_ARD_ADD); 
     Wire.onReceive(PiDataReceive); //this is triggered when Raspberry Pi sends data
@@ -201,7 +202,7 @@ Libraries to be included:
 
           ctrlBusy=1;
           //============MOVE FUNCTION=================
-          stepper_rotate(stepper_gear1); //this has all the movement in it
+          Serial.println("STARTING MOVING");
           state=MOVING;
           break;
         }
@@ -318,6 +319,7 @@ Libraries to be included:
       byteFloat.bytes[2] = instruction[1];
       byteFloat.bytes[3] = instruction[0];
       targetAngle=byteFloat.floatValue + currentAngle;
+
       configuring = false;
     }
     //if offset ==1, target Angle just becomes the angle of = configuration
