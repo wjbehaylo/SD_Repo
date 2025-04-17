@@ -115,12 +115,12 @@ Libraries to be included:
       byteFloat.bytes[1] = instruction[6];
       byteFloat.bytes[2] = instruction[5];
       byteFloat.bytes[3] = instruction[4];
-      recivedAngle = byteFloat.floatValue;
+      receivedAngle = byteFloat.floatValue;
       byteFloat.bytes[0] = instruction[3];
       byteFloat.bytes[1] = instruction[2];
       byteFloat.bytes[2] = instruction[1];
       byteFloat.bytes[3] = instruction[0];
-      recivedAngle = byteFloat.floatValue;
+      receivedAngle = byteFloat.floatValue;
   */
   AccelStepper stepper_gear1(1,STEPPER3_STEP_PIN,STEPPER3_DIR_PIN);
   
@@ -253,6 +253,7 @@ Libraries to be included:
     Serial.println(targetAngle);
 
     if(targetAngle<currentAngle){
+      Serial.println("Entering targetAngle<currentAngle");
       while(targetAngle<currentAngle && !triggered0){
         //now we will move by 0.1 degree in the negative direction, and update current angle
         stepper_moveTheta(&stepper, currentAngle - increment); // need to confirm direction (+/-),
@@ -262,6 +263,7 @@ Libraries to be included:
     }
     //we go here if we will be rotating positively
     else if (targetAngle>currentAngle){
+      Serial.println("entering targetAngle>currentAngle");
       while(targetAngle>currentAngle && !triggered90){
         //now we will move by 0.1 degree in the positive direction, and update current angle
         stepper_moveTheta(&stepper, currentAngle + increment); // need to confirm direction (+/-)
