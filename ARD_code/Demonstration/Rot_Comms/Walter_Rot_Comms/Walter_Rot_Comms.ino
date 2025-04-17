@@ -42,7 +42,7 @@ Libraries to be included:
   
   //Constants to be used
   const float lead_step = 0.01; // 0.01mm
-  const int steps_rev = 2000; // 1/2 microstep
+  const int steps_rev = 400; // 1/2 microstep
   const int configurationPlus = 45; //target degrees for plus configuration
   const int configurationEquals = 0; //target degrees for equal configuration
   const float increment = 0.1; //the amount to increment per loop, one degree each time for now, might have to be changed if it isn't sensitive enough
@@ -423,8 +423,6 @@ Libraries to be included:
 
     stepper_gear1.moveTo(steps); //this is the absolute target to move to, not the number of steps
     stepper_gear1.runToPosition(); //this is a blocking statement to move it the desired amount, in theory
-    //maybe I just update the angle here...?
-    //currentAngle=currentTheta(); //I like this more than the currentTheta function since I feel like that just adds complexity
   }
 
   float currentTheta() {
