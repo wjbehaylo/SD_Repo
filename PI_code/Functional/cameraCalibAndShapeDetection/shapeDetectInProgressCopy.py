@@ -8,8 +8,8 @@ import math
 
 # Constants
 ARUINO_I2C_ADDRESS = 8
-WIDTH = 640
-HEIGHT = 480
+WIDTH = 1920
+HEIGHT = 1080
 
 # Load Camera Calibration Data
 camera_matrix = np.load("camera_matrix.npy")
