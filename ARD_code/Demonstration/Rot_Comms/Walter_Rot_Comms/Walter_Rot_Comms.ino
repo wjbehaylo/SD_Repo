@@ -300,7 +300,7 @@ Libraries to be included:
       executionStatus = 24;
       return;
     }
-    else if(targetAngle == currentAngle){
+    else if(int(targetAngle) == int(currentAngle)){
       if(configuring == true){
         executionStatus = 22;
         return;
