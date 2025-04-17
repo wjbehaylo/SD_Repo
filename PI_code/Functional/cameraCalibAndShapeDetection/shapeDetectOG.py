@@ -91,13 +91,14 @@ def classify_object(contour):
     area = cv2.contourArea(contour)
 
     # Debug: Show aspect ratio, area, width, and height
+    sleep(5)
     print(f"Aspect Ratio: {aspect_ratio:.2f}, Area: {area:.2f}, Width: {object_width}, Height: {object_length}")
 
     # Classification logic
 
     # CubeSat: Small rectangular object
     cube_sat_area = KNOWN_DIMENSIONS["CubeSat"]["width"] * KNOWN_DIMENSIONS["CubeSat"]["length"]
-    if aspect_ratio >= 0.8 and aspect_ratio <= 1.2 and \
+    if aspect_ratio >= 1.0 and aspect_ratio <= 1.9 and \
        object_length >= KNOWN_DIMENSIONS["CubeSat"]["height"] and \
        object_width >= KNOWN_DIMENSIONS["CubeSat"]["width"] and \
        area <= cube_sat_area * 2:  # Allow some variation in area
@@ -154,7 +155,7 @@ def object_dect_and_distance(camera):
 
         # Find contours
         contours, _ = cv2.findContours(edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-        min_contour_area = 1000  # minimum area for a contour to be considered
+        min_contour_area = 10000  # minimum area for a contour to be considered
         contours = [cnt for cnt in contours if cv2.contourArea(cnt) > min_contour_area]
 
 
@@ -189,6 +190,7 @@ def main():
     #Main function to start capturing and processing frames
     global is_running
     #init camera
+    sleep(1)
     camera = cv2.VideoCapture(0)
 
     # Set up camera properties (optional)
