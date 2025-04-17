@@ -45,7 +45,7 @@ Libraries to be included:
   const int steps_rev = 2000; // 1/2 microstep
   const int configurationPlus = 45; //target degrees for plus configuration
   const int configurationEquals = 0; //target degrees for equal configuration
-  const float increment = 10; //the amount to increment per loop, one degree each time for now, might have to be changed if it isn't sensitive enough
+  const float increment = 0.1; //the amount to increment per loop, one degree each time for now, might have to be changed if it isn't sensitive enough
   const float gear_ratio = 3.333333; //the gear ratio
   // Lead/Revolution = 2mm
   // Steps/Rev = 200 (no microstep)
@@ -100,7 +100,7 @@ Libraries to be included:
   status == 25:
     status_string = "Rotational unrecognized command"
   */
-
+  
   //this is for interpretting the data sent from PI
   volatile union FloatUnion 
   {
@@ -280,6 +280,12 @@ Libraries to be included:
     //control is no longer busy and is now done
     ctrlBusy=0;
     ctrlDone=1;
+
+    //debugging
+    Serial.print("Current angle: ");
+    Serial.println(currentAngle);
+    Serial.print("Target Angle: ");
+    Serial.println(targetAngle);
 
     //now we need to determine our output status based on what flags are set
     if(triggered0){
