@@ -276,7 +276,7 @@ def rot_ARD_Read(OFFSET):
             if(OFFSET==0):
                 #debugging
                 print("Trying to read byte data")
-                status=i2c_arduino.read_byte_data(rot_ard_add, OFFSET)
+                status=i2c_arduino.read_byte(rot_ard_add) #I don't think I needed the offset thing.
                 
                 #debugging
                 print("Successfully read byte data")
