@@ -27,10 +27,10 @@ Libraries to be included:
  #include <AccelStepper.h>
  #include <Wire.h>
  
- #define STEPPER3_DIR_PIN 2
- #define STEPPER3_STEP_PIN 3
- #define ENDSTOP_0_SIGNAL_PIN 11
- #define ENDSTOP_90_SIGNAL_PIN 12
+ #define STEPPER3_DIR_PIN 8
+ #define STEPPER3_STEP_PIN 9
+ #define ENDSTOP_0_SIGNAL_PIN 2
+ #define ENDSTOP_90_SIGNAL_PIN 3
  
  #define ROT_ARD_ADD 8
  
