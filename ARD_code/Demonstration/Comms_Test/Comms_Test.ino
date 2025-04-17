@@ -107,8 +107,6 @@ Libraries to be included:
     uint8_t bytes[4];
     float floatValue;
   } byteFloat;
-  
-
 
   /* This is how to use this FloatUnion to convert from the IEEE to integer ish form
       byteFloat.bytes[0] = instruction[7];
@@ -209,7 +207,17 @@ Libraries to be included:
         
         //if we are here we haven't just started or just finished moving
         Serial.println("Still Moving");
+        if(Serial.available()>0){
+            String input = Serial.readStringUntil('\n');
+
+            if (input.length() > 0) {
+              Serial.print("You typed: ");
+              Serial.println(input);
+              ctrlDone = true; //so it moves until there is used input
+            }
+        }
         break;
+
       case DONE:
         //if the Pi has received our updated message, we can move back to waiting
         if(messageReceived==1){
