@@ -267,7 +267,7 @@ Libraries to be included:
       while((stepper_gear1.distanceToGo() != 0) && !triggered0 && !triggered90){
         //note that here we are moving in the positive direction, so we can run 'run' normally
         //currentAngle will end up going up by like 0.3 or whatever each time right now
-        currentAngle+=gear_ratio*steps_rev/360; //currentAngle will go up by the amount that 1 step is (of a full rotation) * the gear ratio (lil to big)
+        currentAngle-=gear_ratio*steps_rev/360; //currentAngle will go up by the amount that 1 step is (of a full rotation) * the gear ratio (lil to big)
         
         stepper_gear1.run();
         
@@ -290,7 +290,7 @@ Libraries to be included:
       while((stepper_gear1.distanceToGo() != 0) && !triggered90 && !triggered0){
         //note that here we are moving in the positive direction, so we can run 'run' normally
         //currentAngle will end up going up by like 0.3 or whatever each time right now
-        currentAngle-=gear_ratio*steps_rev/360; //currentAngle will go up by the amount that 1 step is (of a full rotation) * the gear ratio (lil to big)
+        currentAngle+=gear_ratio*steps_rev/360; //currentAngle will go up by the amount that 1 step is (of a full rotation) * the gear ratio (lil to big)
         stepper_gear1.run(); //I think 'run' can go in the negative direction too?
 
         /*This might be outdated
