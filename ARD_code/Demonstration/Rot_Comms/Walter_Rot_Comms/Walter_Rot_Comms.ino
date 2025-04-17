@@ -172,6 +172,10 @@ Libraries to be included:
       case WAIT:
         Serial.println("Waiting for message");
         if(newMessage==1){
+          //debugging
+          Serial.print("newMessage: ");
+          Serial.println(newMessage);
+
           //here we will go into the moving state, and begin to move
           //the targetAngle is set in the receiveData ISR, 
           state=MOVING;
