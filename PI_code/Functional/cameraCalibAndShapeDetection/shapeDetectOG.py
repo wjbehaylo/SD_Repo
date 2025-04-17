@@ -42,7 +42,7 @@ KNOWN_DIMENSIONS = {
 }
 
 # Function to estimate distance based on object type
-def estimate_distance(corners, object_type):
+'''def estimate_distance(corners, object_type):
     if object_type not in KNOWN_DIMENSIONS:
         return None
 
@@ -78,7 +78,7 @@ def estimate_distance(corners, object_type):
 
     # Calculate the distance based on the tvec (translation vector)
     distance = np.linalg.norm(tvec)
-    return distance
+    return distance'''
 
 # Function to classify objects
 def classify_object(contour):
