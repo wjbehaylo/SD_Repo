@@ -13,7 +13,7 @@ import time
 import threading
 
 # === Configuration ===
-WIDTH, HEIGHT = 1920, 1080
+WIDTH, HEIGHT = 1280, 720
 MIN_CONTOUR_AREA = 1000  # ignore specks
 
 # Load camera calibration
@@ -59,7 +59,7 @@ def detection_loop(cam):
             break
 
         # undistort
-        frame = cv2.undistort(frame, camera_matrix, distortion_coeff)
+        #frame = cv2.undistort(frame, camera_matrix, distortion_coeff)
 
         gray    = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         blurred = cv2.GaussianBlur(gray, (5, 5), 0)
@@ -70,6 +70,8 @@ def detection_loop(cam):
         cnts = [c for c in cnts if cv2.contourArea(c) > MIN_CONTOUR_AREA]
 
         for c in cnts:
+            # draw raw contour
+            cv2.drawContours(frame, [c], -1, (255,0,0), 2)
             obj_type = classify_object(c)
             x, y, w, h = cv2.boundingRect(c)
 
