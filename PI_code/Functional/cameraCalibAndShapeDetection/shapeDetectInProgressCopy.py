@@ -24,32 +24,31 @@ is_running = True
 
 def classify_object(contour):
     # approximate the contour to a polygon
-    area = cv2.contourArea(contour)
-    if area < MIN_CONTOUR_AREA:
+    rect = cv2.minAreaRect(contour)
+    (cx, cy), (w_rect, h_rect), angle = rect
+    if w_rect == 0 or h_rect == 0:
         return "Unknown"
     
     # fit rotated rectangle
-    rect = cv2.minAreaRect(contour)
-    (cx, cy), (w, h), angle = rect
-    if w == 0 or h == 0:
-        return "Unknown"
-    ar = max(w, h) / min(w, h)
+    ratio  = max(w_rect, h_rect) / min(w_rect, h_rect)
+    area   = cv2.contourArea(contour)
+    rect_area = w_rect * h_rect
+    extent = area / rect_area if rect_area > 0 else 0
 
-    # DEBUG print
-    print(f"  box_ar={ar:.2f}, area={area:.0f}")
+    # DEBUG: see what you’re actually measuring
+    print(f" ratio={ratio:.2f}, extent={extent:.2f}, area={area:.0f}")
 
-    # square-ish → CubeSat
-    if ar <= 1.3:
+    # 3) classify
+    #   - nearly square + high extent → CubeSat
+    if ratio <= 1.4 and extent >= 0.7:
         return "CubeSat"
-    # long rectangle → Starlink
-    elif ar >= 2.0:
+    #   - elongated + decent extent → Starlink
+    elif ratio > 1.4 and ratio <= 3.0 and extent >= 0.5:
         return "Starlink"
-    # near circle → Rocket Body
+    #   - near‐square but low extent → maybe Rocket Body (circle‐ish)
+    elif ratio <= 1.4 and extent < 0.7:
+        return "Rocket Body"
     else:
-        ((_, _), radius) = cv2.minEnclosingCircle(contour)
-        circ_area = np.pi * radius**2
-        if abs(area - circ_area) / circ_area < 0.3:
-            return "Rocket Body"
         return "Unknown"
 
 def detection_loop(cam):
@@ -85,6 +84,7 @@ def detection_loop(cam):
             cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
             cv2.putText(frame, obj_type, (x, y - 10),
                         cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
+        
         cv2.imshow("Live Classification", frame)
         if cv2.waitKey(1) & 0xFF == ord('q'):
             is_running = False
