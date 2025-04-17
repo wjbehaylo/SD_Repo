@@ -279,7 +279,7 @@ def rot_ARD_Read(OFFSET):
                 status=i2c_arduino.read_byte_data(rot_ard_add, OFFSET)
                 
                 #debugging
-                print("Read byte data")
+                print("Successfully read byte data")
                 print(f"Status: {status}")
                 if(status==20):
                     print("Still rotating")

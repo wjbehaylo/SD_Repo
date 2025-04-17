@@ -164,13 +164,14 @@ Libraries to be included:
     //the functionality varies depending on what we are actively doing
 
     //debugging
-    Serial.println(state);
+    //Serial.println(state);
     delay(1000); //wait 1 second between this, just for debugging
 
     
     switch(state){
       case WAIT:
-        Serial.println("Waiting for message");
+        //debugging
+        //Serial.println("Waiting for message");
         if(newMessage==1){
           //here we will go into the moving state, and begin to move
           //the targetAngle is set in the receiveData ISR, 
@@ -183,10 +184,10 @@ Libraries to be included:
         }
       case MOVING:
         //debugging:
-        Serial.print("ctrlDone: ");
-        Serial.println(ctrlDone);
-        Serial.print("ctrlBusy: ");
-        Serial.println(ctrlBusy);
+        //Serial.print("ctrlDone: ");
+        //Serial.println(ctrlDone);
+        //Serial.print("ctrlBusy: ");
+        //Serial.println(ctrlBusy);
 
         //if we are not actively controlling the system, 
         if(ctrlDone==1){
