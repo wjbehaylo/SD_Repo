@@ -45,7 +45,7 @@ Libraries to be included:
   const int steps_rev = 400; // 1/2 microstep
   const int configurationPlus = 45; //target degrees for plus configuration
   const int configurationEquals = 0; //target degrees for equal configuration
-  const float increment = 0.1; //the amount to increment per loop
+  const float increment = 1; //the amount to increment per loop, one degree each time for now, might have to be changed if it isn't sensitive enough
   const float gear_ratio = 3.333333; //the gear ratio
   // Lead/Revolution = 2mm
   // Steps/Rev = 200 (no microstep)
@@ -338,7 +338,7 @@ Libraries to be included:
     }
     else{
       Serial.println("Unknown offset");
-    }
+    } 
     //debugging check tbh
     Serial.println("Rotating to angle: " + String(targetAngle));
     //now we have interpretted the message, so we have to signal that we have a new message so our FSM can progress
