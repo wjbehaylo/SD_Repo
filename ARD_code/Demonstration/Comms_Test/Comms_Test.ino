@@ -165,7 +165,7 @@ Libraries to be included:
 
     //debugging
     Serial.println(state);
-    delay(1000); //wait 1 second between this, just for debugging
+    delay(3000); //wait 3 second between this, just for debugging
 
     
     switch(state){
@@ -175,6 +175,7 @@ Libraries to be included:
         if(newMessage==1){
           //here we will go into the moving state, and begin to move
           //the targetAngle is set in the receiveData ISR, 
+          newMessage=0; //I was forgetting to set this back down
           state=MOVING;
           break;
         }
@@ -225,6 +226,9 @@ Libraries to be included:
       case DONE:
         //if the Pi has received our updated message, we can move back to waiting
         if(messageReceived==1){
+          //debugging
+          Serial.println("Pi has sampled the non-20 messsage");
+
           messageReceived=0;
           state=WAIT;
           break;
