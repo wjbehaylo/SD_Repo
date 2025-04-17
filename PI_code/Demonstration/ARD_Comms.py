@@ -272,7 +272,7 @@ def rot_ARD_Read(OFFSET):
     global i2c_arduino
     try:
         while True:
-            sleep(1)
+            sleep(10)
             if(OFFSET==3):
                 #debugging
                 print("Trying to read byte data")

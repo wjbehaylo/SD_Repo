@@ -42,7 +42,7 @@ Libraries to be included:
   
   //Constants to be used
   const float lead_step = 0.01; // 0.01mm
-  const int steps_rev = 400; // 1/2 microstep
+  const int steps_rev = 2000; // 1/2 microstep
   const int configurationPlus = 45; //target degrees for plus configuration
   const int configurationEquals = 0; //target degrees for equal configuration
   const float increment = 10; //the amount to increment per loop, one degree each time for now, might have to be changed if it isn't sensitive enough
@@ -396,7 +396,7 @@ Libraries to be included:
     Serial.println(currentAngle);
 
     //steps represents the number of steps that need to be moved
-    float steps = gear_ratio*theta*steps_rev/360;
+    int steps = gear_ratio*theta*steps_rev/360;
 
     //debugging
     Serial.print("This translates to a total of steps: ");
