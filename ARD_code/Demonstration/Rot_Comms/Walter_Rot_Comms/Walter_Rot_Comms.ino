@@ -259,7 +259,7 @@ Libraries to be included:
 
     if(targetAngle<currentAngle){
       Serial.println("Entering targetAngle<currentAngle");
-      while(targetAngle<currentAngle && !triggered0){
+      while(targetAngle<currentAngle && !triggered0 && !triggered90){
         //now we will move by 0.1 degree in the negative direction, and update current angle
         stepper_moveTheta(currentAngle - increment); // need to confirm direction (+/-),
         //currentAngle-increment is in degrees though, so we need to maintain it in degrees
@@ -271,7 +271,7 @@ Libraries to be included:
     //we go here if we will be rotating positively
     else if (targetAngle>currentAngle){
       Serial.println("entering targetAngle>currentAngle");
-      while(targetAngle>currentAngle && !triggered90){
+      while(targetAngle>currentAngle && !triggered90 && !triggered0){
         //now we will move by 0.1 degree in the positive direction, and update current angle
         stepper_moveTheta(currentAngle + increment); // need to confirm direction (+/-)
         currentAngle = currentAngle + increment; //updating in moveTheta right now, rather than elsewhere
