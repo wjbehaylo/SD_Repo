@@ -214,9 +214,10 @@ Libraries to be included:
             if (input.length() > 0) {
               Serial.print("You typed: ");
               Serial.println(input);
-              ctrlDone = 1; //so it moves until there is used input
+              ctrlDone = 0; //so it moves until there is used input
               ctrlBusy = 0;
               executionStatus = 21;
+              state=DONE; //needed to do this here for whatever reason
             }
         }
         break;
