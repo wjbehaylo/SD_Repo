@@ -364,6 +364,7 @@ Libraries to be included:
       executionStatus=20;
       messageReceived=1;
     }
+    Serial.println("Exiting PiDataRequest");
   }
 
   //this is what will happen when the 0 end stop is triggered
