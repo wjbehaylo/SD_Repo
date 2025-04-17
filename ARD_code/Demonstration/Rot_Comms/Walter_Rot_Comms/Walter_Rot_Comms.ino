@@ -176,6 +176,8 @@ Libraries to be included:
           //here we will go into the moving state, and begin to move
           //the targetAngle is set in the receiveData ISR, 
           state=MOVING;
+          //we also need to signal that we no longer have a new message
+          newMessage=0;
           break;
         }
         else{
@@ -184,10 +186,10 @@ Libraries to be included:
         }
       case MOVING:
         //debugging:
-        Serial.print("ctrlDone: ");
-        Serial.println(ctrlDone);
-        Serial.print("ctrlBusy: ");
-        Serial.println(ctrlBusy);
+        //Serial.print("ctrlDone: ");
+        //Serial.println(ctrlDone);
+        //Serial.print("ctrlBusy: ");
+        //Serial.println(ctrlBusy);
 
         //if we are not actively controlling the system, 
         if(ctrlDone==1){
@@ -201,6 +203,8 @@ Libraries to be included:
 
           ctrlBusy=1;
           //============MOVE FUNCTION=================
+          //debugging
+          Serial.println("Starting moving!");
           stepper_rotate(stepper_gear1); //this has all the movement in it
           state=MOVING;
           break;
@@ -212,6 +216,9 @@ Libraries to be included:
       case DONE:
         //if the Pi has received our updated message, we can move back to waiting
         if(messageReceived==1){
+          //debugging
+          Serial.println("Pi has sampled the non-20 messsage");
+
           messageReceived=0;
           state=WAIT;
           break;
@@ -318,6 +325,7 @@ Libraries to be included:
       byteFloat.bytes[2] = instruction[1];
       byteFloat.bytes[3] = instruction[0];
       targetAngle=byteFloat.floatValue + currentAngle;
+      
       configuring = false;
     }
     //if offset ==1, target Angle just becomes the angle of = configuration
