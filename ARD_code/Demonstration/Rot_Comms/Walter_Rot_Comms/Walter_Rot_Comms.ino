@@ -261,6 +261,11 @@ Libraries to be included:
 
     int steps = gear_ratio*targetAngle*steps_rev/360;
     stepper_gear1.moveTo(steps);
+
+    //debugging
+    Serial.print("Target total steps: ");
+    Serial.println(steps);
+
     if(targetAngle<currentAngle){
       Serial.println("Entering targetAngle<currentAngle");
 
@@ -289,7 +294,11 @@ Libraries to be included:
     }
     //we go here if we will be rotating positively
     else if (targetAngle>currentAngle){
+      //debugging
       Serial.println("entering targetAngle>currentAngle");
+      Serial.print("Distance to go: ");
+      Serial.println(stepper_gear1.distanceToGo());
+
       while((stepper_gear1.distanceToGo() != 0) && !triggered90 && !triggered0){
         //note that here we are moving in the positive direction, so we can run 'run' normally
         //currentAngle will end up going up by like 0.3 or whatever each time right now
