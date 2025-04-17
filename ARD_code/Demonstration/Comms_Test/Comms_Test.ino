@@ -207,7 +207,7 @@ Libraries to be included:
         }
         
         //if we are here we haven't just started or just finished moving
-        Serial.println("Still Moving");
+        //Serial.println("Still Moving");
         if(Serial.available()>0){
             String input = Serial.readStringUntil('\n');
 
