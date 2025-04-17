@@ -134,6 +134,8 @@ Libraries to be included:
     stepper_gear1.moveTo(20);
     stepper_gear1.runToPosition();
     delay(1000);
+    stepper_gear1.moveTo(0);
+    stepper_gear1.runToPosition();
 
     
     //declare pins for the end stops
@@ -260,29 +262,26 @@ Libraries to be included:
 
     //steps represents the desired amount of steps to move to
 
-    int steps = gear_ratio*targetAngle*steps_rev/360;
-    stepper_gear1.moveTo(steps);
-
-    //debugging
-    Serial.print("Target total steps: ");
-    Serial.println(steps);
 
     if(targetAngle<currentAngle){
       Serial.println("Entering targetAngle<currentAngle");
 
-      while((stepper_gear1.distanceToGo() != 0) && !triggered0 && !triggered90){
+      while((targetAngle<currentAngle) && !triggered0 && !triggered90){
         //note that here we are moving in the positive direction, so we can run 'run' normally
         //currentAngle will end up going up by like 0.3 or whatever each time right now, in theory
         
         
-        //this is obselete I think?
-        /*
-        //now we will move by 0.1 degree in the negative direction, and update current angle
-        stepper_moveTheta(currentAngle - increment); // need to confirm direction (+/-),
-        //currentAngle-increment is in degrees though, so we need to maintain it in degrees
+        stepper_moveTheta(currentAngle - increment); // need to confirm direction (+/-)
+        currentAngle-=increment; //currentAngle will go up by small degrees/step / (small degrees/big degrees)
+        
+
+        /*This might be outdated
+        //now we will move by 0.1 degree in the positive direction, and update current angle
+        
+        currentAngle = currentAngle - increment; //updating in moveTheta right now, rather than elsewhere
         */
-       currentAngle-=360/(steps_rev)/gear_ratio; //currentAngle will go down by small degrees/step / (small degrees/big degrees)
-       stepper_gear1.run();
+        //debugging
+        delay(1000);
 
       //debugging
       Serial.print("currentAngle: ");
@@ -296,32 +295,22 @@ Libraries to be included:
     //we go here if we will be rotating positively
     else if (targetAngle>currentAngle){
       //debugging
-      Serial.println("entering targetAngle>currentAngle");
-      Serial.print("Distance to go: ");
-      Serial.println(stepper_gear1.distanceToGo());
 
-      while((stepper_gear1.distanceToGo() != 0) && !triggered90 && !triggered0){
+      while((targetAngle>currentAngle) && !triggered90 && !triggered0){
         //note that here we are moving in the positive direction, so we can run 'run' normally
         //currentAngle will end up going up by like 0.3 or whatever each time right now
         
-        currentAngle+=360/(steps_rev)/gear_ratio; //currentAngle will go up by small degrees/step / (small degrees/big degrees)
+        stepper_moveTheta(currentAngle + increment); // need to confirm direction (+/-)
+        currentAngle+=increment; //currentAngle will go up by small degrees/step / (small degrees/big degrees)
         
-        //debugging
-        /*
-        Serial.print("Increase on currentAngle: ");
-        Serial.println(360/steps_rev/gear_ratio);
-        Serial.print("currentAngle, inside loop: ");
-        Serial.println(currentAngle);
-        */
-        stepper_gear1.run(); //I think 'run' can go in the negative direction too?
 
         /*This might be outdated
         //now we will move by 0.1 degree in the positive direction, and update current angle
-        stepper_moveTheta(currentAngle + increment); // need to confirm direction (+/-)
+        
         currentAngle = currentAngle + increment; //updating in moveTheta right now, rather than elsewhere
         */
         //debugging
-        //delay(1000);
+        delay(1000);
       }
     }
     else {
