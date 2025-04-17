@@ -109,7 +109,7 @@ while(True):
         #debugging
         print("Wrote "+ str(rotate_amount) + " to Arduino")
         
-        result = rot_ARD_Read(0)
+        result = rot_ARD_Read(3)
         #now that we've written to it and read from it, result should store the non '20' output
         #so we can use generate status function and continue with the loop
         message= Generate_Status(result)
