@@ -263,6 +263,8 @@ Libraries to be included:
         stepper_moveTheta(currentAngle - increment); // need to confirm direction (+/-),
         //currentAngle-increment is in degrees though, so we need to maintain it in degrees
         currentAngle = currentAngle - increment; //updating in moveTheta right now, rather than elsewhere
+        //debugging
+        delay(1000);
       }
     }
     //we go here if we will be rotating positively
@@ -272,6 +274,8 @@ Libraries to be included:
         //now we will move by 0.1 degree in the positive direction, and update current angle
         stepper_moveTheta(currentAngle + increment); // need to confirm direction (+/-)
         currentAngle = currentAngle + increment; //updating in moveTheta right now, rather than elsewhere
+        //debugging
+        delay(1000);
       }
     }
     else {
@@ -419,7 +423,7 @@ Libraries to be included:
     stepper_gear1.moveTo(steps); //this is the absolute target to move to, not the number of steps
     stepper_gear1.runToPosition(); //this is a blocking statement to move it the desired amount, in theory
     //maybe I just update the angle here...?
-    currentAngle=currentTheta(); //I like this more than the currentTheta function since I feel like that just adds complexity
+    //currentAngle=currentTheta(); //I like this more than the currentTheta function since I feel like that just adds complexity
   }
 
   float currentTheta() {
