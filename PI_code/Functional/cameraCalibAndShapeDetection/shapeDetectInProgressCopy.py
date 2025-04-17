@@ -25,32 +25,31 @@ is_running = True
 def classify_object(contour):
     # approximate the contour to a polygon
     area = cv2.contourArea(contour)
-    peri   = cv2.arcLength(contour, True)
-    approx = cv2.approxPolyDP(contour, 0.02 * peri, True)
-    print(f"  verts={len(approx)}, area={area:.0f}, peri={peri:.0f}")
+    if area < MIN_CONTOUR_AREA:
+        return "Unknown"
+    
+    # fit rotated rectangle
+    rect = cv2.minAreaRect(contour)
+    (cx, cy), (w, h), angle = rect
+    if w == 0 or h == 0:
+        return "Unknown"
+    ar = max(w, h) / min(w, h)
 
+    # DEBUG print
+    print(f"  box_ar={ar:.2f}, area={area:.0f}")
 
-    x, y, w, h = cv2.boundingRect(approx)
-    aspect_ratio = w / float(h)
-
-    # 4‐sided shapes → rectangles (CubeSat vs. Starlink)
-    if len(approx) == 4:
-        if 0.8 <= aspect_ratio <= 1.2:
-            return "CubeSat"
-        elif aspect_ratio > 2.0:
-            return "Starlink"
-        else:
-            return "Rectangle"
-    # many‐sided → approximate circle
-    elif len(approx) > 8:
-        # check how circular it is
-        ((cx, cy), radius) = cv2.minEnclosingCircle(contour)
-        circle_area = np.pi * (radius ** 2)
-        if abs(area - circle_area) / circle_area < 0.3:
-            return "Rocket Body"
-        else:
-            return "Unknown"
+    # square-ish → CubeSat
+    if ar <= 1.3:
+        return "CubeSat"
+    # long rectangle → Starlink
+    elif ar >= 2.0:
+        return "Starlink"
+    # near circle → Rocket Body
     else:
+        ((_, _), radius) = cv2.minEnclosingCircle(contour)
+        circ_area = np.pi * radius**2
+        if abs(area - circ_area) / circ_area < 0.3:
+            return "Rocket Body"
         return "Unknown"
 
 def detection_loop(cam):
@@ -73,16 +72,19 @@ def detection_loop(cam):
         cnts = [c for c in cnts if cv2.contourArea(c) > MIN_CONTOUR_AREA]
 
         for c in cnts:
-            # draw raw contour
-            cv2.drawContours(frame, [c], -1, (255,0,0), 2)
+            # 1) fit a rotated rectangle
+            rect = cv2.minAreaRect(c)
+            box_pts = cv2.boxPoints(rect).astype(int)
+
+            # 2) draw the rotated box in blue
+            cv2.drawContours(frame, [box_pts], 0, (255, 0, 0), 2)
+
+            # 3) classify and draw your regular AABB + label
             obj_type = classify_object(c)
             x, y, w, h = cv2.boundingRect(c)
-
-            # draw
             cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
             cv2.putText(frame, obj_type, (x, y - 10),
                         cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
-
         cv2.imshow("Live Classification", frame)
         if cv2.waitKey(1) & 0xFF == ord('q'):
             is_running = False
