@@ -12,8 +12,8 @@ Circuitry: Connect the following listed pins for I2C communication:
   - A5 is SCL on Arduino, third pin from top on left (05) is SCL on Pi
   - Digital 2 on Arduino is the direction pin to connect to the driver
   - Digital 3 on Arduino is the Step pin to connect to the driver
-  - Digital 11 on Arduino is the signal pin for the 0 degree end stop
-  - Digital 12 on Arduino is the signal pin for the 90 degree end stop
+  - Digital 11 on Arduino is the signal pin for the 0 degree end stop, this is the orange cable
+  - Digital 12 on Arduino is the signal pin for the 90 degree end stop, this is the purple cable
   - GND on Arduino to GND bus for rotational end stops
   - 5V on Arduino to 5V bus for rotational end stops
   - Bus to pins for ground and 5V on the end stops
