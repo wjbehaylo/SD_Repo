@@ -413,7 +413,7 @@ Libraries to be included:
     stepper_gear1.moveTo(steps); //this is the absolute target to move to, not the number of steps
     stepper_gear1.runToPosition(); //this is a blocking statement to move it the desired amount, in theory
     //maybe I just update the angle here...?
-    currentAngle=currentTheta(stepper); //I like this more than the currentTheta function since I feel like that just adds complexity
+    currentAngle=currentTheta(); //I like this more than the currentTheta function since I feel like that just adds complexity
   }
 
   float currentTheta() {
