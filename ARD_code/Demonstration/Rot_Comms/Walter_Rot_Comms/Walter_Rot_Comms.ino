@@ -129,7 +129,7 @@ Libraries to be included:
     stepper_gear1.setMaxSpeed(100);
     stepper_gear1.setAcceleration(100);
     stepper_gear1.setCurrentPosition(0);
-    
+
     //debugging
     //stepper_gear1.moveTo(20);
     //stepper_gear1.runToPosition();
@@ -265,7 +265,7 @@ Libraries to be included:
         //currentAngle-increment is in degrees though, so we need to maintain it in degrees
         currentAngle = currentAngle - increment; //updating in moveTheta right now, rather than elsewhere
         //debugging
-        delay(1000);
+        //delay(1000);
       }
     }
     //we go here if we will be rotating positively
@@ -276,7 +276,7 @@ Libraries to be included:
         stepper_moveTheta(currentAngle + increment); // need to confirm direction (+/-)
         currentAngle = currentAngle + increment; //updating in moveTheta right now, rather than elsewhere
         //debugging
-        delay(1000);
+        //delay(1000);
       }
     }
     else {
