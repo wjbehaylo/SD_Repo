@@ -42,11 +42,11 @@ Libraries to be included:
   
   //Constants to be used
   const float lead_step = 0.01; // 0.01mm
-  const int steps_rev = 400; // this is the number of steps per full STEPPER rotation
+  const int steps_rev = 2000; // this is the number of steps per full STEPPER rotation, not 100% on if it is correct though
   const int configurationPlus = 45; //target degrees for plus configuration
   const int configurationEquals = 0; //target degrees for equal configuration
   const float increment = 0.1; //the amount to increment per loop, one degree each time for now, might have to be changed if it isn't sensitive enough
-  const float gear_ratio = 0.333333; //the gear ratio, it needs to be small gear/large gear though
+  const float gear_ratio = 0.333333; //the gear ratio between the small and large gear, small first because we care about angle change on a per step basis
   // Lead/Revolution = 2mm
   // Steps/Rev = 200 (no microstep)
   
