@@ -98,16 +98,16 @@ def classify_object(contour):
 
     # CubeSat: Small rectangular object
     cube_sat_area = KNOWN_DIMENSIONS["CubeSat"]["width"] * KNOWN_DIMENSIONS["CubeSat"]["length"]
-    if aspect_ratio >= 1.0 and aspect_ratio <= 1.9 and \
+    if aspect_ratio >= 3.5 and aspect_ratio <= 4.5 and \
        object_length >= KNOWN_DIMENSIONS["CubeSat"]["height"] and \
        object_width >= KNOWN_DIMENSIONS["CubeSat"]["width"] and \
-       area <= cube_sat_area * 2:  # Allow some variation in area
+       area >= cube_sat_area * 0.5 and area <= cube_sat_area *2:  # Allow some variation in area
             return "CubeSat"
         #testing on cubesat sideview image, Aspect Ratio: 1.27, Area: 239706.00, Width: 569, Height: 448
 
     # Starlink: Larger rectangular object
     starlink_area = KNOWN_DIMENSIONS["Starlink"]["width"] * KNOWN_DIMENSIONS["Starlink"]["length"]
-    if aspect_ratio >= 2.0 and \
+    if aspect_ratio >= 6.5 and aspect_ratio <= 7.5 and \
        object_width >= KNOWN_DIMENSIONS["Starlink"]["width"] and \
        object_length >= KNOWN_DIMENSIONS["Starlink"]["height"] and \
        area >= starlink_area * 0.5 and area <= starlink_area * 2:  # Allow some variation in area
