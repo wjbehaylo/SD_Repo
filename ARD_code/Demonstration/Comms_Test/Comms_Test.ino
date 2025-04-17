@@ -215,6 +215,7 @@ Libraries to be included:
               Serial.print("You typed: ");
               Serial.println(input);
               ctrlDone = true; //so it moves until there is used input
+              executionStatus = 21;
             }
         }
         break;
