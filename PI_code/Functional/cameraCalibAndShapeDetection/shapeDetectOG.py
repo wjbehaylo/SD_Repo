@@ -155,7 +155,7 @@ def object_dect_and_distance(camera):
 
         # Find contours
         contours, _ = cv2.findContours(edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-        min_contour_area = 10000  # minimum area for a contour to be considered
+        min_contour_area = 5000  # minimum area for a contour to be considered
         contours = [cnt for cnt in contours if cv2.contourArea(cnt) > min_contour_area]
 
 
