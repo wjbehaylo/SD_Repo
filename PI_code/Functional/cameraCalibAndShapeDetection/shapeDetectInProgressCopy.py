@@ -24,11 +24,14 @@ is_running = True
 
 def classify_object(contour):
     # approximate the contour to a polygon
+    area = cv2.contourArea(contour)
     peri   = cv2.arcLength(contour, True)
     approx = cv2.approxPolyDP(contour, 0.02 * peri, True)
+    print(f"  verts={len(approx)}, area={area:.0f}, peri={peri:.0f}")
+
+
     x, y, w, h = cv2.boundingRect(approx)
     aspect_ratio = w / float(h)
-    area = cv2.contourArea(contour)
 
     # 4‐sided shapes → rectangles (CubeSat vs. Starlink)
     if len(approx) == 4:
