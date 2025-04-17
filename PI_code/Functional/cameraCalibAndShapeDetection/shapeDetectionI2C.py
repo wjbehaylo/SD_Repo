@@ -9,282 +9,173 @@
 import cv2
 import numpy as np
 import time
-#from smbus2 import SMBus
+from smbus2 import SMBus
 from time import sleep
-import math
 import threading
+import math
 
-# I2C addresses
-LINEAR_ADDR = 0x08      # Arduino controlling lift
-ROTATION_ADDR = 0x09    # Arduino controlling rotation
-
-#Constants
-WIDTH = 1920 #may need to play around with these values
-HEIGHT = 1080 #may need to play around with values 
+# Constants
+ARUINO_I2C_ADDRESS = 8
+WIDTH = 1920
+HEIGHT = 1080
 
 # Load Camera Calibration Data
 camera_matrix = np.load("camera_matrix.npy")
 distortion_coeffs = np.load("distortion_coeffs.npy")
 
-FOCAL_LENGTH = [camera_matrix[0, 0], camera_matrix[1, 1]]  # fx
-fx = camera_matrix[0, 0]  # focal length in pixels (x-axis)
-HFOV_rad = 2 * np.arctan(WIDTH / (2 * fx))
-HFOV_deg = np.degrees(HFOV_rad)
+# Extract focal lengths (pixels)
+fx = camera_matrix[0, 0]
+fy = camera_matrix[1, 1]
 
-#Flag to control main loop
-is_running = True
-#Flag for detected object
-#detected_object = None
-#object_type = None
-
-# Define known dimensions for each object type (in meters)
+# Known object dimensions in **millimeters**
 KNOWN_DIMENSIONS = {
-    "CubeSat": {"width": 0.1, "length": 0.38, "height": 0.1},  # 1U CubeSat width, length, and height
-    "Starlink": {"width": 0.7, "length": 1.4, "height": 0.1},  # Approximate deployed width, length, and height
-    "Rocket Body": {"diameter": 0.62}  # Minotaur upper stage diameters
+    "CubeSat":    {"width": 100, "length": 380, "height": 100},   # 1U CubeSat (100×100×380 mm)
+    "Starlink":   {"width": 700, "length": 140, "height": 100},   # Approx. Starlink panel (700×140×100 mm)
+    "Rocket Body":{"diameter": 620}                               # Minotaur upper stage diameter (mm)
 }
 
-# Function to classify objects
-def classify_object(contour):
-    x, y, w, h = cv2.boundingRect(contour)
-    aspect_ratio = float(w) / h  # Width / Height
-    
-    # Get the object length and width
-    object_length = h  # Assuming height is the length
-    object_width = w   # Assuming width is the width
-    area = cv2.contourArea(contour)
 
-    # Debug: Show aspect ratio, area, width, and height
-    print(f"Aspect Ratio: {aspect_ratio:.2f}, Area: {area:.2f}, Width: {object_width}, Height: {object_length}")
-
-    # Classification logic
-
-    # CubeSat: Small rectangular object
-    cube_sat_area = KNOWN_DIMENSIONS["CubeSat"]["width"] * KNOWN_DIMENSIONS["CubeSat"]["length"]
-    if aspect_ratio >= 0.8 and aspect_ratio <= 1.2 and \
-       object_length >= KNOWN_DIMENSIONS["CubeSat"]["height"] and \
-       object_width >= KNOWN_DIMENSIONS["CubeSat"]["width"] and \
-       area <= cube_sat_area * 2:  # Allow some variation in area
-            return "CubeSat"
-        #testing on cubesat sideview image, Aspect Ratio: 1.27, Area: 239706.00, Width: 569, Height: 448
-
-    # Starlink: Larger rectangular object
-    starlink_area = KNOWN_DIMENSIONS["Starlink"]["width"] * KNOWN_DIMENSIONS["Starlink"]["length"]
-    if aspect_ratio >= 2.0 and \
-       object_width >= KNOWN_DIMENSIONS["Starlink"]["width"] and \
-       object_length >= KNOWN_DIMENSIONS["Starlink"]["height"] and \
-       area >= starlink_area * 0.5 and area <= starlink_area * 2:  # Allow some variation in area
-            return "Starlink"
-        #testing on starlink top view image, i got Aspect Ratio: 1.79, Area: 156171.00, Width: 550, Height: 307
-
-    # Rocket Body: Circular object
-    if aspect_ratio >= 0.9 and aspect_ratio <= 1.1:
-        diameter = KNOWN_DIMENSIONS["Rocket Body"]["diameter"]
-        estimated_diameter = object_width
-
-        diameter_tolerance = 0.05
-        if abs(estimated_diameter - diameter) <= diameter_tolerance:
-            expected_area = np.pi * (diameter / 2) ** 2
-            if area >= expected_area * 0.5 and area <= expected_area * 1.5:
-                return "Rocket Body"
-            #testing on minotaur bottom view, i got AR: 0.95, area: 117105.50, width: 380, height: 395
-
-    # If nothing matches, return Unknown
-    return "Unknown"
-
-# Function to estimate distance based on object type
-def estimate_distance(corners, object_type):
-    if object_type not in KNOWN_DIMENSIONS:
+def estimate_distance_simple(pixel_size, real_size_mm, f=fy):
+    """
+    Simple pinhole‐camera distance estimate:
+      Z ≈ f * H / h
+    where:
+      f: focal length in pixels
+      H: real size (mm)
+      h: measured size in pixels
+    Returns distance in meters.
+    """
+    if pixel_size <= 0:
         return None
+    return (f * (real_size_mm / 1000.0)) / pixel_size
 
+
+def estimate_distance_pnp(corners, object_type):
+    """
+    Use solvePnP for a more accurate distance. 
+    corners: list of four (x,y) image points in the order
+             top-left, top-right, bottom-right, bottom-left
+    Returns distance in meters or None on failure.
+    """
+    dims = KNOWN_DIMENSIONS[object_type]
+    # Build 3D object points in mm → convert to meters
     if object_type == "Rocket Body":
-        # For Rocket Body, we only have a diameter
-        diameter = KNOWN_DIMENSIONS["Rocket Body"]["diameter"]
-        known_width = diameter
-        known_length = diameter  # Use diameter as both width and height
+        d = dims["diameter"] / 1000.0
+        object_pts = np.array([
+            [-d/2, -d/2, 0],
+            [ d/2, -d/2, 0],
+            [ d/2,  d/2, 0],
+            [-d/2,  d/2, 0]
+        ], dtype=np.float32)
     else:
-        # CubeSat and Starlink
-        known_width = KNOWN_DIMENSIONS[object_type]["width"]
-        known_length = KNOWN_DIMENSIONS[object_type]["length"]
+        w = dims["width"] / 1000.0
+        l = dims["length"] / 1000.0
+        object_pts = np.array([
+            [-w/2, -l/2, 0],
+            [ w/2, -l/2, 0],
+            [ w/2,  l/2, 0],
+            [-w/2,  l/2, 0]
+        ], dtype=np.float32)
 
-    # Define object points in 3D space (assuming object is flat and on Z=0 plane)
-    object_points = np.array([
-        [-known_width / 2, -known_length / 2, 0],
-        [known_width / 2, -known_length / 2, 0],
-        [known_width / 2, known_length / 2, 0],
-        [-known_width / 2, known_length / 2, 0]
-    ], dtype=np.float32)
-
-        # Corners from the bounding box of the detected object (in 2D image coordinates)
-    image_points = np.array([
-        [corners[0][0], corners[0][1]],  # Top-left
-        [corners[1][0], corners[1][1]],  # Top-right
-        [corners[2][0], corners[2][1]],  # Bottom-right
-        [corners[3][0], corners[3][1]]   # Bottom-left
-    ], dtype=np.float32)
+    image_pts = np.array(corners, dtype=np.float32)
+    success, rvec, tvec = cv2.solvePnP(object_pts, image_pts,
+                                        camera_matrix, distortion_coeffs,
+                                        flags=cv2.SOLVEPNP_IPPE_SQUARE)
+    if not success:
+        return None
+    # tvec is in meters
+    return np.linalg.norm(tvec)
 
 
-    # SolvePnP to get the rotation and translation vectors
-    _, rvec, tvec = cv2.solvePnP(object_points, image_points, camera_matrix, distortion_coeffs)
+def classify_and_distance(contour, frame):
+    x, y, w, h = cv2.boundingRect(contour)
+    area = cv2.contourArea(contour)
+    aspect = float(w) / (h + 1e-6)
 
-    # Calculate the distance based on the tvec (translation vector)
-    distance = np.linalg.norm(tvec)
-    return distance
+    # Simple shape+size rules first
+    # CubeSat
+    cube = KNOWN_DIMENSIONS["CubeSat"]
+    if 0.8 < aspect < 1.2 and area < cube["width"] * cube["length"]:
+        obj = "CubeSat"
+    # Starlink (long rectangle)
+    elif aspect > 2.0 and area > 0.5 * KNOWN_DIMENSIONS["Starlink"]["width"] * KNOWN_DIMENSIONS["Starlink"]["length"]:
+        obj = "Starlink"
+    # Rocket Body (circle)
+    elif 0.9 < aspect < 1.1:
+        obj = "Rocket Body"
+    else:
+        return "Unknown", None
 
-def initialize_camera():
-    #init camera
-    camera = cv2.VideoCapture(0)
-    # Set up camera properties
-    camera.set(cv2.CAP_PROP_FPS, 30) # Set camera frames per second to 30
-    camera.set(cv2.CAP_PROP_FRAME_WIDTH, WIDTH)
-    camera.set(cv2.CAP_PROP_FRAME_HEIGHT, HEIGHT)
-    return camera
+    # Estimate distance with simple formula
+    real_size_mm = (cube["height"] if obj == "CubeSat" else
+                    KNOWN_DIMENSIONS[obj].get("height", KNOWN_DIMENSIONS[obj].get("diameter")))
+    dist_simple = estimate_distance_simple(h if obj!="Rocket Body" else w, real_size_mm)
 
-#Function for I2C data writter
-'''def write_data(angle, distance):
-    if detected_object is not None:
-        angle_sent = (-angle+HFOV_deg/2)*(255/HFOV_deg)
-        angle_sent = int(angle_sent)
-        distance = int(np.round(distance))
+    # Reject if simple distance is outside expected range (~1 m ±20 cm)
+    if dist_simple is None or not (0.8 < dist_simple < 1.2):
+        return "Unknown", None
 
-        # Convert to byte format
-        angle_byte = int((angle_sent / 180.0) * 255)
-        distance_byte = int((distance / 1.0) * 255)
-        
-        #initalize i2c
-        i2c_bus = SMBus(1)
+    # Now refine with solvePnP
+    corners = [(x, y), (x + w, y), (x + w, y + h), (x, y + h)]
+    dist_pnp = estimate_distance_pnp(corners, obj)
+    if dist_pnp is None or not (0.8 < dist_pnp < 1.2):
+        return "Unknown", None
 
-        try:
-            # Send to linear Arduino (sends both angle and distance, but only distance is used)
-            i2c_bus.write_i2c_block_data(LINEAR_ADDR, 0, [angle_byte, distance_byte])
-            print(f"Sent to LINEAR Arduino: angle={angle_byte}, distance={distance_byte}")
-        except Exception as e:
-            print(f"Error sending to Linear Arduino: {e}")
-        
-        time.sleep(0.1)  # slight delay between devices
+    # Draw and label
+    cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
+    cv2.putText(frame,
+                f"{obj} @ {dist_pnp:.2f}m",
+                (x, y - 10),
+                cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
+    # debug center
+    cx, cy = x + w // 2, y + h // 2
+    cv2.circle(frame, (cx, cy), 4, (255, 0, 0), -1)
 
-        # Send to rotation Arduino (only angle is used)
-        try:
-            i2c_bus.write_i2c_block_data(ROTATION_ADDR, 0, [angle_byte])
-            print(f"Sent to ROTATION Arduino: angle={angle_byte}")
-        except Exception as e:
-            print(f"Error sending to Rotation Arduino: {e}")'''
+    return obj, dist_pnp
 
-#Frame Processing Loop
-def object_dect_and_distance(camera):
-    global is_running
-    while camera.isOpened():
-        while True:
-            ret, frame = camera.read()
-            if not ret:
-                print("Failed to capture image!")
 
-        # Apply camera calibration to remove distortion**
-        frame_undistorted = cv2.undistort(frame, camera_matrix, distortion_coeffs)
+def object_detect_and_distance(camera):
+    while True:
+        ret, frame = camera.read()
+        if not ret:
+            print("Failed to capture image!")
+            break
 
-        # Convert to grayscale and process
-        gray = cv2.cvtColor(frame_undistorted, cv2.COLOR_BGR2GRAY)
-        # Improve lighting conditions
-        adaptive_thresh = cv2.adaptiveThreshold(gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
-                                               cv2.THRESH_BINARY, 11, 2)
-        blurred = cv2.GaussianBlur(adaptive_thresh, (5, 5), 0)
-        edges = cv2.Canny(blurred, 50, 150)
-        # Use morphological operations to clean up the edges
+        # undistort
+        frame_u = cv2.undistort(frame, camera_matrix, distortion_coeffs)
+
+        gray = cv2.cvtColor(frame_u, cv2.COLOR_BGR2GRAY)
+        blur = cv2.GaussianBlur(gray, (5, 5), 0)
+        edges = cv2.Canny(blur, 50, 150)
+
+        # clean up
         kernel = np.ones((5, 5), np.uint8)
-        processed_image = cv2.morphologyEx(edges, cv2.MORPH_CLOSE, kernel)
+        proc = cv2.morphologyEx(edges, cv2.MORPH_CLOSE, kernel)
 
-        # Find contours
-        contours, _ = cv2.findContours(processed_image, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-        min_contour_area = 100  # minimum area for a contour to be considered
-        contours = [cnt for cnt in contours if cv2.contourArea(cnt) > min_contour_area]
+        cnts, _ = cv2.findContours(proc, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        for cnt in cnts:
+            if cv2.contourArea(cnt) < 1000:
+                continue
+            # draw raw contour
+            cv2.drawContours(frame_u, [cnt], -1, (0, 0, 255), 1)
+            classify_and_distance(cnt, frame_u)
 
+        cv2.imshow("Detection & Distance", frame_u)
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            break
 
-        for contour in contours:
-
-            # Draw the contour for debugging
-            cv2.drawContours(frame_undistorted, [contour], -1, (0, 0, 255), 2)
-
-            # Get bounding box and classify
-            x, y, w, h = cv2.boundingRect(contour)
-            object_type = classify_object(contour)
-            
-            # Draw bounding box for classified objects
-            cv2.rectangle(frame_undistorted, (x, y), (x + w, y + h), (0, 255, 0), 2)
-            corners = [
-                (x, y),               # Top-left
-                (x + w, y),           # Top-right
-                (x + w, y + h),       # Bottom-right
-                (x, y + h)            # Bottom-left
-            ]
-            distance = estimate_distance(corners, object_type)
-            label = f"{object_type}" if object_type != "Unknown" else f"Unknown"
-            cv2.putText(frame_undistorted, label, (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
-
-            # Estimate angle using solvePnP
-            if object_type != "Unknown":
-                object_points = np.array([
-                    [-KNOWN_DIMENSIONS[object_type]["width"] / 2, -KNOWN_DIMENSIONS[object_type]["length"] / 2, 0],
-                    [KNOWN_DIMENSIONS[object_type]["width"] / 2, -KNOWN_DIMENSIONS[object_type]["length"] / 2, 0],
-                    [KNOWN_DIMENSIONS[object_type]["width"] / 2, KNOWN_DIMENSIONS[object_type]["length"] / 2, 0],
-                    [-KNOWN_DIMENSIONS[object_type]["width"] / 2, KNOWN_DIMENSIONS[object_type]["length"] / 2, 0]
-                ], dtype=np.float32)
-
-                image_points = np.array(corners, dtype=np.float32)
-                success, rvec, tvec = cv2.solvePnP(object_points, image_points, camera_matrix, distortion_coeffs)
-
-                if success:
-                    # Convert rotation vector to rotation matrix
-                    rotation_matrix, _ = cv2.Rodrigues(rvec)
-
-                    # Get orientation
-                    angle_rad = math.atan2(rotation_matrix[1, 0], rotation_matrix[0, 0])
-                    angle_deg = np.degrees(angle_rad)
-
-                    cv2.putText(frame_undistorted, f"Angle: {angle_deg:.1f} deg", (x, y + h + 20),
-                                cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 0), 2)
-                    write_data(angle_deg, distance)      
-                else:
-                    print(f"solvePnP failed for object: {object_type}")
-
-            # Show the center of the object for debugging
-            cx = x + w // 2
-            cy = y + h // 2
-            cv2.circle(frame_undistorted, (cx, cy), 5, (0, 0, 255), -1)
-
-        cv2.imshow("Object Classification", frame_undistorted)
-
-        key = cv2.waitKey(1) & 0xFF
-        # Press 'q' to exit
-        if key == ord('q'):
-            is_running = False
-            quit()
 
 def main():
-    #Main function to start capturing and processing frames
-    global is_running, detected_object, object_type
-    camera = initialize_camera()
     camera = cv2.VideoCapture(0)
-
-    sleep(1) #allow camera to warm up
-
-    # Start the processing thread
-    capture_thread = threading.Thread(target=initialize_camera)
-    capture_thread.start()
-    process_thread = threading.Thread(target=object_dect_and_distance, args=(camera,))
-
-    process_thread.start()
+    camera.set(cv2.CAP_PROP_FRAME_WIDTH, WIDTH)
+    camera.set(cv2.CAP_PROP_FRAME_HEIGHT, HEIGHT)
 
     try:
-        while is_running:
-            time.sleep(1)  # Main thread can handle other tasks if necessary
-    except KeyboardInterrupt:
-        is_running = False
+        object_detect_and_distance(camera)
+    finally:
+        camera.release()
+        cv2.destroyAllWindows()
 
-    capture_thread.join()
-    process_thread.join()
-    
-    camera.release()
-    cv2.destroyAllWindows()
 
 if __name__ == "__main__":
     main()
