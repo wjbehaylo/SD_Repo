@@ -29,7 +29,8 @@ Libraries to be included:
  
  #define STEPPER3_DIR_PIN 2
  #define STEPPER3_STEP_PIN 3
- #define ENDSTOP_0_SIGNAL_PIN 11
+ //remember that both of these are active low
+ #define ENDSTOP_0_SIGNAL_PIN 11 
  #define ENDSTOP_90_SIGNAL_PIN 12
  
  #define ROT_ARD_ADD 8
@@ -261,7 +262,7 @@ void stepper_rotate () {
   
   if(targetAngle<currentAngle){
     Serial.println("Entering targetAngle<currentAngle");
-    while(targetAngle<currentAngle && digitalRead(ENDSTOP_0_SIGNAL_PIN)==LOW){
+    while(targetAngle<currentAngle && digitalRead(ENDSTOP_0_SIGNAL_PIN)==HIGH){
       //now we will move by 0.1 degree in the negative direction, and update current angle
       stepper_moveTheta(currentAngle - increment); // need to confirm direction (+/-),
       //currentAngle-increment is in degrees though, so we need to maintain it in degrees
@@ -272,8 +273,15 @@ void stepper_rotate () {
   }
   //we go here if we will be rotating positively
   else if (targetAngle>currentAngle){
+    //debugging
     Serial.println("entering targetAngle>currentAngle");
-    while(targetAngle>currentAngle && digitalRead(ENDSTOP_90_SIGNAL_PIN)==LOW){
+    if(digitalRead(ENDSTOP_90_SIGNAL_PIN)==HIGH){
+      Serial.println("Endstop 90 signal pin not-triggered");
+    }
+    if(digitalRead(ENDSTOP_90_SIGNAL_PIN)==LOW){
+      Serial.println("Endstop 90 signal pin triggered");
+    }
+      while(targetAngle>currentAngle && digitalRead(ENDSTOP_90_SIGNAL_PIN)==HIGH){
       //now we will move by 0.1 degree in the positive direction, and update current angle
       stepper_moveTheta(currentAngle + increment); // need to confirm direction (+/-)
       currentAngle = currentAngle + increment; //updating in moveTheta right now, rather than elsewhere
@@ -294,16 +302,8 @@ void stepper_rotate () {
   Serial.print("Target Angle: ");
   Serial.println(targetAngle);
   
-  //now we need to determine our output status based on what flags are set
-  if(triggered0){
-    executionStatus = 23;
-    return;
-  }
-  else if(triggered90){
-    executionStatus = 24;
-    return;
-  }
-  else if(int(targetAngle) == int(currentAngle)){
+  //now we need to determine our output status based on what flags are set. We gotta consider the configuring first because = and endstop 0 are the same
+  if(int(targetAngle) == int(currentAngle)){
     if(configuring == true){
       executionStatus = 22;
       return;
@@ -313,6 +313,15 @@ void stepper_rotate () {
       return;
     }
   }
+  else if(digitalRead(ENDSTOP_0_SIGNAL_PIN)==LOW){
+    executionStatus = 23;
+    return;
+  }
+  else if(digitalRead(ENDSTOP_90_SIGNAL_PIN)==LOW){
+    executionStatus = 24;
+    return;
+  }
+  
   else{ // if we get here it broke somehow or something
     Serial.println("Movement Failure");
     executionStatus=25;
