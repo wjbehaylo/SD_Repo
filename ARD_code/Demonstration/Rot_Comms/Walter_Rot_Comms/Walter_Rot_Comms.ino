@@ -46,7 +46,7 @@ Libraries to be included:
   const int configurationPlus = 45; //target degrees for plus configuration
   const int configurationEquals = 0; //target degrees for equal configuration
   const float increment = 0.1; //the amount to increment per loop, one degree each time for now, might have to be changed if it isn't sensitive enough
-  const float gear_ratio = 0.333333; //the gear ratio between the small and large gear, small first because we care about angle change on a per step basis
+  const float gear_ratio = 3.333333; //the gear ratio between the small and large gear, small first because we care about angle change on a per step basis
   // Lead/Revolution = 2mm
   // Steps/Rev = 200 (no microstep)
   
@@ -280,7 +280,7 @@ Libraries to be included:
         stepper_moveTheta(currentAngle - increment); // need to confirm direction (+/-),
         //currentAngle-increment is in degrees though, so we need to maintain it in degrees
         */
-       currentAngle -= gear_ratio*steps_rev/360; //currentAngle will go up by the amount that 1 step is (of a full rotation) * the gear ratio (lil to big)
+       currentAngle-=360/(steps_rev)/gear_ratio; //currentAngle will go down by small degrees/step / (small degrees/big degrees)
        stepper_gear1.run();
 
       //debugging
@@ -302,7 +302,7 @@ Libraries to be included:
       while((stepper_gear1.distanceToGo() != 0) && !triggered90 && !triggered0){
         //note that here we are moving in the positive direction, so we can run 'run' normally
         //currentAngle will end up going up by like 0.3 or whatever each time right now
-        currentAngle+=gear_ratio*steps_rev/360; //currentAngle will go up by the amount that 1 step is (of a full rotation) * the gear ratio (lil to big)
+        currentAngle+=360/(steps_rev)/gear_ratio; //currentAngle will go up by small degrees/step / (small degrees/big degrees)
         
         //debugging
         Serial.print("currentAngle: ");
