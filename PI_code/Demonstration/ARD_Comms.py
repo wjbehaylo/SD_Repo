@@ -133,8 +133,8 @@ OFFSET:
     
 REQUESTING: every second or so, the Pi will try to read the arduino's register 0 to get the status. This is the arduino's 'Request' routine
 OFFSET:
-0:
-    we decided offset 0 is for general status, and there is enough flexibility to get many messages
+3:
+    we decided offset 3 is for general status, and there is enough flexibility to get many messages. I think there is a problem with having this be 0 and the other too.
 Status: 
     20:
         Rotating
@@ -273,7 +273,7 @@ def rot_ARD_Read(OFFSET):
     try:
         while True:
             sleep(1)
-            if(OFFSET==0):
+            if(OFFSET==3):
                 #debugging
                 print("Trying to read byte data")
                 status=i2c_arduino.read_byte(rot_ard_add) #I don't think I needed the offset thing.
