@@ -129,9 +129,10 @@ Libraries to be included:
     stepper_gear1.setMaxSpeed(100);
     stepper_gear1.setAcceleration(100);
     stepper_gear1.setCurrentPosition(0);
+    
     //debugging
-    stepper_gear1.moveTo(20);
-    stepper_gear1.runToPosition();
+    //stepper_gear1.moveTo(20);
+    //stepper_gear1.runToPosition();
 
     
     //declare pins for the end stops
