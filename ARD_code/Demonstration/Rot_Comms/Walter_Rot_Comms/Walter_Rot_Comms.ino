@@ -387,18 +387,29 @@ Libraries to be included:
   //this is what will happen when the 0 end stop is triggered
   void triggered0Interrupt(){
     if(digitalRead(ENDSTOP_0_SIGNAL_PIN)==HIGH){
+      //debugging
+      Serial.println("Endstop 0 on");
+
       triggered0=true;
     }
     else{
+      //debugging
+      Serial.println("Endstop 0 off");
       triggered0=false;
     }
   }
 
   void triggered90Interrupt(){
     if(digitalRead(ENDSTOP_90_SIGNAL_PIN)==HIGH){
+      //debugging
+      Serial.println("Endstop 90 on");
+
       triggered90=true;
     }
     else{
+      //debugging
+      Serial.println("Endstop 90 off");
+      
       triggered90=false;
     }  
   }
