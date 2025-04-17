@@ -266,21 +266,24 @@ Libraries to be included:
 
       while((stepper_gear1.distanceToGo() != 0) && !triggered0 && !triggered90){
         //note that here we are moving in the positive direction, so we can run 'run' normally
-        //currentAngle will end up going up by like 0.3 or whatever each time right now
-        currentAngle-=gear_ratio*steps_rev/360; //currentAngle will go up by the amount that 1 step is (of a full rotation) * the gear ratio (lil to big)
+        //currentAngle will end up going up by like 0.3 or whatever each time right now, in theory
         
-        stepper_gear1.run();
         
         //this is obselete I think?
         /*
         //now we will move by 0.1 degree in the negative direction, and update current angle
         stepper_moveTheta(currentAngle - increment); // need to confirm direction (+/-),
         //currentAngle-increment is in degrees though, so we need to maintain it in degrees
-        currentAngle = currentAngle - increment; //updating in moveTheta right now, rather than elsewhere
         */
-        
-        //debugging
-        //delay(1000);
+       currentAngle -= gear_ratio*steps_rev/360; //currentAngle will go up by the amount that 1 step is (of a full rotation) * the gear ratio (lil to big)
+       stepper_gear1.run();
+
+      //debugging
+      Serial.print("currentAngle: ");
+      Serial.println(currentAngle);
+      
+      //debugging
+      //delay(1000);
         
       }
     }
@@ -291,6 +294,11 @@ Libraries to be included:
         //note that here we are moving in the positive direction, so we can run 'run' normally
         //currentAngle will end up going up by like 0.3 or whatever each time right now
         currentAngle+=gear_ratio*steps_rev/360; //currentAngle will go up by the amount that 1 step is (of a full rotation) * the gear ratio (lil to big)
+        
+        //debugging
+        Serial.print("currentAngle: ");
+        Serial.println(currentAngle);
+
         stepper_gear1.run(); //I think 'run' can go in the negative direction too?
 
         /*This might be outdated
@@ -309,29 +317,23 @@ Libraries to be included:
     ctrlBusy=0;
     ctrlDone=1;
 
-    //debugging
-    Serial.print("Current angle: ");
-    Serial.println(currentAngle);
-    Serial.print("Target Angle: ");
-    Serial.println(targetAngle);
+    
 
     //now we need to determine our output status based on what flags are set
     if(triggered0){
       executionStatus = 23;
-      return;
+      currentAngle = 0; //kind of a reset
     }
     else if(triggered90){
       executionStatus = 24;
-      return;
+      currentAngle = 90;
     }
     else if(int(targetAngle) == int(currentAngle)){
       if(configuring == true){
         executionStatus = 22;
-        return;
       }
       else {
         executionStatus = 21;
-        return;
       }
     }
     else{ // if we get here it broke somehow or something
@@ -339,6 +341,14 @@ Libraries to be included:
       executionStatus=25;
       return;
     }
+    
+    //debugging
+    Serial.print("Current angle: ");
+    Serial.println(currentAngle);
+    Serial.print("Target Angle: ");
+    Serial.println(targetAngle);
+    
+    return;
   } 
 
   //this is our ISR for when the Pi sends data
