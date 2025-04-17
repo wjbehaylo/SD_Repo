@@ -416,9 +416,9 @@ Libraries to be included:
     currentAngle=currentTheta(stepper); //I like this more than the currentTheta function since I feel like that just adds complexity
   }
 
-  float currentTheta(AccelStepper &stepper) {
+  float currentTheta() {
     //
-    return float(stepper.currentPosition()*360/steps_rev);
+    return float(stepper_gear1.currentPosition()*360/steps_rev);
   }
 
   
