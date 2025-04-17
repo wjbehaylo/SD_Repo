@@ -112,8 +112,10 @@ while(True):
         result = rot_ARD_Read(3)
         #now that we've written to it and read from it, result should store the non '20' output
         #so we can use generate status function and continue with the loop
-        message= Generate_Status(result)
-        print(message)
+        
+        #debugging, since this is done in the rot_ARD_Read() function
+        #message= Generate_Status(result)
+        #print(message)
 
 #I think this should do all it is supposed to, it's pretty simple in general to be honest
         
