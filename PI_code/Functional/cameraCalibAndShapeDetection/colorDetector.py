@@ -19,12 +19,6 @@ distortion_coeffs = np.load("distortion_coeffs.npy")
 fx = camera_matrix[0, 0]
 fy = camera_matrix[1, 1]
 
-# Python code for Multiple Color Detection 
-
-import numpy as np 
-import cv2 
-
-
 # Capturing video through webcam 
 webcam = cv2.VideoCapture(0) 
 # Set up camera properties (optional)
@@ -120,7 +114,7 @@ while True:
 			cv2.putText(imageFrame, "Minotaur Detected!", (x, y), 
 						cv2.FONT_HERSHEY_SIMPLEX, 
 						1.0, (0, 255, 0)) 
-
+			
 	# Creating contour to track blue color 
 	contours, hierarchy = cv2.findContours(blue_mask, 
 										cv2.RETR_TREE, 
