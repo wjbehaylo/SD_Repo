@@ -262,7 +262,7 @@ Libraries to be included:
         //now we will move by 0.1 degree in the negative direction, and update current angle
         stepper_moveTheta(currentAngle - increment); // need to confirm direction (+/-),
         //currentAngle-increment is in degrees though, so we need to maintain it in degrees
-        // currentAngle = currentTheta(&stepper); //updating in moveTheta right now, rather than elsewhere
+        currentAngle = currentAngle - increment; //updating in moveTheta right now, rather than elsewhere
       }
     }
     //we go here if we will be rotating positively
@@ -271,7 +271,7 @@ Libraries to be included:
       while(targetAngle>currentAngle && !triggered90){
         //now we will move by 0.1 degree in the positive direction, and update current angle
         stepper_moveTheta(currentAngle + increment); // need to confirm direction (+/-)
-        //currentAngle = currentTheta(&stepper); //updating in moveTheta right now, rather than elsewhere
+        currentAngle = currentAngle + increment; //updating in moveTheta right now, rather than elsewhere
       }
     }
     else {
