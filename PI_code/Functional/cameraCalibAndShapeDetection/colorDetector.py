@@ -21,22 +21,31 @@ fy = camera_matrix[1, 1]
 
 # Python code for Multiple Color Detection 
 
+import numpy as np 
+import cv2 
+
+
 # Capturing video through webcam 
 webcam = cv2.VideoCapture(0) 
+# Set up camera properties (optional)
+webcam.set(cv2.CAP_PROP_FRAME_WIDTH, WIDTH)
+webcam.set(cv2.CAP_PROP_FRAME_HEIGHT, HEIGHT)
 
 # Start a while loop 
-while(1): 
+while True: 
 	
 	# Reading the video from the 
 	# webcam in image frames 
-	_, imageFrame = webcam.read() 
-	# **Apply camera calibration to remove distortion**
-    frame_undistorted = cv2.undistort(imageFrame, camera_matrix, distortion_coeffs)
+	ret, imageFrame = webcam.read() 
+	if not ret:
+		print("Failed to capture image!")
+		break
 
 	# Convert the imageFrame in 
 	# BGR(RGB color space) to 
 	# HSV(hue-saturation-value) 
 	# color space 
+	frame_undistorted = cv2.undistort(imageFrame, camera_matrix, distortion_coeffs)
 	hsvFrame = cv2.cvtColor(frame_undistorted, cv2.COLOR_BGR2HSV) 
 
 	# Set range for red color and 
@@ -91,7 +100,7 @@ while(1):
 									(x + w, y + h), 
 									(0, 0, 255), 2) 
 			
-			cv2.putText(imageFrame, "RocketBody", (x, y), 
+			cv2.putText(imageFrame, "RocketBody Detected!", (x, y), 
 						cv2.FONT_HERSHEY_SIMPLEX, 1.0, 
 						(0, 0, 255))	 
 
@@ -108,7 +117,7 @@ while(1):
 									(x + w, y + h), 
 									(0, 255, 0), 2) 
 			
-			cv2.putText(imageFrame, "Starlink", (x, y), 
+			cv2.putText(imageFrame, "Minotaur Detected!", (x, y), 
 						cv2.FONT_HERSHEY_SIMPLEX, 
 						1.0, (0, 255, 0)) 
 
@@ -124,13 +133,14 @@ while(1):
 									(x + w, y + h), 
 									(255, 0, 0), 2) 
 			
-			cv2.putText(imageFrame, "CubeSat", (x, y), 
+			cv2.putText(imageFrame, "CubeSat Detected!", (x, y), 
 						cv2.FONT_HERSHEY_SIMPLEX, 
 						1.0, (255, 0, 0)) 
 			
 	# Program Termination 
-	cv2.imshow("Object", imageFrame) 
+	cv2.imshow("Debris:", imageFrame) 
 	if cv2.waitKey(10) & 0xFF == ord('q'): 
 		webcam.release() 
 		cv2.destroyAllWindows() 
 		break
+
