@@ -401,7 +401,7 @@ Libraries to be included:
 
 
     //steps represents the number of steps that need to be moved
-    int steps = gear_ratio*theta*steps_rev/360;
+    float steps = gear_ratio*theta*steps_rev/360;
 
     //debugging
     Serial.print("This translates to a total of steps: ");
