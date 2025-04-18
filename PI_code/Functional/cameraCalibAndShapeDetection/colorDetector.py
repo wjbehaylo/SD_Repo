@@ -97,8 +97,8 @@ def debris_detect():
 			res_red2   = cv2.bitwise_and(snap, snap, mask=red_mask1)
 
 			# Set range for green color and define mask
-			green_lower = np.array([25, 52, 72], np.uint8)
-			green_upper = np.array([85, 255, 255], np.uint8)
+			green_lower = np.array([50, 52, 72], np.uint8)
+			green_upper = np.array([102, 255, 255], np.uint8)
 			green_mask = cv2.inRange(hsv, green_lower, green_upper) 
 			res_green   = cv2.bitwise_and(snap, snap, mask=green_mask)
 
@@ -119,7 +119,7 @@ def debris_detect():
 				if cv2.contourArea(contour) > 300:
 					x, y, w, h = cv2.boundingRect(contour)
 					snap = cv2.rectangle(snap, (x, y), (x + w, y + h), (0, 0, 255), 2)
-					cv2.putText(snap, "Red Colour", (x, y - 10),
+					cv2.putText(snap, "RocketBody Detected!", (x, y - 10),
 								cv2.FONT_HERSHEY_SIMPLEX, 1.0, (0, 0, 255), 2)
 			
 			
@@ -129,7 +129,7 @@ def debris_detect():
 				if cv2.contourArea(contour) > 300:
 					x, y, w, h = cv2.boundingRect(contour)
 					snap = cv2.rectangle(snap, (x, y), (x + w, y + h), (0, 0, 255), 2)
-					cv2.putText(snap, "Red Colour", (x, y - 10),
+					cv2.putText(snap, "RocketBody Detected!", (x, y - 10),
 								cv2.FONT_HERSHEY_SIMPLEX, 1.0, (0, 0, 255), 2)
 
 			# — Green
@@ -138,7 +138,7 @@ def debris_detect():
 				if cv2.contourArea(contour) > 300:
 					x, y, w, h = cv2.boundingRect(contour)
 					snap = cv2.rectangle(snap, (x, y), (x + w, y + h), (0, 255, 0), 2)
-					cv2.putText(snap, "Green Colour", (x, y - 10),
+					cv2.putText(snap, "Starlink Detected!", (x, y - 10),
 								cv2.FONT_HERSHEY_SIMPLEX, 1.0, (0, 255, 0), 2)
 
 			# — Blue
@@ -147,13 +147,13 @@ def debris_detect():
 				if cv2.contourArea(contour) > 300:
 					x, y, w, h = cv2.boundingRect(contour)
 					snap = cv2.rectangle(snap, (x, y), (x + w, y + h), (255, 0, 0), 2)
-					cv2.putText(snap, "Blue Colour", (x, y - 10),
+					cv2.putText(snap, "CubeSat Detected!", (x, y - 10),
 								cv2.FONT_HERSHEY_SIMPLEX, 1.0, (255, 0, 0), 2)
 
 
 		# show and check for quit
 		cv2.imshow("Debris Detection", snap)
-		if cv2.waitKey(1) & 0xFF == ord('q'):
+		if cv2.waitKey(10) & 0xFF == ord('q'):
 			is_running = False
 			break
 
