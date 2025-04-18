@@ -73,7 +73,7 @@ def capture_frame():
 
 def debris_detect():
 	global is_running
-	kernel = np.ones((5, 5), np.uint8)
+	kernel = np.ones((5, 5), "uint8")
 
 	# Continue processing frames while is_running is True
 	while (is_running):
@@ -81,7 +81,7 @@ def debris_detect():
 			snap = color_frame.copy() if color_frame is not None else None
 			
 		if snap is None:
-			time.sleep(0.01)
+			time.sleep(1)
 			continue
 		
 		if need_color:
@@ -93,8 +93,10 @@ def debris_detect():
 			lower2, upper2 = np.array([0, 150, 170]), np.array([10, 255, 255])
 			mask1 = cv2.inRange(hsv, lower1, upper1)
 			mask2 = cv2.inRange(hsv, lower2, upper2)
-			red_mask = cv2.dilate(cv2.bitwise_or(mask1, mask2), kernel)
-			res_red   = cv2.bitwise_and(snap, snap, mask=red_mask)
+			red_mask1 = cv2.dilate(mask1, kernel)
+			red_mask2 = cv2.dilate(mask2, kernel)
+			res_red1   = cv2.bitwise_and(snap, snap, mask=red_mask1)
+			res_red2   = cv2.bitwise_and(snap, snap, mask=red_mask1)
 
 			# Set range for green color and define mask
 			green_lower = np.array([25, 100, 100], np.uint8)
@@ -112,32 +114,43 @@ def debris_detect():
 
 
 			# show the extracted color regions
-			cv2.imshow("Red Detection",   res_red)
-			cv2.imshow("Green Detection", res_green)
-			cv2.imshow("Blue Detection",  res_blue)
+			#cv2.imshow("Red Detection",   res_red1)
+			#cv2.imshow("Green Detection", res_green)
+			#cv2.imshow("Blue Detection",  res_blue)
 
-			contours, _ = cv2.findContours(red_mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-			for c in contours:
+			contours, hierarchy = cv2.findContours(red_mask1, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+			
+			for pic, contour in enumerate(contours):
+				if cv2.contourArea(contour) > 300:
+					x, y, w, h = cv2.boundingRect(contour)
+					cv2.rectangle(snap, (x, y), (x + w, y + h), (0, 0, 255), 2)
+					cv2.putText(snap, "Red Colour", (x, y - 10),
+								cv2.FONT_HERSHEY_SIMPLEX, 1.0, (0, 0, 255), 2)
+			
+			
+			contours, hierarchy = cv2.findContours(red_mask2, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+			
+			for pic, contour in enumerate(contours):
 				if cv2.contourArea(c) > 300:
-					x, y, w, h = cv2.boundingRect(c)
+					x, y, w, h = cv2.boundingRect(contour)
 					cv2.rectangle(snap, (x, y), (x + w, y + h), (0, 0, 255), 2)
 					cv2.putText(snap, "Red Colour", (x, y - 10),
 								cv2.FONT_HERSHEY_SIMPLEX, 1.0, (0, 0, 255), 2)
 
 			# — Green
-			contours, _ = cv2.findContours(green_mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-			for c in contours:
+			contours, hierarchy = cv2.findContours(green_mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+			for pic, contour in enumerate(contours):
 				if cv2.contourArea(c) > 300:
-					x, y, w, h = cv2.boundingRect(c)
+					x, y, w, h = cv2.boundingRect(contours)
 					cv2.rectangle(snap, (x, y), (x + w, y + h), (0, 255, 0), 2)
 					cv2.putText(snap, "Green Colour", (x, y - 10),
 								cv2.FONT_HERSHEY_SIMPLEX, 1.0, (0, 255, 0), 2)
 
 			# — Blue
-			contours, _ = cv2.findContours(blue_mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-			for c in contours:
+			contours, hierarchy = cv2.findContours(blue_mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+			for pic, contour in enumerate(contours):
 				if cv2.contourArea(c) > 300:
-					x, y, w, h = cv2.boundingRect(c)
+					x, y, w, h = cv2.boundingRect(contours)
 					cv2.rectangle(snap, (x, y), (x + w, y + h), (255, 0, 0), 2)
 					cv2.putText(snap, "Blue Colour", (x, y - 10),
 								cv2.FONT_HERSHEY_SIMPLEX, 1.0, (255, 0, 0), 2)
