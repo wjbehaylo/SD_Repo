@@ -88,29 +88,28 @@ def debris_detect():
 			print("In debris color")
 		
 			# red
-			red = np.uint8([[[0, 0, 255]]]) # Here insert the BGR values which you want to convert to HSV
-			hsvRed = cv2.cvtColor(red, cv2.COLOR_BGR2HSV)
-			lowerRed = hsvRed[0][0][0] - 10, 100, 100
-			upperRed = hsvRed[0][0][0] - 10, 100, 100
-			red_mask = cv2.inRange(hsvRed, lowerRed, upperRed)
+			lower1 = np.array([136, 87, 111], np.uint8)
+			upper1 = np.array([180, 255, 255], np.uint8)
+			lower2 = np.array([0, 150, 170], np.uint8)
+			upper2 = np.array([20, 255, 255], np.uint8)
+			red_mask1 = cv2.inRange(hsv, lower1, upper1)
+			red_mask2 = cv2.inRange(hsv, lower2, upper2)
 
 			# Set range for green color and define mask
-			green = np.uint8([[[0, 255, 0]]]) # Here insert the BGR values which you want to convert to HSV
-			hsvGreen = cv2.cvtColor(green, cv2.COLOR_BGR2HSV)
-			green_lower = hsvGreen[0][0][0] - 10, 100, 100
-			green_upper = hsvGreen[0][0][0] + 10, 255, 255
-			green_mask = cv2.inRange(hsvGreen, green_lower, green_upper) 
+			green_lower = np.array([50, 90, 70], np.uint8)
+			green_upper = np.array([90, 255, 255], np.uint8)
+			green_mask = cv2.inRange(hsv, green_lower, green_upper) 
 
 			# Set range for blue color and define mask
-			blue = np.uint8([[[255, 0, 0]]]) # Here insert the BGR values which you want to convert to HSV
-			hsvBlue= cv2.cvtColor(blue, cv2.COLOR_BGR2HSV)
-			blue_lower = hsvBlue[0][0][0] - 10, 100, 100
-			blue_upper = hsvBlue[0][0][0] + 10, 255, 255
-			blue_mask = cv2.inRange(hsvBlue, blue_lower, blue_upper)
+			blue_lower = np.array([94, 80, 2], np.uint8)
+			blue_upper = np.array([120, 255, 255], np.uint8)
+			blue_mask = cv2.inRange(hsv, blue_lower, blue_upper)
 
 			kernel = np.ones((5, 5), "uint8")
-			red_mask = cv2.dilate(red_mask, kernel) 
-			res_red1   = cv2.bitwise_and(snap, snap, mask=red_mask)
+			red_mask1 = cv2.dilate(red_mask1, kernel) 
+			red_mask2 = cv2.dilate(red_mask2, kernel) 
+			res_red1   = cv2.bitwise_and(snap, snap, mask=red_mask1)
+			res_red2   = cv2.bitwise_and(snap, snap, mask=red_mask2)
 
 			# For green color 
 			green_mask = cv2.dilate(green_mask, kernel) 
@@ -125,7 +124,7 @@ def debris_detect():
 			greenDetected = False
 			blueDetected  = False
 
-			contoursR1, hierarchy = cv2.findContours(red_mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+			contoursR1, hierarchy = cv2.findContours(red_mask1, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 			for pic, contour in enumerate(contoursR1):
 				if cv2.contourArea(contour) > 1000:
 					x, y, w, h = cv2.boundingRect(contour)
@@ -138,6 +137,17 @@ def debris_detect():
 						redDetected  = True
 			
 			
+			contoursR2, hierarchy = cv2.findContours(red_mask2, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+			for pic, contour in enumerate(contoursR2):
+				if cv2.contourArea(contour) > 1000:
+					x, y, w, h = cv2.boundingRect(contour)
+					snap = cv2.rectangle(snap, (x, y), (x + w, y + h), (0, 0, 255), 2)
+					if len(contoursR2) >= 6:
+						cv2.putText(snap, "RocketBody Detected!", (x, y - 10),
+								cv2.FONT_HERSHEY_SIMPLEX, 1.0, (0, 0, 255), 2)
+						debris_color = "red"
+						need_color   = False
+						redDetected  = True
 
 			# — Green
 			contoursG, hierarchy = cv2.findContours(green_mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
