@@ -23,13 +23,16 @@ Circuitry: Connect the following listed pins
   - Digital 5 on Arduino is the step pin to connect to the driver for pair1
   - Each of these drivers also has ground pins that need to connect to the bus
 
+  - Digital 10 on Arduino is end stop 0, top of pair 0
+  - Digital 11 on Arduino is end stop 1, bot of pair 0
+  - Digital 12 on Arduino is end stop 2, bot of pair 1
+  - Digital 13 on Arduino is end stop 3, top of pair 1
 
-  - Digital 11 on Arduino is the signal pin for the 0 degree end stop, this is the orange cable
-  - Digital 12 on Arduino is the signal pin for the 90 degree end stop, this is the purple cable
   - GND on Arduino to GND bus for rotational end stops
   - 5V on Arduino to 5V bus for rotational end stops
   - Bus to pins for ground and 5V on the end stops
   - GND on Arduino to fifth pin from top left (09) on Pi
+
 Libraries to be included:
  - Wire.h (For I2C communication)
  - AccelStepper.h (For controlling stepper motors) 
@@ -40,24 +43,58 @@ Libraries to be included:
 #include <AccelStepper.h>
 #include <MultiStepper.h>
 
-#define FORCE0_Pin A0
-#define FORCE1_Pin A1
-#define FORCE2_Pin A2
-#define FORCE3_Pin A3
+#define FORCE0_PIN A0
+#define FORCE1_PIN A1
+#define FORCE2_PIN A2
+#define FORCE3_PIN A3
 
-#define dirPin_l1 2
-#define stepPin_l1 3
-#define dirPin_l2 12
-#define stepPin_l2 12
-#define joyxPin A0
+#define PAIR0_DIR_PIN 2
+#define PAIR0_STP_PIN 3
+#define PAIR1_DIR_PIN 4
+#define PAIR1_STP_PIN 5
 
-/* COM NOTES
-General: PI Probes ARD for value, sends int response based on status
-Rotational: Rotate to end stop, set position to 0. Get degrees from PI and rotate. Rotate to "plus" from anywhere
-*/ 
+#define ENDSTOP_TOP_0_PIN 10
+#define ENDSTOP_BOT_0_PIN 11
+#define ENDSTOP_BOT_1_PIN 12
+#define ENDSTOP_TOP_1_PIN 13
 
-int xVal;
-int xSpeed;
+#define LIN_ARD_ADD 15
+
+
+//Honestly I'm not sure what of these I will/won't need, I will probably get rid of some and add some as I go through
+volatile uint8_t instruction[32] = {0}; //content of the message
+volatile uint8_t messageLength=0; //length of the message sent
+volatile uint8_t newMessage=0; //1 when we have a message to interpret
+
+
+volatile uint8_t messageReceived=0; //1 if the Pi has prompted the non 20 status, indicating that 'DONE' state is done
+volatile bool configuring = false;
+volatile short ctrlBusy=0; //whether or not the control system is actively busy or not
+volatile short ctrlDone=0; //whether or not the control system is done (1) or not.
+
+//these are the volatile things to record the position and target position of each of the motors, as well as their execution status
+volatile uint8_t executionStatus0=0; //the status of the capturing execution for pair 0
+volatile uint8_t executionStatus1=10; //the status of the capturing execution for pair 1
+volatile long targ_steps_pair0 = 0;
+volatile long targ_steps_pair1 = 0;
+static long curr_steps_pair0;
+static long curr_steps_pair1;
+
+//this is for the FSM states
+//WAIT is while the Arduino is on and waiting for instructions
+//MOVING is while the Arduino is moving its amount
+//DONE is when it is done moving for whatever reason, and waiting for Pi to ask result
+typedef enum {WAIT, MOVING, DONE} state;
+
+//this is for interpretting the data sent from PI
+volatile union FloatUnion 
+{
+uint8_t bytes[4];
+float floatValue;
+} byteFloat;
+
+volatile uint8_t offset = 0; //offset of the message
+
 
 const float lead_step = 0.01; // 0.01mm: Lead/Revolution = 2mm
 const int steps_rev = 400; // 1/2 microstep: Steps/Rev = 200 (no microstep)
@@ -65,50 +102,47 @@ const int threshold = 60;
 const int maxSpeed = 500;
 const int maxAccel = 500;
 
-AccelStepper stepper_lin1(1,stepPin_l1,dirPin_l1);
-AccelStepper stepper_lin2(1,stepPin_l2,dirPin_l2);
+AccelStepper stepper_lin0(AccelStepper::DRIVER, PAIR0_STP_PIN, PAIR0_DIR_PIN);
+AccelStepper stepper_lin1(AccelStepper::DRIVER, PAIR1_STP_PIN, PAIR1_DIR_PIN);
 
 // MultiStepper steppers_lin;
 int numSteppers = 2; // Number of steppers in MultiStepper
 
 void setup() {
-  Serial.begin(9600);
-   // Declare pins as output:
-  stepper_lin1.setMaxSpeed(maxSpeed); // Set max speed stepper
-  stepper_lin1.setAcceleration(maxAccel);
-  // Accel not supported for AccelStepper
-  // stepper_lin1.setCurrentPosition(0); // Set current position for stepper
-  stepper_lin2.setMaxSpeed(maxSpeed);
-  stepper_lin2.setAcceleration(maxAccel);
-  // stepper_lin2.setCurrentPosition(0);
+    // Declare pins as output:
+    stepper_lin0.setMaxSpeed(maxSpeed); // Set max speed stepper
+    stepper_lin0.setAcceleration(maxAccel);
+    // Accel not supported for AccelStepper
+    // stepper_lin1.setCurrentPosition(0); // Set current position for stepper
+    stepper_lin1.setMaxSpeed(maxSpeed);
+    stepper_lin1.setAcceleration(maxAccel);
 
-  // steppers_lin.addStepper(stepper_lin1);
-  // steppers_lin.addStepper(stepper_lin2);
+    //initializing the end stops
+    pinMode(ENDSTOP_TOP_0_PIN, INPUT_PULLUP);
+    pinMode(ENDSTOP_BOT_0_PIN, INPUT_PULLUP);
+    pinMode(ENDSTOP_TOP_1_PIN, INPUT_PULLUP);
+    pinMode(ENDSTOP_BOT_1_PIN, INPUT_PULLUP);
+
+    //initialize the I2C slave
+    Wire.begin(LIN_ARD_ADD); 
+    Wire.onReceive(PiDataReceive); //this is triggered when Raspberry Pi sends data
+    Wire.onRequest(PiDataRequest); //this is triggered when Raspberry Pi requests data
+
+    //initialize the force sensors
+    pinMode(FORCE0_PIN, INPUT);
+    pinMode(FORCE1_PIN, INPUT);
+    pinMode(FORCE2_PIN, INPUT);
+    pinMode(FORCE3_PIN, INPUT);
+
+    //Start serial for debugging
+    //Note that you get rid of this and all serial statements if no longer debugging
+    Serial.begin(9600);
+    Serial.println("Linear Arduino Initialized.");
 }
 
 void loop() {
-  //* Function test code *//
-  // steppers_moveMM(steppers_lin, 100, numSteppers); // + goes up
-  // delay(1000);
-
-  // steppers_moveMM(steppers_lin, 0, numSteppers);
-  // delay(1000);
-
-  //* Joystick code for demo *//
-  xVal = analogRead(joyxPin); // 0-900
-  xSpeed = map(xVal, 0, 900, maxSpeed, -1*maxSpeed);
-
-  // Apply dead zone
-  if (abs(xSpeed) < threshold){
-    xSpeed = 0;
-  }
-
-  stepper_lin1.setSpeed(xSpeed);
-  stepper_lin2.setSpeed(xSpeed);
-
-  stepper_lin1.runSpeed();
-  stepper_lin2.runSpeed();
-  }
+  
+}
 
 void stepper_moveMM (AccelStepper &stepper, float mm) {
   float steps = (mm*steps_rev)/(200*lead_step);
@@ -124,4 +158,50 @@ void steppers_moveMM (MultiStepper &steppers, float mm, int numSteppers) {
   }
   steppers.moveTo(positions);
   steppers.runSpeedToPosition();
+}
+
+//This gets called when the Pi tries to send data over
+//
+void Pi_Data_Receive(){
+    //getting the offset
+    offset = Wire.read();
+
+    //getting the full message
+    while(Wire.available()){
+        instruction[messageLength] = Wire.read(); //get the next byte of info
+        messageLength++;
+    }
+
+    //now we need to decide what to do with the message based on the input offset
+    //if offset=0, we are getting sent the target steps for pair0
+    if(offset==0){
+        byteFloat.bytes[0] = instruction[3];
+        byteFloat.bytes[1] = instruction[2];
+        byteFloat.bytes[2] = instruction[1];
+        byteFloat.bytes[3] = instruction[0];
+        targ_steps_pair0 = byteFloat.floatValue + curr_steps_pair0;
+    }
+    //if offset=1, we are getting sent the target steps for pair1
+    else if(offset==1){
+        byteFloat.bytes[0] = instruction[3];
+        byteFloat.bytes[1] = instruction[2];
+        byteFloat.bytes[2] = instruction[1];
+        byteFloat.bytes[3] = instruction[0];
+        targ_steps_pair1 = byteFloat.floatValue + curr_steps_pair1;
+    }
+    //if offset=2, we are getting the steps for both pairs
+    else if(offset==2){
+        byteFloat.bytes[0] = instruction[3];
+        byteFloat.bytes[1] = instruction[2];
+        byteFloat.bytes[2] = instruction[1];
+        byteFloat.bytes[3] = instruction[0];
+        targ_steps_pair0=byteFloat.floatValue + curr_steps_pair0;
+        targ_steps_pair1=byteFloat.floatValue + curr_steps_pair1;
+    }
+    else{
+        //debugging
+        Serial.println("Unknown offset");
+    }
+    //Because we have multiple offsets to read from for the status, 
+
 }

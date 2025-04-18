@@ -52,7 +52,7 @@ OFFSET:
 REQUESTING: this will be the status communicated from the ARDUINO to the PI regarding linear movement.
 Note that this function, lin_ARD_Read, returns a two element array.
 OFFSET:
-    0:
+    3:
         This is just about pair0 movement
         Status:
             0:
@@ -68,7 +68,7 @@ OFFSET:
             5:
                 pair0 Unrecognized movement command, could be due to incomplete or corrupt data
                 
-    1:
+    4:
         This is just about pair1 movement
         Status:
             10:
@@ -84,7 +84,7 @@ OFFSET:
             15:
                 pair1 Unrecognized movement command, could be due to incomplete or corrupt data
 
-    2:
+    5:
         This is for both arm movement. 
         Note that for this, each of the output bytes will be set to non-10 divisible values, meaning they will both contribute to UART status when checked
         
@@ -203,7 +203,7 @@ def lin_ARD_Read(OFFSET):
     status={0,0}
     try:
         while True:
-            sleep(1)
+            sleep(10)
             #read block of data from arduino reg based on arduino's offset
             if OFFSET == 0 or OFFSET == 1:
                 status[OFFSET] = i2c_arduino.read_byte_data(lin_ard_add, OFFSET)

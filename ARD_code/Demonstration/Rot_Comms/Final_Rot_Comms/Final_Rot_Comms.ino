@@ -84,8 +84,6 @@ Libraries to be included:
  volatile bool configuring = false;
  volatile short ctrlBusy=0; //whether or not the control system is actively busy or not
  volatile short ctrlDone=0; //whether or not the control system is done (1) or not.
- volatile bool triggered0 = false;
- volatile bool triggered90 = false;
  /*
   STATUSES:
   status == 20:
@@ -127,15 +125,17 @@ Libraries to be included:
  
  void setup() {
  // Declare pins as output for the motor
- stepper_gear1.setMaxSpeed(100);
- stepper_gear1.setAcceleration(100);
+ stepper_gear1.setMaxSpeed(500);
+ stepper_gear1.setAcceleration(500);
  stepper_gear1.setCurrentPosition(0);
  
  //debugging
+ /*
  stepper_gear1.moveTo(20);
  stepper_gear1.runToPosition();
  stepper_gear1.moveTo(0);
  stepper_gear1.runToPosition();
+ */
  
  
  //declare pins for the end stops
