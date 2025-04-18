@@ -46,7 +46,7 @@ searcher = True
 
 # Initialize webcam
 webcam = cv2.VideoCapture(0)
-webcam.set(cv2.CAP_PROP_FPS, 30) #set frames per second so the camera doesn't get overwhelmed
+#webcam.set(cv2.CAP_PROP_FPS, 30) #set frames per second so the camera doesn't get overwhelmed
 
 
 def capture_frame(): 
@@ -73,7 +73,6 @@ def capture_frame():
 
 def debris_detect():
 	global is_running
-	kernel = np.ones((5, 5), "uint8")
 
 	# Continue processing frames while is_running is True
 	while (is_running):
@@ -89,26 +88,37 @@ def debris_detect():
 			print("In debris color")
 		
 			# red
-			lower1, upper1 = np.array([136, 87, 111]), np.array([180, 255, 255])
-			lower2, upper2 = np.array([0, 150, 170]), np.array([10, 255, 255])
+			lower1 = np.array([136, 87, 111], np.uint8)
+			upper1 = np.array([180, 255, 255], np.uint8)
+			lower2 = np.array([0, 150, 170], np.uint8)
+			upper2 = np.array([10, 255, 255], np.uint8)
 			red_mask1 = cv2.inRange(hsv, lower1, upper1)
 			red_mask2 = cv2.inRange(hsv, lower2, upper2)
-			res_red1   = cv2.bitwise_and(snap, snap, mask=red_mask1)
-			res_red2   = cv2.bitwise_and(snap, snap, mask=red_mask1)
 
 			# Set range for green color and define mask
 			green_lower = np.array([50, 52, 72], np.uint8)
 			green_upper = np.array([102, 255, 255], np.uint8)
 			green_mask = cv2.inRange(hsv, green_lower, green_upper) 
-			res_green   = cv2.bitwise_and(snap, snap, mask=green_mask)
 
 			# Set range for blue color and define mask
 			blue_lower = np.array([94, 80, 2], np.uint8)
 			blue_upper = np.array([120, 255, 255], np.uint8)
-			blue_mask = cv2.inRange(hsv, blue_lower, blue_upper) 
+			blue_mask = cv2.inRange(hsv, blue_lower, blue_upper)
+
+
+			kernel = np.ones((5, 5), "uint8")
+			red_mask1 = cv2.dilate(red_mask1, kernel) 
+			red_mask2 = cv2.dilate(red_mask2, kernel) 
+			res_red1   = cv2.bitwise_and(snap, snap, mask=red_mask1)
+			res_red2   = cv2.bitwise_and(snap, snap, mask=red_mask2)
+
+			# For green color 
+			green_mask = cv2.dilate(green_mask, kernel) 
+			res_green   = cv2.bitwise_and(snap, snap, mask=green_mask)
+
+			#For blue
+			blue_mask = cv2.dilate(blue_mask, kernel)
 			res_blue   = cv2.bitwise_and(snap, snap, mask=blue_mask)
-
-
 			# show the extracted color regions
 			#cv2.imshow("Red Detection",   res_red1)
 			#cv2.imshow("Green Detection", res_green)
@@ -124,7 +134,6 @@ def debris_detect():
 			
 			
 			contours, hierarchy = cv2.findContours(red_mask2, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-			
 			for pic, contour in enumerate(contours):
 				if cv2.contourArea(contour) > 300:
 					x, y, w, h = cv2.boundingRect(contour)
@@ -155,9 +164,9 @@ def debris_detect():
 		cv2.imshow("Debris Detection", snap)
 		if cv2.waitKey(10) & 0xFF == ord('q'):
 			is_running = False
+			webcam.release() 
+			cv2.destroyAllWindows() 
 			break
-
-	cv2.destroyAllWindows()
 
 if __name__ == "__main__":
 	# start threads
