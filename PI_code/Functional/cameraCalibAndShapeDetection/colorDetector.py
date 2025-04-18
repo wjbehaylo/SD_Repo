@@ -102,17 +102,21 @@ def debris_detect():
 			lower2, upper2 = np.array([0, 150, 170]), np.array([10, 255, 255])
 			mask1 = cv2.inRange(hsv, lower1, upper1)
 			mask2 = cv2.inRange(hsv, lower2, upper2)
-			red_mask = cv2.dilate(mask1 | mask2, kernel)
+			red_mask = cv2.dilate(mask1 | mask2)
 
 			# Set range for green color and define mask
 			green_lower = np.array([50, 52, 72], np.uint8)
 			green_upper = np.array([102, 255, 155], np.uint8)
-			green_mask = cv2.inRange(hsv, green_lower, green_upper, kernel) 
+			green_mask = cv2.inRange(hsv, green_lower, green_upper) 
+			# 2) clean it up a bit
+			green_clean = cv2.morphologyEx(green_mask, cv2.MORPH_OPEN, kernel)
+			# only the largest contour
+			cnts, _ = cv2.findContours(green_clean, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
 			# Set range for blue color and define mask
 			blue_lower = np.array([94, 80, 2], np.uint8)
 			blue_upper = np.array([120, 255, 255], np.uint8)
-			blue_mask = cv2.inRange(hsv, blue_lower, blue_upper, kernel) 
+			blue_mask = cv2.inRange(hsv, blue_lower, blue_upper) 
 
 			# apply mask to the original snap
 			red_area   = cv2.bitwise_and(snap, snap, mask=red_mask)
