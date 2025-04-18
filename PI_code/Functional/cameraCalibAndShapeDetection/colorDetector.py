@@ -96,13 +96,13 @@ def debris_detect():
 			red_mask2 = cv2.inRange(hsv, lower2, upper2)
 
 			# Set range for green color and define mask
-			green_lower = np.array([30, 40, 40], np.uint8)
-			green_upper = np.array([90, 255, 255], np.uint8)
-			green_mask = cv2.inRange(hsv, green_lower, green_upper) 
+			#green_lower = np.array([30, 40, 40], np.uint8)
+			#green_upper = np.array([90, 255, 255], np.uint8)
+			#green_mask = cv2.inRange(hsv, green_lower, green_upper) 
 
 			# Set range for blue color and define mask
-			blue_lower = np.array([100, 150, 0], np.uint8)
-			blue_upper = np.array([140, 100, 255], np.uint8)
+			blue_lower = np.array([30, 40, 40], np.uint8)
+			blue_upper = np.array([90, 255, 255], np.uint8)
 			blue_mask = cv2.inRange(hsv, blue_lower, blue_upper)
 
 			kernel = np.ones((5, 5), "uint8")
@@ -113,8 +113,8 @@ def debris_detect():
 			res_red2   = cv2.bitwise_and(snap, snap, mask=red_mask2)
 
 			# For green color 
-			green_mask = cv2.dilate(green_mask, kernel) 
-			res_green   = cv2.bitwise_and(snap, snap, mask=green_mask)
+			#green_mask = cv2.dilate(green_mask, kernel) 
+			#res_green   = cv2.bitwise_and(snap, snap, mask=green_mask)
 
 			#For blue
 			blue_mask = cv2.dilate(blue_mask, kernel)
@@ -122,7 +122,7 @@ def debris_detect():
 
 			# ─── Detection flags ─────────────────────────────────────────
 			redDetected   = False
-			greenDetected = False
+			#greenDetected = False
 			blueDetected  = False
 
 			contoursR1, hierarchy = cv2.findContours(red_mask1, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
@@ -151,7 +151,7 @@ def debris_detect():
 						redDetected  = True
 
 			# — Green
-			contoursG, hierarchy = cv2.findContours(green_mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+			'''contoursG, hierarchy = cv2.findContours(green_mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 			for pic, contour in enumerate(contoursG):
 				if cv2.contourArea(contour) > 500:
 					x, y, w, h = cv2.boundingRect(contour)
@@ -161,7 +161,7 @@ def debris_detect():
 								cv2.FONT_HERSHEY_SIMPLEX, 1.0, (0, 255, 0), 2)
 						debris_color = "green"
 						need_color = False
-						greenDetected = True
+						greenDetected = True'''
 
 			# — Blue
 			contoursB, hierarchy = cv2.findContours(blue_mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
