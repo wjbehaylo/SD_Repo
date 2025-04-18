@@ -1,5 +1,38 @@
+/* Purpose: This is a functional file to set up the Rotational Arduino as an I2C Slave 
+        for receiving rotational commands from the Raspberry Pi and 
+        controlling stepper motors for linear and rotational motion.
+Contributors: Walter, Noah Kelly
+Sources: SEED_LAB repository for previous examples
+        IEEE 754 float conversion reference
+        Arduino Wire Library Documentation (https://www.arduino.cc/reference/en/libraries/wire/)
+        Stepper Library Documentation (https://www.arduino.cc/reference/en/libraries/stepper/)
+Relevant Files: This file is related to the ARD_Comms.py file located in Demonstration/PI_code.
+Circuitry: Connect the following listed pins for I2C communication:
+  - A4 is SDA on Arduino, second pin from top on left (03) is SDA on Pi
+  - A5 is SCL on Arduino, third pin from top on left (05) is SCL on Pi
+  - Digital 2 on Arduino is the direction pin to connect to the driver
+  - Digital 3 on Arduino is the Step pin to connect to the driver
+  - Digital 11 on Arduino is the signal pin for the 0 degree end stop, this is the orange cable
+  - Digital 12 on Arduino is the signal pin for the 90 degree end stop, this is the purple cable
+  - GND on Arduino to GND bus for rotational end stops
+  - 5V on Arduino to 5V bus for rotational end stops
+  - Bus to pins for ground and 5V on the end stops
+  - GND on Arduino to fifth pin from top left (09) on Pi
+Libraries to be included:
+ - Wire.h (For I2C communication)
+ - AccelStepper.h (For controlling stepper motors) 
+ - MultiStepper.h (For controlling multiple motors at the same time)
+ 
+ */
+
 #include <AccelStepper.h>
 #include <MultiStepper.h>
+
+#define FORCE0_Pin A0
+#define FORCE1_Pin A1
+#define FORCE2_Pin A2
+#define FORCE3_Pin A3
+
 #define dirPin_l1 2
 #define stepPin_l1 3
 #define dirPin_l2 12
