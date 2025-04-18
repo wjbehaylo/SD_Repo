@@ -132,8 +132,10 @@ Libraries to be included:
  stepper_gear1.setCurrentPosition(0);
  
  //debugging
- //stepper_gear1.moveTo(20);
- //stepper_gear1.runToPosition();
+ stepper_gear1.moveTo(20);
+ stepper_gear1.runToPosition();
+ stepper_gear1.moveTo(0);
+ stepper_gear1.runToPosition();
  
  
  //declare pins for the end stops
@@ -172,80 +174,79 @@ Libraries to be included:
  //the functionality varies depending on what we are actively doing
  
  //debugging
- Serial.println(state); //0 is waiting for message, 1 is moving, 2 is done
- delay(3000); //wait 1 second between this, just for debugging
+ //Serial.println(state); //0 is waiting for message, 1 is moving, 2 is done
+ delay(3000); //wait 3 seconds between this, just for debugging
  
  
- switch(state){
- case WAIT:
- Serial.println("Waiting for message");
- if(newMessage==1){
- //debugging
- Serial.print("newMessage: ");
- Serial.println(newMessage);
- 
- //here we will go into the moving state, and begin to move
- //the targetAngle is set in the receiveData ISR, 
- state=MOVING;
- //we also need to signal that we no longer have a new message
- newMessage=0;
- break;
- }
- else{
- state=WAIT;
- break;
- }
- case MOVING:
- //debugging:
- //Serial.print("ctrlDone: ");
- //Serial.println(ctrlDone);
- //Serial.print("ctrlBusy: ");
- //Serial.println(ctrlBusy);
- 
- //if we are not actively controlling the system, 
- if(ctrlDone==1){
- //if we are done moving, we will go to the next state, and set the value of 'execution status' to the resulf of our move.
- ctrlDone=0;
- state=DONE;
- break;
- }
- if(ctrlBusy==0){
- //here we add in whatever move function
- 
- ctrlBusy=1;
- //============MOVE FUNCTION=================
- //debugging
- Serial.println("Starting moving!");
- stepper_rotate(); //this has all the movement in it.
- state=MOVING;
- break;
- }
- 
- //if we are here we haven't just started or just finished moving
- Serial.println("Still Moving");
- break;
- case DONE:
- //if the Pi has received our updated message, we can move back to waiting
- if(messageReceived==1){
- //debugging
- Serial.println("Pi has sampled the non-20 messsage");
- 
- messageReceived=0;
- state=WAIT;
- break;
- }
- else{
- state=DONE;
- break;
- }
- }
+  switch(state){
+    case WAIT:
+      //Serial.println("Waiting for message");
+      if(newMessage==1){
+        //debugging
+        //Serial.print("newMessage: ");
+        //Serial.println(newMessage);
+        
+        //here we will go into the moving state, and begin to move
+        //the targetAngle is set in the receiveData ISR, 
+        state=MOVING;
+        //we also need to signal that we no longer have a new message
+        newMessage=0;
+        break;
+      }
+      else{
+        state=WAIT;
+        break;
+      }
+    case MOVING:
+      //debugging:
+      //Serial.print("ctrlDone: ");
+      //Serial.println(ctrlDone);
+      //Serial.print("ctrlBusy: ");
+      //Serial.println(ctrlBusy);
+      
+      //if we are not actively controlling the system, 
+      if(ctrlDone==1){
+        //if we are done moving, we will go to the next state, and set the value of 'execution status' to the resulf of our move.
+        ctrlDone=0;
+        state=DONE;
+        break;
+      }
+      if(ctrlBusy==0){
+        //here we add in whatever move function
+        ctrlBusy=1;
+        //============MOVE FUNCTION=================
+        //debugging
+        //Serial.println("Starting moving!");
+        stepper_rotate(); //this has all the movement in it.
+        state=MOVING;
+        break;
+      }
+      
+      //if we are here we haven't just started or just finished moving
+      //Serial.println("Still Moving");
+    break;
+  case DONE:
+  //if the Pi has received our updated message, we can move back to waiting
+    if(messageReceived==1){
+      //debugging
+      //Serial.println("Pi has sampled the non-20 messsage");
+      
+      messageReceived=0;
+      state=WAIT;
+      break;
+    }
+    else{
+      state=DONE;
+      break;
+    }
+  }
  //at this point, we are done with state transition logic. 
  //I am a bit concerned at the simplicity as compared to seed lab to be honest, but I think this all makes sense
  //there was just much more logic in the other one after the loop ended.
  
  
  
- }
+}
  
  //the move function will need to work in a manner that uses a while loop which ends when end stops are triggered or actual position meets target position
 void stepper_rotate () {
@@ -254,14 +255,14 @@ void stepper_rotate () {
   //we go here if we will be rotating negatively
   
   //debugging
-  Serial.println("Entering stepper_rotate");
+  /*Serial.println("Entering stepper_rotate");
   Serial.print("Current angle: ");
   Serial.println(currentAngle);
   Serial.print("Target angle: ");
   Serial.println(targetAngle);
-  
+  */
   if(targetAngle<currentAngle){
-    Serial.println("Entering targetAngle<currentAngle");
+    //Serial.println("Entering targetAngle<currentAngle");
     while(targetAngle<currentAngle && digitalRead(ENDSTOP_0_SIGNAL_PIN)==HIGH){
       //now we will move by 0.1 degree in the negative direction, and update current angle
       stepper_moveTheta(currentAngle - increment); // need to confirm direction (+/-),
@@ -273,15 +274,7 @@ void stepper_rotate () {
   }
   //we go here if we will be rotating positively
   else if (targetAngle>currentAngle){
-    //debugging
-    Serial.println("entering targetAngle>currentAngle");
-    if(digitalRead(ENDSTOP_90_SIGNAL_PIN)==HIGH){
-      Serial.println("Endstop 90 signal pin not-triggered");
-    }
-    if(digitalRead(ENDSTOP_90_SIGNAL_PIN)==LOW){
-      Serial.println("Endstop 90 signal pin triggered");
-    }
-      while(targetAngle>currentAngle && digitalRead(ENDSTOP_90_SIGNAL_PIN)==HIGH){
+    while(targetAngle>currentAngle && digitalRead(ENDSTOP_90_SIGNAL_PIN)==HIGH){
       //now we will move by 0.1 degree in the positive direction, and update current angle
       stepper_moveTheta(currentAngle + increment); // need to confirm direction (+/-)
       currentAngle = currentAngle + increment; //updating in moveTheta right now, rather than elsewhere
@@ -290,17 +283,19 @@ void stepper_rotate () {
     }
   }
   else {
-    Serial.println("target angle = current angle");
+    //Serial.println("target angle = current angle");
   }
   //control is no longer busy and is now done
   ctrlBusy=0;
   ctrlDone=1;
   
   //debugging
+  /*
   Serial.print("Current angle: ");
   Serial.println(currentAngle);
   Serial.print("Target Angle: ");
   Serial.println(targetAngle);
+  */
   
   //now we need to determine our output status based on what flags are set. We gotta consider the configuring first because = and endstop 0 are the same
   if(int(targetAngle) == int(currentAngle)){
@@ -323,7 +318,7 @@ void stepper_rotate () {
   }
   
   else{ // if we get here it broke somehow or something
-    Serial.println("Movement Failure");
+    //Serial.println("Movement Failure");
     executionStatus=25;
     return;
   }
@@ -367,6 +362,7 @@ void PiDataReceive(){
     configuring = true;
   }
   else{
+    //debugging
     Serial.println("Unknown offset");
   } 
   //debugging check tbh
@@ -429,20 +425,25 @@ void triggered90Interrupt(){
  //this function should have an input of the stepper to be moved, as well as the amount to move it.
  void stepper_moveTheta (float theta) {
   //debugging
+  /*
   Serial.print("Trying to move to a total of degrees theta: ");
   Serial.println(theta);
-  
+  */
+
   //debugging
+  /*
   Serial.print("Current angle is: ");
   Serial.println(currentAngle);
-  
+  */
   
   //steps represents the number of steps that need to be moved
   int steps = gear_ratio*theta*steps_rev/360;
   
   //debugging
+  /*
   Serial.print("This translates to a total of steps: ");
   Serial.println(steps);
+  */
   
   stepper_gear1.moveTo(steps); //this is the absolute target to move to, not the number of steps
   stepper_gear1.runToPosition(); //this is a blocking statement to move it the desired amount, in theory
