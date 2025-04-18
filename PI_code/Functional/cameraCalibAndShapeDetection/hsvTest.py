@@ -1,63 +1,40 @@
-import cv2
+import cv2 as cv
 import numpy as np
+
+Winname = "Frame:"
 
 def nothing(x):
     pass
 
-def calibrate_hsv(source=0):
-    """
-    Launches a window with 6 trackbars (H_min, S_min, V_min, H_max, S_max, V_max).
-    Displays your webcam feed and the resulting mask in real time.
-    Hit ‘s’ to print and return your chosen ranges; ‘q’ to quit without saving.
-    """
-    cap = cv2.VideoCapture(source)
-    cv2.namedWindow("HSV Calibration")
+cv.namedWindow('Frame:')
+# H, S,V are for Lower Boundaries
+#H2,S2,V2 are for Upper Boundaries
+cv.createTrackbar('H',Winname,0,255,nothing)
+cv.createTrackbar('S',Winname,0,255,nothing)
+cv.createTrackbar('V',Winname,0,255,nothing)
+cv.createTrackbar('H2',Winname,0,255,nothing)
+cv.createTrackbar('S2',Winname,0,255,nothing)
+cv.createTrackbar('V2',Winname,0,255,nothing)
 
-    # create trackbars for min/max HSV
-    for name, val in zip(
-        ("H_min","S_min","V_min","H_max","S_max","V_max"),
-        (0, 0, 0, 180, 255, 255)
-    ):
-        cv2.createTrackbar(name, "HSV Calibration", val, 180 if 'H' in name else 255, nothing)
 
-    while True:
-        ret, frame = cap.read()
-        if not ret:
-            break
+cap = cv.VideoCapture(0)
 
-        hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+while cap.isOpened():
+    _, frame = cap.read()
+    H = cv.getTrackbarPos('H', 'Frame:')
+    S = cv.getTrackbarPos('S', 'Frame:')
+    V = cv.getTrackbarPos('V', 'Frame:')
+    H2 = cv.getTrackbarPos('H2', 'Frame:')
+    S2 = cv.getTrackbarPos('S2', 'Frame:')
+    V2 = cv.getTrackbarPos('V2', 'Frame:')
+    hsv = cv.cvtColor(frame, cv.COLOR_BGR2HSV)
+    lower_boundary = np.array([H, S, V])
+    upper_boundary = np.array([H2,S2,V2])
+    mask = cv.inRange(hsv, lower_boundary, upper_boundary)
+    final = cv.bitwise_and(frame, frame, mask=mask)
+    cv.imshow("Frame:", final)
 
-        # read trackbar positions
-        h0 = cv2.getTrackbarPos("H_min", "HSV Calibration")
-        s0 = cv2.getTrackbarPos("S_min", "HSV Calibration")
-        v0 = cv2.getTrackbarPos("V_min", "HSV Calibration")
-        h1 = cv2.getTrackbarPos("H_max", "HSV Calibration")
-        s1 = cv2.getTrackbarPos("S_max", "HSV Calibration")
-        v1 = cv2.getTrackbarPos("V_max", "HSV Calibration")
+    if cv.waitKey(1) == ord('q'): break
 
-        lower = np.array([h0, s0, v0])
-        upper = np.array([h1, s1, v1])
-        mask  = cv2.inRange(hsv, lower, upper)
-
-        # show feed and mask side by side
-        combined = np.hstack([frame, cv2.cvtColor(mask, cv2.COLOR_GRAY2BGR)])
-        cv2.imshow("HSV Calibration", combined)
-
-        key = cv2.waitKey(1) & 0xFF
-        if key == ord('s'):
-            print(f"Chosen range: lower={lower.tolist()}, upper={upper.tolist()}")
-            cap.release()
-            cv2.destroyAllWindows()
-            return lower, upper
-        elif key == ord('q'):
-            break
-
-    cap.release()
-    cv2.destroyAllWindows()
-    return None, None
-
-if __name__ == "__main__":
-    # run this once to get good HSV bounds for a given color
-    lower, upper = calibrate_hsv(0)
-    if lower is not None:
-        print("Apply these in your mask:", lower, upper)
+cap.release()
+cv.destroyAllWindows()
