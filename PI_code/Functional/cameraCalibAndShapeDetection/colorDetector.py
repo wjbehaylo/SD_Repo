@@ -96,8 +96,8 @@ def debris_detect():
 			red_mask2 = cv2.inRange(hsv, lower2, upper2)
 
 			# Set range for green color and define mask
-			green_lower = np.array([50, 90, 70], np.uint8)
-			green_upper = np.array([90, 255, 255], np.uint8)
+			green_lower = np.array([25, 90, 70], np.uint8)
+			green_upper = np.array([102, 255, 255], np.uint8)
 			green_mask = cv2.inRange(hsv, green_lower, green_upper) 
 
 			# Set range for blue color and define mask
@@ -126,7 +126,7 @@ def debris_detect():
 
 			contoursR1, hierarchy = cv2.findContours(red_mask1, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 			for pic, contour in enumerate(contoursR1):
-				if cv2.contourArea(contour) > 1000:
+				if cv2.contourArea(contour) > 500:
 					x, y, w, h = cv2.boundingRect(contour)
 					snap = cv2.rectangle(snap, (x, y), (x + w, y + h), (0, 0, 255), 2)
 					if len(contoursR1) >= 6:
@@ -139,7 +139,7 @@ def debris_detect():
 			
 			contoursR2, hierarchy = cv2.findContours(red_mask2, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 			for pic, contour in enumerate(contoursR2):
-				if cv2.contourArea(contour) > 1000:
+				if cv2.contourArea(contour) > 500:
 					x, y, w, h = cv2.boundingRect(contour)
 					snap = cv2.rectangle(snap, (x, y), (x + w, y + h), (0, 0, 255), 2)
 					if len(contoursR2) >= 6:
@@ -152,7 +152,7 @@ def debris_detect():
 			# — Green
 			contoursG, hierarchy = cv2.findContours(green_mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 			for pic, contour in enumerate(contoursG):
-				if cv2.contourArea(contour) > 1000:
+				if cv2.contourArea(contour) > 500:
 					x, y, w, h = cv2.boundingRect(contour)
 					snap = cv2.rectangle(snap, (x, y), (x + w, y + h), (0, 255, 0), 2)
 					if len(contoursG) >= 6:
@@ -165,7 +165,7 @@ def debris_detect():
 			# — Blue
 			contoursB, hierarchy = cv2.findContours(blue_mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 			for pic, contour in enumerate(contoursB):
-				if cv2.contourArea(contour) > 1000:
+				if cv2.contourArea(contour) > 500:
 					x, y, w, h = cv2.boundingRect(contour)
 					snap = cv2.rectangle(snap, (x, y), (x + w, y + h), (255, 0, 0), 2)
 					if len(contoursB) >= 6:
@@ -178,13 +178,13 @@ def debris_detect():
 
 
 
-		# show and check for quit
-		cv2.imshow("Debris Detection", snap)
-		if cv2.waitKey(10) & 0xFF == ord('q'):
-			is_running = False
-			webcam.release() 
-			cv2.destroyAllWindows() 
-			break
+			# show and check for quit
+			cv2.imshow("Debris Detection", snap)
+			if cv2.waitKey(10) & 0xFF == ord('q'):
+				is_running = False
+				webcam.release() 
+				cv2.destroyAllWindows() 
+				break
 
 if __name__ == "__main__":
 	# start threads
