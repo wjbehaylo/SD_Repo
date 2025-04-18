@@ -112,7 +112,7 @@ def debris_detect():
 			# Set range for blue color and define mask
 			blue_lower = np.array([94, 80, 2], np.uint8)
 			blue_upper = np.array([120, 255, 255], np.uint8)
-			blue_mask = cv2.inRange(hsv, blue_lower, blue_uppe, kernelr) 
+			blue_mask = cv2.inRange(hsv, blue_lower, blue_upper, kernel) 
 
 
 			draw_contours(red_mask,   "RocketBody Detected!", (0,   0,   255))
@@ -139,7 +139,7 @@ if __name__ == "__main__":
     # capture thread will exit when is_running → False
 
 
-	'''
+'''
 	# ───── CONFIGURATION ─────
 	KNOWN_DISTANCE = 1.0  # meters (distance from camera to debris in captured frame)
 
@@ -200,4 +200,4 @@ if __name__ == "__main__":
 			break
 
 	cv2.destroyAllWindows()
-	'''
+'''
