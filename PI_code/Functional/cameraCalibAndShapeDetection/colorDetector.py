@@ -11,47 +11,11 @@ import math
 
 # Initialize SMBus library for I2C communication (using bus 1)
 ARUINO_I2C_ADDRESS = 8
-#i2c_bus = SM(1)
-
-# Global variables
-global status, searcher, color_frame, over_state, need_color, angle_degrees, distance_to_object, debris_color, dataSent, starter,count_to_over
-
-#flags for debris detection and I2C data
-debris_found = False
-dataSent = False
-
-# Degrees and Distance variables
-angle_degrees = None
-distance_to_object = None
-debris_color = None
-
-#flag for color needed
-need_color = False
-
-#different imageg frames from camera for image processing
-current_frame = None
-color_frame = None
-distance_frame = None
-
-#different state variables
-over_state = False
-starter = True
-
-#count of frames 
-count_to_over = 0
-
-#flag for searching
-searcher = True
-
-# Create a lock for thread-safe frame access
-frame_lock = threading.Lock()
-
-#Flag to control main loop
+#i2c_bus = SMbus(1)
+#Flags 
 is_running = True
+need_color = True #turn on color detection immediately
 
-# Initialize webcam
-webcam = cv2.VideoCapture(0) 
-webcam.set(cv2.CAP_PROP_FPS, 30) #set frames per second so the camera doesn't get overwhelmed
 # Load Camera Calibration Data
 camera_matrix = np.load("camera_matrix.npy")
 distortion_coeffs = np.load("distortion_coeffs.npy")
@@ -59,115 +23,121 @@ distortion_coeffs = np.load("distortion_coeffs.npy")
 fx = camera_matrix[0, 0]
 fy = camera_matrix[1, 1]
 
+#flags for debris detection and I2C data
+debris_found = False
+#dataSent = False
+
+# Shared frames + lock
+frame_lock      = threading.Lock()
+color_frame     = None
+distance_frame  = None
+
+# Degrees and Distance variables
+angle_degrees = None
+distance_to_object = None
+debris_color = None
+
+#different state variables
+over_state = False
+starter = True
+count_to_over = 0
+searcher = True
+
+
+# Initialize webcam
+webcam = cv2.VideoCapture(0) 
+webcam.set(cv2.CAP_PROP_FPS, 30) #set frames per second so the camera doesn't get overwhelmed
+
+
 def capture_frame(): 
 	# Capture frames from current camera in separate thread
-	global current_frame, is_running, color_frame, distance_frame
+	global color_frame, is_running, distance_frame
 	# Continue capturing frames while is_running is True
 	while is_running:
 		ret, frame = webcam.read()
 		# Check if frame capture was successful
-		if ret and current_frame is not None:
-			# Ensure thread-safe access to current_frame
-			current_frame = frame
-			undistort_frame = cv2.undistort(current_frame, camera_matrix, distortion_coeffs)
-			color_frame = undistort_frame.copy()
-			distance_frame = undistort_frame.copy()
+		if not ret:
+			print("Failed to capture frame")
+			is_running = False
+			return
+		#undistort the image
+		und = cv2.undistort(frame, camera_matrix, distortion_coeffs)
+
+		 # safely hand off to the detector
+		with frame_lock:
+			color_frame    = und.copy()
+			distance_frame = und.copy()
+			
+	webcam.release()
+
 
 def debris_detect():
-	# Process captured frames to detect ArUco markers and calculate their angles and distance
-	global is_running, frame_lock, debris_found, debris_color, need_color, color_frame, is_running
+	global is_running
+	kernel = np.ones((5, 5), np.uint8)
+
+	# helper to draw all contours above area threshold
+	def draw_contours(mask, label, color_bgr):
+		cnts, _ = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+		for c in cnts:
+			if cv2.contourArea(c) > 300:
+				x, y, w, h = cv2.boundingRect(c)
+				cv2.rectangle(snap, (x, y), (x + w, y + h), color_bgr, 2)
+				cv2.putText(snap, label, (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, color_bgr, 2)
+
 	# Continue processing frames while is_running is True
 	while (is_running):
-
-		if color_frame is not None and need_color == True:
-			print("In arrowColor")
-		#Convert image to HSV for color detection
-			hsv_frame = cv2.cvtColor(color_frame, cv2.COLOR_BGR2HSV) 
+		with frame_lock:
+			snap = color_frame.copy() if color_frame is not None else None
+			
+		if snap is None:
+			time.sleep(0.01)
+			continue
 		
-			# Set range for red color and define mask
-			red_lower = np.array([136, 87, 111], np.uint8)
-			red_upper = np.array([180, 255, 255], np.uint8)
-			red_lower2 = np.array([0,150,170])
-			red_upper2 = np.array([10, 255, 255])
-			red_mask = cv2.inRange(hsv_frame, red_lower, red_upper)
-			red_mask2 = cv2.inRange(hsv_frame, red_lower2, red_upper2) 
+		if need_color:
+			hsv = cv2.cvtColor(snap, cv2.COLOR_BGR2HSV)
+			print("In debris color")
+		
+			# red
+			lower1, upper1 = np.array([136, 87, 111]), np.array([180, 255, 255])
+			lower2, upper2 = np.array([0, 150, 170]), np.array([10, 255, 255])
+			mask1 = cv2.inRange(hsv, lower1, upper1)
+			mask2 = cv2.inRange(hsv, lower2, upper2)
+			red_mask = cv2.dilate(mask1 | mask2, kernel)
 
 			# Set range for green color and define mask
 			green_lower = np.array([50, 52, 72], np.uint8)
 			green_upper = np.array([102, 255, 255], np.uint8)
-			green_mask = cv2.inRange(hsv_frame, green_lower, green_upper) 
+			green_mask = cv2.inRange(hsv, green_lower, green_upper, kernel) 
 
 			# Set range for blue color and define mask
 			blue_lower = np.array([94, 80, 2], np.uint8)
 			blue_upper = np.array([120, 255, 255], np.uint8)
-			blue_mask = cv2.inRange(hsv_frame, blue_lower, blue_upper) 
-				
-			#detection flags
-			green_detected = False
-			red_detected = False
-			blue_detected = False
-					
-			# Morphological Transform, Dilation for each color and bitwise_and operator to detect only that particular color 
-			kernel = np.ones((5,5), "uint8")
-			
-			# For red color 
-			red_mask = cv2.dilate(red_mask, kernel)
-			res_red = cv2.bitwise_and(color_frame, color_frame, mask = red_mask)
-			red_mask2 = cv2.dilate(red_mask, kernel)
-			res_red2 = cv2.bitwise_and(color_frame, color_frame, mask = red_mask2)
+			blue_mask = cv2.inRange(hsv, blue_lower, blue_uppe, kernelr) 
 
-			#For green color 
-			green_mask = cv2.dilate(green_mask, kernel) 
-			res_green = cv2.bitwise_and(color_frame, color_frame, mask = green_mask) 
 
-			# For blue color 
-			blue_mask = cv2.dilate(blue_mask, kernel) 
-			res_blue = cv2.bitwise_and(color_frame, color_frame, mask = blue_mask) 
+			draw_contours(red_mask,   "RocketBody Detected!", (0,   0,   255))
+			draw_contours(green_mask, "Minotaur Detected!",   (0,   255, 0))
+			draw_contours(blue_mask,  "CubeSat Detected!",    (255, 0,   0))
 
-			# Creating contour to track red color 
-			contours, hierarchy = cv2.findContours(red_mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-
-			for pic, contour in enumerate(contours):
-				area = cv2.contourArea(contour)
-				if(area > 300):
-					x, y, w, h = cv2.boundingRect(contour)
-					imageFrame = cv2.rectangle(color_frame, (x, y), (x + w, y + h), (0, 0, 255), 2)
-					cv2.putText(imageFrame, "RocketBody Detected!", (x, y), cv2.FONT_HERSHEY_SIMPLEX, 1.0, (0, 0, 255))
-
-			# Creating contour to track red color
-			contours, hierarchy = cv2.findContours(red_mask2, cv2.RETR_TREE,cv2.CHAIN_APPROX_SIMPLE)
-
-		for pic, contour in enumerate(contours):
-				area = cv2.contourArea(contour)
-				if(area > 300):
-					x, y, w, h = cv2.boundingRect(contour)
-					imageFrame = cv2.rectangle(color_frame, (x, y), (x + w, y + h), (0, 0, 255), 2) 
-					cv2.putText(imageFrame, "RocketBody Detected!", (x, y), cv2.FONT_HERSHEY_SIMPLEX, 1.0, (0, 0, 255))	
-
-		# Creating contour to track green color 
-		contours, hierarchy = cv2.findContours(green_mask, cv2.RETR_TREE,cv2.CHAIN_APPROX_SIMPLE) 
-		for pic, contour in enumerate(contours):
-				area = cv2.contourArea(contour)
-				if(area > 300):
-					x, y, w, h = cv2.boundingRect(contour)
-					imageFrame = cv2.rectangle(color_frame, (x, y), (x + w, y + h), (0, 255, 0), 2) 
-					cv2.putText(imageFrame, "Minotaur Detected!", (x, y), cv2.FONT_HERSHEY_SIMPLEX, 1.0, (0, 255, 0)) 
-
-		# Creating contour to track blue color 
-		contours, hierarchy = cv2.findContours(blue_mask, cv2.RETR_TREE,cv2.CHAIN_APPROX_SIMPLE)
-		for pic, contour in enumerate(contours):
-				area = cv2.contourArea(contour)
-				if(area > 300):
-					x, y, w, h = cv2.boundingRect(contour)
-					imageFrame = cv2.rectangle(color_frame, (x, y), (x + w, y + h), (255, 0, 0), 2) 
-					cv2.putText(imageFrame, "CubeSat Detected!", (x, y), cv2.FONT_HERSHEY_SIMPLEX, 1.0, (255, 0, 0)) 
-					
-		# Program Termination 
-		cv2.imshow("Debris:", imageFrame) 
-		if cv2.waitKey(10) & 0xFF == ord('q'): 
-			webcam.release() 
-			cv2.destroyAllWindows()
+		# show and check for quit
+		cv2.imshow("Debris Detection", snap)
+		if cv2.waitKey(1) & 0xFF == ord('q'):
+			is_running = False
 			break
+
+	cv2.destroyAllWindows()
+
+if __name__ == "__main__":
+    # start threads
+    t1 = threading.Thread(target=capture_frame, daemon=True)
+    t2 = threading.Thread(target=debris_detect, daemon=True)
+    t1.start()
+    t2.start()
+
+    # wait for detection thread to finish
+    t2.join()
+    # capture thread will exit when is_running → False
+
 
 	'''
 	# ───── CONFIGURATION ─────
