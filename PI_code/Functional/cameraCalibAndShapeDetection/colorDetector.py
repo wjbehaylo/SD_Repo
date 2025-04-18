@@ -45,8 +45,8 @@ searcher = True
 
 
 # Initialize webcam
-webcam = cv2.VideoCapture(0) 
-webcam.set(cv2.CAP_PROP_FPS, 30) #set frames per second so the camera doesn't get overwhelmed
+webcam = cv2.VideoCapture(0)
+#webcam.set(cv2.CAP_PROP_FPS, 30) #set frames per second so the camera doesn't get overwhelmed
 
 
 def capture_frame(): 
@@ -98,8 +98,8 @@ def debris_detect():
 			print("In debris color")
 		
 			# red
-			lower1, upper1 = np.array([136, 87, 111]), np.array([180, 255, 255])
-			lower2, upper2 = np.array([0, 150, 170]), np.array([20, 255, 255])
+			lower1, upper1 = np.array([170, 50, 50]), np.array([180, 255, 255])
+			lower2, upper2 = np.array([0, 50, 50]), np.array([10, 255, 255])
 			mask1 = cv2.inRange(hsv, lower1, upper1)
 			mask2 = cv2.inRange(hsv, lower2, upper2)
 			red_mask = cv2.dilate(mask1 | mask2, kernel)
