@@ -96,8 +96,8 @@ def debris_detect():
 			red_mask2 = cv2.inRange(hsv, lower2, upper2)
 
 			# Set range for green color and define mask
-			#green_lower = np.array([30, 40, 40], np.uint8)
-			#green_upper = np.array([90, 255, 255], np.uint8)
+			#green_lower = np.array([50, 100, 100], np.uint8)
+			#green_upper = np.array([70, 255, 255], np.uint8)
 			#green_mask = cv2.inRange(hsv, green_lower, green_upper) 
 
 			# Set range for blue color and define mask
