@@ -5,8 +5,8 @@ from smbus2 import SMBus
 from time import sleep
 import threading
 import math
-from imutils import paths
-import imutils
+#from imutils import paths
+#import imutils
 
 
 # Initialize SMBus library for I2C communication (using bus 1)
