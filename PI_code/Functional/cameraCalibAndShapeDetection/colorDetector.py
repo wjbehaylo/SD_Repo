@@ -98,15 +98,15 @@ def debris_detect():
 			print("In debris color")
 		
 			# red
-			lower1, upper1 = np.array([170, 50, 50]), np.array([180, 255, 255])
-			lower2, upper2 = np.array([0, 50, 50]), np.array([10, 255, 255])
+			lower1, upper1 = np.array([136, 87, 111]), np.array([180, 255, 255])
+			lower2, upper2 = np.array([0, 150, 170]), np.array([10, 255, 255])
 			mask1 = cv2.inRange(hsv, lower1, upper1)
 			mask2 = cv2.inRange(hsv, lower2, upper2)
 			red_mask = cv2.dilate(mask1 | mask2, kernel)
 
 			# Set range for green color and define mask
-			green_lower = np.array([50, 90, 70], np.uint8)
-			green_upper = np.array([75, 255, 155], np.uint8)
+			green_lower = np.array([50, 52, 72], np.uint8)
+			green_upper = np.array([102, 255, 155], np.uint8)
 			green_mask = cv2.inRange(hsv, green_lower, green_upper, kernel) 
 
 			# Set range for blue color and define mask
@@ -114,6 +114,15 @@ def debris_detect():
 			blue_upper = np.array([120, 255, 255], np.uint8)
 			blue_mask = cv2.inRange(hsv, blue_lower, blue_upper, kernel) 
 
+			# apply mask to the original snap
+			red_area   = cv2.bitwise_and(snap, snap, mask=red_mask)
+			green_area = cv2.bitwise_and(snap, snap, mask=green_mask)
+			blue_area  = cv2.bitwise_and(snap, snap, mask=blue_mask)
+
+			# show the extracted color regions
+			cv2.imshow("Red Detection",   red_area)
+			cv2.imshow("Green Detection", green_area)
+			cv2.imshow("Blue Detection",  blue_area)
 
 			draw_contours(red_mask,   "RocketBody Detected!", (0,   0,   255))
 			draw_contours(green_mask, "Minotaur Detected!",   (0,   255, 0))
