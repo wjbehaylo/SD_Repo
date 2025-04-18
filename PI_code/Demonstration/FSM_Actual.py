@@ -34,8 +34,6 @@ capture_start=0
 initialize=0
 #this is a flag to signal if the program should stop, it won't often be set
 program_quit=0
-#this is a flag to signal that we should read the time of flight sensor
-detecting_distance=0
 #this is a flag to signal that we should determine the object type
 detecting_object=0
 #this is a flag to signal that the arms will be moving
@@ -99,7 +97,6 @@ def stateB():
     global capture_start
     global initialize
     global program_quit
-    global detecting_distance
     global detecting_object
     global moving_arm
     global rotating_arm
@@ -113,7 +110,6 @@ def stateB():
         #generally, only one of these should be 1 when this statement comes up
         if(capture_start==1):
             initialize=1
-            detecting_distance=1
             detecting_object=1
             return stateA #first step in capturing is resetting the arms
         if(initialize==1):
@@ -122,10 +118,8 @@ def stateB():
             return stateC #we are entering the moving arm state
         if(rotating_arm==1):
             return stateD #we are rotating the arm by some amount
-        if(detecting_distance==1):
-            return stateF #we are going to be detecting the distance
         if(detecting_object==1):
-            return stateG #we will be using CV to detect the object
+            return stateF #we will be using CV to detect the object
         if(program_quit==1):
             return stateQ #the program is exiting
     
@@ -346,17 +340,27 @@ def stateE():
     return stateQ
             
 
-#Detecting_Distance
+#Detecting_Object
 #I believe we just either go here from UART_Wait or from ARD_Wait, ARD_Wait if we are in capture_start==1
-def stateF():        
-    global detecting_distance
-    
+def stateF(): 
+
+    global detecting_object
+    global rotating_arm
+    global moving_arm
+    MOVE_OFFSET=pair_select
+    ROTATE_OFFSET=0+configuring_arm+arm_configuration
+
+    #divide into closing the arms vs. opening the arms
+    #closing the arms
+    if(capture_start==0):
+        rotate
     if(capture_start==1):
-        return stateG
+        #begin rotating
+        rotating_arm = 1
+
+        return 
     else:
         return stateB    
-
-#Detecting_Object
         
     
 #At this point, we are actually in the program that will be running to execute it all.
@@ -369,9 +373,7 @@ state_machine={
     "Moving_Arm": stateC,
     "Rotating_Arm": stateD,
     "ARD_Wait": stateE,
-    "Detecting_Distance": stateF,
-    "Detecting_Object": stateG,
-    "Data_Analysis": stateH,
+    "Detecting_Object": stateF,
     "Quit": stateQ
 }
 
