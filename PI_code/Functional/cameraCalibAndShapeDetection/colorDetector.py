@@ -131,7 +131,7 @@ def debris_detect():
 			contours, hierarchy = cv2.findContours(red_mask2, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 			
 			for pic, contour in enumerate(contours):
-				if cv2.contourArea(c) > 300:
+				if cv2.contourArea(contour) > 300:
 					x, y, w, h = cv2.boundingRect(contour)
 					cv2.rectangle(snap, (x, y), (x + w, y + h), (0, 0, 255), 2)
 					cv2.putText(snap, "Red Colour", (x, y - 10),
@@ -140,7 +140,7 @@ def debris_detect():
 			# — Green
 			contours, hierarchy = cv2.findContours(green_mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 			for pic, contour in enumerate(contours):
-				if cv2.contourArea(c) > 300:
+				if cv2.contourArea(contour) > 300:
 					x, y, w, h = cv2.boundingRect(contours)
 					cv2.rectangle(snap, (x, y), (x + w, y + h), (0, 255, 0), 2)
 					cv2.putText(snap, "Green Colour", (x, y - 10),
@@ -149,7 +149,7 @@ def debris_detect():
 			# — Blue
 			contours, hierarchy = cv2.findContours(blue_mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 			for pic, contour in enumerate(contours):
-				if cv2.contourArea(c) > 300:
+				if cv2.contourArea(contour) > 300:
 					x, y, w, h = cv2.boundingRect(contours)
 					cv2.rectangle(snap, (x, y), (x + w, y + h), (255, 0, 0), 2)
 					cv2.putText(snap, "Blue Colour", (x, y - 10),
