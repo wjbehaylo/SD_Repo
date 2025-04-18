@@ -46,7 +46,7 @@ searcher = True
 
 # Initialize webcam
 webcam = cv2.VideoCapture(0)
-#webcam.set(cv2.CAP_PROP_FPS, 30) #set frames per second so the camera doesn't get overwhelmed
+webcam.set(cv2.CAP_PROP_FPS, 30) #set frames per second so the camera doesn't get overwhelmed
 
 
 def capture_frame(): 
@@ -75,15 +75,6 @@ def debris_detect():
 	global is_running
 	kernel = np.ones((5, 5), np.uint8)
 
-	# helper to draw all contours above area threshold
-	def draw_contours(mask, label, color_bgr):
-		cnts, _ = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-		for c in cnts:
-			if cv2.contourArea(c) > 300:
-				x, y, w, h = cv2.boundingRect(c)
-				cv2.rectangle(snap, (x, y), (x + w, y + h), color_bgr, 2)
-				cv2.putText(snap, label, (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, color_bgr, 2)
-
 	# Continue processing frames while is_running is True
 	while (is_running):
 		with frame_lock:
@@ -102,35 +93,55 @@ def debris_detect():
 			lower2, upper2 = np.array([0, 150, 170]), np.array([10, 255, 255])
 			mask1 = cv2.inRange(hsv, lower1, upper1)
 			mask2 = cv2.inRange(hsv, lower2, upper2)
-			red_mask = cv2.dilate(mask1 | mask2, kernel)
+			red_mask = cv2.dilate(cv2.bitwise_or(mask1, mask2), kernel)
+			res_red   = cv2.bitwise_and(snap, snap, mask=red_mask)
 
 			# Set range for green color and define mask
-			green_lower = np.array([40, 100, 100], np.uint8)
-			green_upper = np.array([100, 255, 155], np.uint8)
+			green_lower = np.array([25, 52, 72], np.uint8)
+			green_upper = np.array([100, 255, 255], np.uint8)
 			green_mask = cv2.inRange(hsv, green_lower, green_upper) 
-			# 2) clean it up a bit
-			green_clean = cv2.morphologyEx(green_mask, cv2.MORPH_OPEN, kernel)
-			# only the largest contour
-			cnts, _ = cv2.findContours(green_clean, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+			green_mask  = cv2.dilate(green_mask, kernel)
+			res_green   = cv2.bitwise_and(snap, snap, mask=green_mask)
 
 			# Set range for blue color and define mask
 			blue_lower = np.array([94, 80, 2], np.uint8)
 			blue_upper = np.array([120, 255, 255], np.uint8)
 			blue_mask = cv2.inRange(hsv, blue_lower, blue_upper) 
+			blue_mask  = cv2.dilate(blue_mask, kernel)
+			res_blue   = cv2.bitwise_and(snap, snap, mask=blue_mask)
 
-			# apply mask to the original snap
-			red_area   = cv2.bitwise_and(snap, snap, mask=red_mask)
-			green_area = cv2.bitwise_and(snap, snap, mask=green_mask)
-			blue_area  = cv2.bitwise_and(snap, snap, mask=blue_mask)
 
 			# show the extracted color regions
-			cv2.imshow("Red Detection",   red_area)
-			cv2.imshow("Green Detection", green_area)
-			cv2.imshow("Blue Detection",  blue_area)
+			cv2.imshow("Red Detection",   res_red)
+			cv2.imshow("Green Detection", res_green)
+			cv2.imshow("Blue Detection",  res_blue)
 
-			draw_contours(red_mask,   "RocketBody Detected!", (0,   0,   255))
-			draw_contours(green_mask, "Minotaur Detected!",   (0,   255, 0))
-			draw_contours(blue_mask,  "CubeSat Detected!",    (255, 0,   0))
+			contours, _ = cv2.findContours(red_mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+			for c in contours:
+				if cv2.contourArea(c) > 300:
+					x, y, w, h = cv2.boundingRect(c)
+					cv2.rectangle(snap, (x, y), (x + w, y + h), (0, 0, 255), 2)
+					cv2.putText(snap, "Red Colour", (x, y - 10),
+								cv2.FONT_HERSHEY_SIMPLEX, 1.0, (0, 0, 255), 2)
+
+			# — Green
+			contours, _ = cv2.findContours(green_mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+			for c in contours:
+				if cv2.contourArea(c) > 300:
+					x, y, w, h = cv2.boundingRect(c)
+					cv2.rectangle(snap, (x, y), (x + w, y + h), (0, 255, 0), 2)
+					cv2.putText(snap, "Green Colour", (x, y - 10),
+								cv2.FONT_HERSHEY_SIMPLEX, 1.0, (0, 255, 0), 2)
+
+			# — Blue
+			contours, _ = cv2.findContours(blue_mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+			for c in contours:
+				if cv2.contourArea(c) > 300:
+					x, y, w, h = cv2.boundingRect(c)
+					cv2.rectangle(snap, (x, y), (x + w, y + h), (255, 0, 0), 2)
+					cv2.putText(snap, "Blue Colour", (x, y - 10),
+								cv2.FONT_HERSHEY_SIMPLEX, 1.0, (255, 0, 0), 2)
+
 
 		# show and check for quit
 		cv2.imshow("Debris Detection", snap)
@@ -141,15 +152,15 @@ def debris_detect():
 	cv2.destroyAllWindows()
 
 if __name__ == "__main__":
-    # start threads
-    t1 = threading.Thread(target=capture_frame, daemon=True)
-    t2 = threading.Thread(target=debris_detect, daemon=True)
-    t1.start()
-    t2.start()
+	# start threads
+	t1 = threading.Thread(target=capture_frame, daemon=True)
+	t2 = threading.Thread(target=debris_detect, daemon=True)
+	t1.start()
+	t2.start()
 
-    # wait for detection thread to finish
-    t2.join()
-    # capture thread will exit when is_running → False
+	# wait for detection thread to finish
+	t2.join()
+	# capture thread will exit when is_running → False
 
 
 '''
