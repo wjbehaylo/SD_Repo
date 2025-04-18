@@ -91,25 +91,21 @@ def debris_detect():
 			# red
 			lower1, upper1 = np.array([136, 87, 111]), np.array([180, 255, 255])
 			lower2, upper2 = np.array([0, 150, 170]), np.array([10, 255, 255])
-			mask1 = cv2.inRange(hsv, lower1, upper1)
-			mask2 = cv2.inRange(hsv, lower2, upper2)
-			red_mask1 = cv2.dilate(mask1, kernel)
-			red_mask2 = cv2.dilate(mask2, kernel)
+			red_mask1 = cv2.inRange(hsv, lower1, upper1)
+			red_mask2 = cv2.inRange(hsv, lower2, upper2)
 			res_red1   = cv2.bitwise_and(snap, snap, mask=red_mask1)
 			res_red2   = cv2.bitwise_and(snap, snap, mask=red_mask1)
 
 			# Set range for green color and define mask
-			green_lower = np.array([25, 100, 100], np.uint8)
+			green_lower = np.array([25, 52, 72], np.uint8)
 			green_upper = np.array([85, 255, 255], np.uint8)
 			green_mask = cv2.inRange(hsv, green_lower, green_upper) 
-			green_mask  = cv2.dilate(green_mask, kernel)
 			res_green   = cv2.bitwise_and(snap, snap, mask=green_mask)
 
 			# Set range for blue color and define mask
 			blue_lower = np.array([94, 80, 2], np.uint8)
 			blue_upper = np.array([120, 255, 255], np.uint8)
 			blue_mask = cv2.inRange(hsv, blue_lower, blue_upper) 
-			blue_mask  = cv2.dilate(blue_mask, kernel)
 			res_blue   = cv2.bitwise_and(snap, snap, mask=blue_mask)
 
 
@@ -119,11 +115,10 @@ def debris_detect():
 			#cv2.imshow("Blue Detection",  res_blue)
 
 			contours, hierarchy = cv2.findContours(red_mask1, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-			
 			for pic, contour in enumerate(contours):
 				if cv2.contourArea(contour) > 300:
 					x, y, w, h = cv2.boundingRect(contour)
-					cv2.rectangle(snap, (x, y), (x + w, y + h), (0, 0, 255), 2)
+					snap = cv2.rectangle(snap, (x, y), (x + w, y + h), (0, 0, 255), 2)
 					cv2.putText(snap, "Red Colour", (x, y - 10),
 								cv2.FONT_HERSHEY_SIMPLEX, 1.0, (0, 0, 255), 2)
 			
@@ -133,7 +128,7 @@ def debris_detect():
 			for pic, contour in enumerate(contours):
 				if cv2.contourArea(contour) > 300:
 					x, y, w, h = cv2.boundingRect(contour)
-					cv2.rectangle(snap, (x, y), (x + w, y + h), (0, 0, 255), 2)
+					snap = cv2.rectangle(snap, (x, y), (x + w, y + h), (0, 0, 255), 2)
 					cv2.putText(snap, "Red Colour", (x, y - 10),
 								cv2.FONT_HERSHEY_SIMPLEX, 1.0, (0, 0, 255), 2)
 
@@ -142,7 +137,7 @@ def debris_detect():
 			for pic, contour in enumerate(contours):
 				if cv2.contourArea(contour) > 300:
 					x, y, w, h = cv2.boundingRect(contours)
-					cv2.rectangle(snap, (x, y), (x + w, y + h), (0, 255, 0), 2)
+					snap = cv2.rectangle(snap, (x, y), (x + w, y + h), (0, 255, 0), 2)
 					cv2.putText(snap, "Green Colour", (x, y - 10),
 								cv2.FONT_HERSHEY_SIMPLEX, 1.0, (0, 255, 0), 2)
 
@@ -151,7 +146,7 @@ def debris_detect():
 			for pic, contour in enumerate(contours):
 				if cv2.contourArea(contour) > 300:
 					x, y, w, h = cv2.boundingRect(contours)
-					cv2.rectangle(snap, (x, y), (x + w, y + h), (255, 0, 0), 2)
+					snap = cv2.rectangle(snap, (x, y), (x + w, y + h), (255, 0, 0), 2)
 					cv2.putText(snap, "Blue Colour", (x, y - 10),
 								cv2.FONT_HERSHEY_SIMPLEX, 1.0, (255, 0, 0), 2)
 
