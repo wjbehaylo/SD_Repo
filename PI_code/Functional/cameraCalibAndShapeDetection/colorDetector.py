@@ -72,7 +72,7 @@ def capture_frame():
 
 
 def debris_detect():
-	global is_running
+	global is_running, need_color, debris_color
 
 	# Continue processing frames while is_running is True
 	while (is_running):
