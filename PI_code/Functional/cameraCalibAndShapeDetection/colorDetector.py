@@ -91,13 +91,13 @@ def debris_detect():
 			lower1 = np.array([136, 87, 111], np.uint8)
 			upper1 = np.array([180, 255, 255], np.uint8)
 			lower2 = np.array([0, 150, 170], np.uint8)
-			upper2 = np.array([10, 255, 255], np.uint8)
+			upper2 = np.array([20, 255, 255], np.uint8)
 			red_mask1 = cv2.inRange(hsv, lower1, upper1)
 			red_mask2 = cv2.inRange(hsv, lower2, upper2)
 
 			# Set range for green color and define mask
-			green_lower = np.array([50, 52, 72], np.uint8)
-			green_upper = np.array([102, 255, 255], np.uint8)
+			green_lower = np.array([50, 90, 70], np.uint8)
+			green_upper = np.array([90, 255, 255], np.uint8)
 			green_mask = cv2.inRange(hsv, green_lower, green_upper) 
 
 			# Set range for blue color and define mask
@@ -119,45 +119,64 @@ def debris_detect():
 			#For blue
 			blue_mask = cv2.dilate(blue_mask, kernel)
 			res_blue   = cv2.bitwise_and(snap, snap, mask=blue_mask)
-			# show the extracted color regions
-			#cv2.imshow("Red Detection",   res_red1)
-			#cv2.imshow("Green Detection", res_green)
-			#cv2.imshow("Blue Detection",  res_blue)
 
-			contours, hierarchy = cv2.findContours(red_mask1, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-			for pic, contour in enumerate(contours):
-				if cv2.contourArea(contour) > 300:
+			# ─── Detection flags ─────────────────────────────────────────
+			redDetected   = False
+			greenDetected = False
+			blueDetected  = False
+
+			contoursR1, hierarchy = cv2.findContours(red_mask1, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+			for pic, contour in enumerate(contoursR1):
+				if cv2.contourArea(contour) > 1000:
 					x, y, w, h = cv2.boundingRect(contour)
 					snap = cv2.rectangle(snap, (x, y), (x + w, y + h), (0, 0, 255), 2)
-					cv2.putText(snap, "RocketBody Detected!", (x, y - 10),
+					if len(contoursR1) >= 6:
+						cv2.putText(snap, "RocketBody Detected!", (x, y - 10),
 								cv2.FONT_HERSHEY_SIMPLEX, 1.0, (0, 0, 255), 2)
+						debris_color = "red"
+						need_color   = False
+						redDetected  = True
 			
 			
-			contours, hierarchy = cv2.findContours(red_mask2, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-			for pic, contour in enumerate(contours):
-				if cv2.contourArea(contour) > 300:
+			contoursR2, hierarchy = cv2.findContours(red_mask2, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+			for pic, contour in enumerate(contoursR2):
+				if cv2.contourArea(contour) > 1000:
 					x, y, w, h = cv2.boundingRect(contour)
 					snap = cv2.rectangle(snap, (x, y), (x + w, y + h), (0, 0, 255), 2)
-					cv2.putText(snap, "RocketBody Detected!", (x, y - 10),
+					if len(contoursR2) >= 6:
+						cv2.putText(snap, "RocketBody Detected!", (x, y - 10),
 								cv2.FONT_HERSHEY_SIMPLEX, 1.0, (0, 0, 255), 2)
+						debris_color = "red"
+						need_color   = False
+						redDetected  = True
 
 			# — Green
-			contours, hierarchy = cv2.findContours(green_mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-			for pic, contour in enumerate(contours):
-				if cv2.contourArea(contour) > 300:
+			contoursG, hierarchy = cv2.findContours(green_mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+			for pic, contour in enumerate(contoursG):
+				if cv2.contourArea(contour) > 1000:
 					x, y, w, h = cv2.boundingRect(contour)
 					snap = cv2.rectangle(snap, (x, y), (x + w, y + h), (0, 255, 0), 2)
-					cv2.putText(snap, "Starlink Detected!", (x, y - 10),
+					if len(contoursG) >= 6:
+						cv2.putText(snap, "Starlink Detected!", (x, y - 10),
 								cv2.FONT_HERSHEY_SIMPLEX, 1.0, (0, 255, 0), 2)
+						debris_color = "green"
+						need_color = False
+						greenDetected = True
 
 			# — Blue
-			contours, hierarchy = cv2.findContours(blue_mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-			for pic, contour in enumerate(contours):
-				if cv2.contourArea(contour) > 300:
+			contoursB, hierarchy = cv2.findContours(blue_mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+			for pic, contour in enumerate(contoursB):
+				if cv2.contourArea(contour) > 1000:
 					x, y, w, h = cv2.boundingRect(contour)
 					snap = cv2.rectangle(snap, (x, y), (x + w, y + h), (255, 0, 0), 2)
-					cv2.putText(snap, "CubeSat Detected!", (x, y - 10),
+					if len(contoursB) >= 6:
+						cv2.putText(snap, "CubeSat Detected!", (x, y - 10),
 								cv2.FONT_HERSHEY_SIMPLEX, 1.0, (255, 0, 0), 2)
+						debris_color = "blue"
+						need_color   = False
+						blueDetected = True
+		
+
 
 
 		# show and check for quit
