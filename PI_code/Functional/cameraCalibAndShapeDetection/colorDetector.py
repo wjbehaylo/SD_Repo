@@ -105,8 +105,8 @@ def debris_detect():
 			red_mask = cv2.dilate(mask1 | mask2)
 
 			# Set range for green color and define mask
-			green_lower = np.array([50, 52, 72], np.uint8)
-			green_upper = np.array([102, 255, 155], np.uint8)
+			green_lower = np.array([40, 100, 100], np.uint8)
+			green_upper = np.array([100, 255, 155], np.uint8)
 			green_mask = cv2.inRange(hsv, green_lower, green_upper) 
 			# 2) clean it up a bit
 			green_clean = cv2.morphologyEx(green_mask, cv2.MORPH_OPEN, kernel)
