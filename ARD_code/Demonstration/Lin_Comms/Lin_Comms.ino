@@ -1,17 +1,29 @@
 /* Purpose: This is a functional file to set up the Rotational Arduino as an I2C Slave 
         for receiving rotational commands from the Raspberry Pi and 
         controlling stepper motors for linear and rotational motion.
-Contributors: Walter, Noah Kelly
+Contributors: Walter, Angela
 Sources: SEED_LAB repository for previous examples
         IEEE 754 float conversion reference
         Arduino Wire Library Documentation (https://www.arduino.cc/reference/en/libraries/wire/)
         Stepper Library Documentation (https://www.arduino.cc/reference/en/libraries/stepper/)
-Relevant Files: This file is related to the ARD_Comms.py file located in Demonstration/PI_code.
-Circuitry: Connect the following listed pins for I2C communication:
-  - A4 is SDA on Arduino, second pin from top on left (03) is SDA on Pi
-  - A5 is SCL on Arduino, third pin from top on left (05) is SCL on Pi
-  - Digital 2 on Arduino is the direction pin to connect to the driver
-  - Digital 3 on Arduino is the Step pin to connect to the driver
+Relevant Files: This file is related to the ARD_Comms.py file located in Demonstration/PI_code, it also goes with the FSM_Actual
+Circuitry: Connect the following listed pins
+  - Note that when things are numbered, i.e. the force sensors or arm pairs, it goes clockwise from low to high, with the pi at 6pm
+  - SDA on Arduino, second pin from top on left (03) is SDA on Pi
+  - SCL on Arduino, third pin from top on left (05) is SCL on Pi
+  - Ground on Arduino needs to connect to ground bus from Pi
+
+  - A0=A3 on Arduino connects to the blue cables coming through the force sensors 0-3
+  - These force sensors need to connect to 5V bus with their white cables
+  - The force sensors also need to connect to the ground bus
+
+  - Digital 2 on Arduino is the direction pin to connect to the driver for pair0
+  - Digital 3 on Arduino is the Step pin to connect to the driver for pair0
+  - Digital 4 on Arduino is the direction pin to connect to the driver for pair1
+  - Digital 5 on Arduino is the step pin to connect to the driver for pair1
+  - Each of these drivers also has ground pins that need to connect to the bus
+
+
   - Digital 11 on Arduino is the signal pin for the 0 degree end stop, this is the orange cable
   - Digital 12 on Arduino is the signal pin for the 90 degree end stop, this is the purple cable
   - GND on Arduino to GND bus for rotational end stops

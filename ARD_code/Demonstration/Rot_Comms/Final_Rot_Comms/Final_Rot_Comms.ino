@@ -10,6 +10,7 @@ Relevant Files: This file is related to the ARD_Comms.py file located in Demonst
 Circuitry: Connect the following listed pins for I2C communication:
   - A4 is SDA on Arduino, second pin from top on left (03) is SDA on Pi
   - A5 is SCL on Arduino, third pin from top on left (05) is SCL on Pi
+  - Ground on Arduino to Pi Ground bus
   - Digital 2 on Arduino is the direction pin to connect to the driver
   - Digital 3 on Arduino is the Step pin to connect to the driver
   - Digital 11 on Arduino is the signal pin for the 0 degree end stop, this is the orange cable
@@ -17,7 +18,6 @@ Circuitry: Connect the following listed pins for I2C communication:
   - GND on Arduino to GND bus for rotational end stops
   - 5V on Arduino to 5V bus for rotational end stops
   - Bus to pins for ground and 5V on the end stops
-  - GND on Arduino to fifth pin from top left (09) on Pi
 Libraries to be included:
  - Wire.h (For I2C communication)
  - Stepper.h (For controlling stepper motors) */
