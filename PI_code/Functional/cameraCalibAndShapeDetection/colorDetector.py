@@ -97,8 +97,8 @@ def debris_detect():
 			res_red   = cv2.bitwise_and(snap, snap, mask=red_mask)
 
 			# Set range for green color and define mask
-			green_lower = np.array([25, 52, 72], np.uint8)
-			green_upper = np.array([100, 255, 255], np.uint8)
+			green_lower = np.array([25, 100, 100], np.uint8)
+			green_upper = np.array([85, 255, 255], np.uint8)
 			green_mask = cv2.inRange(hsv, green_lower, green_upper) 
 			green_mask  = cv2.dilate(green_mask, kernel)
 			res_green   = cv2.bitwise_and(snap, snap, mask=green_mask)
