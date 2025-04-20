@@ -151,6 +151,7 @@ Libraries to be included:
  //at this point, the 0 degree end stop should be triggered
  currentAngle=0;
  stepper_gear1.setCurrentPosition(0); //need to do this again now that it's initialized
+ Serial.println("Initialized at 0 degrees");
 
 
 
