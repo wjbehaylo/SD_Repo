@@ -74,10 +74,18 @@ def capture_frame():
 def debris_detect():
 	global is_running, need_color, debris_color
 
+	h, w = int(webcam.get(cv2.CAP_PROP_FRAME_HEIGHT)), int(webcam.get(cv2.CAP_PROP_FRAME_WIDTH))
+	newCamMtx, roi = cv2.getOptimalNewCameraMatrix(camera_matrix, distortion_coeffs, (w,h), alpha=1)
+	mapx, mapy = cv2.initUndistortRectifyMap(camera_matrix, distortion_coeffs,
+                                         None, newCamMtx, (w,h), cv2.CV_16SC2)
+
 	# Continue processing frames while is_running is True
 	while (is_running):
 		with frame_lock:
-			snap = color_frame.copy() if color_frame is not None else None
+			und = cv2.remap(frame, mapx, mapy, cv2.INTER_LINEAR)
+			# optional crop:
+			x, y, w, h = roi
+			snap = und[y:y+h, x:x+w]
 			
 		if snap is None:
 			time.sleep(1)
@@ -140,7 +148,7 @@ def debris_detect():
 			
 			contoursR2, hierarchy = cv2.findContours(red_mask2, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 			for pic, contour in enumerate(contoursR2):
-				if cv2.contourArea(contour) > 500:
+				if cv2.contourArea(contour) > 300:
 					x, y, w, h = cv2.boundingRect(contour)
 					snap = cv2.rectangle(snap, (x, y), (x + w, y + h), (0, 0, 255), 2)
 					if len(contoursR2) >= 6:
@@ -153,7 +161,7 @@ def debris_detect():
 			# — Green
 			contoursG, hierarchy = cv2.findContours(green_mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 			for pic, contour in enumerate(contoursG):
-				if cv2.contourArea(contour) > 500:
+				if cv2.contourArea(contour) > 300:
 					x, y, w, h = cv2.boundingRect(contour)
 					snap = cv2.rectangle(snap, (x, y), (x + w, y + h), (0, 255, 0), 2)
 					if len(contoursG) >= 6:
@@ -166,7 +174,7 @@ def debris_detect():
 			# — Blue
 			contoursB, hierarchy = cv2.findContours(blue_mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 			for pic, contour in enumerate(contoursB):
-				if cv2.contourArea(contour) > 500:
+				if cv2.contourArea(contour) > 300:
 					x, y, w, h = cv2.boundingRect(contour)
 					snap = cv2.rectangle(snap, (x, y), (x + w, y + h), (255, 0, 0), 2)
 					if len(contoursB) >= 6:
@@ -181,7 +189,7 @@ def debris_detect():
 
 			# show and check for quit
 			cv2.imshow("Debris Detection", snap)
-			if cv2.waitKey(10) & 0xFF == ord('q'):
+			if cv2.waitKey(1) & 0xFF == ord('q'):
 				is_running = False
 				webcam.release() 
 				cv2.destroyAllWindows() 
