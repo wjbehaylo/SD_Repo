@@ -87,10 +87,12 @@ new_status=0
 
 #
 
-while(True):
-    command = input("Enter 'Y' to rotate an arbitrary amount, '+' for plus config, '=' for equals config, or 'Q' to quit: ")
-    while(command != "Y" and command != "Q"):
-        command = input("Enter 'Y' to rotate an arbitrary amount, '+' for plus config, '=' for equals config, or 'Q' to quit: ")
+valid_commands = ("Y", "+", "=", "Q")
+
+while True:
+    command= input("Enter 'Y' to rotate an arbitrary amount, '+' (45°), '=' (0°), or 'Q' to quit: ")
+    while cmd not in valid_commands:
+        cmd = input("Invalid. Please enter 'Y', '+', '=', or 'Q': ")
     if(command == "Q"):
         print("Entered Q, exiting test")
         break
