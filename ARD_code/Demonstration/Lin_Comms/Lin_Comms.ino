@@ -195,8 +195,8 @@ void Pi_Data_Receive(){
         byteFloat.bytes[1] = instruction[2];
         byteFloat.bytes[2] = instruction[1];
         byteFloat.bytes[3] = instruction[0];
-        targ_steps_pair0=byteFloat.floatValue + curr_steps_pair0;
-        targ_steps_pair1=byteFloat.floatValue + curr_steps_pair1;
+        targ_steps_pair0 = byteFloat.floatValue + curr_steps_pair0;
+        targ_steps_pair1 = byteFloat.floatValue + curr_steps_pair1;
     }
     else{
         //debugging
