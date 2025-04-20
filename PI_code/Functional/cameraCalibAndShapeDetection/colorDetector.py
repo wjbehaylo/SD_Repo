@@ -54,8 +54,8 @@ webcam.set(cv2.CAP_PROP_FRAME_HEIGHT, HEIGHT)
 webcam.set(cv2.CAP_PROP_AUTO_EXPOSURE, 3)
 webcam.set(cv2.CAP_PROP_AUTO_EXPOSURE, 1)
 webcam.set(cv2.CAP_PROP_BRIGHTNESS, 250)
-webcam..set(cv2.CAP_PROP_EXPOSURE, 39) 
-webcam..set(cv2.CAP_PROP_BUFFERSIZE, 1) 
+webcam.set(cv2.CAP_PROP_EXPOSURE, 39) 
+webcam.set(cv2.CAP_PROP_BUFFERSIZE, 1) 
 webcam.set(cv2.CAP_PROP_FPS, 120)
 
 
