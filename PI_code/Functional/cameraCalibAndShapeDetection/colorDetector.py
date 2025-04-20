@@ -82,7 +82,7 @@ def debris_detect():
 	# Continue processing frames while is_running is True
 	while (is_running):
 		with frame_lock:
-			und = cv2.remap(frame, mapx, mapy, cv2.INTER_LINEAR)
+			und = cv2.remap(color_frame, mapx, mapy, cv2.INTER_LINEAR)
 			# optional crop:
 			x, y, w, h = roi
 			snap = und[y:y+h, x:x+w]
