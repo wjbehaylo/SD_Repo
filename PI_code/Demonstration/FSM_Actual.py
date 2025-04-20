@@ -174,7 +174,7 @@ def stateD():
     return stateE
 
 #ARD_Wait
-#this state is gone to after stateC (move) or stateD (rotate)
+#this state is gone to after stateC (move) or stateD (rotate) or state_F (debris detect)
 #we could go from here to UART_Wait, move, rotate, or detectDistance
 def stateE():
     #global variables that will be modified:
@@ -342,25 +342,65 @@ def stateE():
 
 #Detecting_Object
 #I believe we just either go here from UART_Wait or from ARD_Wait, ARD_Wait if we are in capture_start==1
+#from cameraCalibAndShapeDetection import colorDetector #will have to move this over
 def stateF(): 
 
     global detecting_object
+    global capture_start
     global rotating_arm
     global moving_arm
-    MOVE_OFFSET=pair_select
-    ROTATE_OFFSET=0+configuring_arm+arm_configuration
+    global pair_select, move_amount
+    global status_UART
+    global new_status
+
+    #we need to determine the object type and how we are going to close the arms
+    detecting_object == 0
+
+    #run CV classifier (implement in cameraCalibAndShapeDetector)
+    obj_type = colorDetector()
+
+    # report back over UART
+    if obj_type in ("CubeSat", "Starlink", "Minotaur"):
+        status_UART += f"Detected object: {obj_type}\r\n"
+    else:
+        status_UART += "Detected object: UNKNOWN\r\n"
+        new_status = 1
+        # ask for new command
+        return stateB
+    
+    new_status = 1 #queue that message
+
+    # set grip parameters based on the type
+    if obj_type == "CubeSat":
+        pair_select = 1    # one claw only
+        move_amount  = 600000 #guessing here, idk
+    elif obj_type == "Starlink":
+        pair_select = 2    # both claws
+        move_amount  = 300000
+    elif obj_type == "Minotaur":
+        pair_select = 2 #both claws
+        move_amount = 500000
+    else:
+        # unrecognized – go back to UART_Wait and request a new command
+        return stateB
 
     #divide into closing the arms vs. opening the arms
-    #closing the arms
-    if(capture_start==0):
-        rotate
-    if(capture_start==1):
-        #begin rotating
-        rotating_arm = 1
+    # schedule the two‑step sequence
+    rotating_arm = 1
+    moving_arm   = 1
 
-        return 
+    #closing the arms (we detected the object and now we need to capture it)
+    if(capture_start==1):
+        status_UART += "Initiating CLOSE sequence\r\n"
+        new_status = 1
+        #Close: rotate -> ARD_wait -> move -> ARD_Wait
+        return stateD
+    #opening the arms
     else:
-        return stateB    
+        status_UART += "Initiating OPEN sequence\r\n"
+        new_status = 1
+        #Open: move -> ARD_wait -> rotate -> ARD_Wait
+        return stateC
         
     
 #At this point, we are actually in the program that will be running to execute it all.
