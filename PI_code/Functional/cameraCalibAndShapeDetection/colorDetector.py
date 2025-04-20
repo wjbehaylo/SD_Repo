@@ -74,22 +74,30 @@ def capture_frame():
 def debris_detect():
 	global is_running, need_color, debris_color
 
-	h, w = int(webcam.get(cv2.CAP_PROP_FRAME_HEIGHT)), int(webcam.get(cv2.CAP_PROP_FRAME_WIDTH))
-	newCamMtx, roi = cv2.getOptimalNewCameraMatrix(camera_matrix, distortion_coeffs, (w,h), alpha=1)
-	mapx, mapy = cv2.initUndistortRectifyMap(camera_matrix, distortion_coeffs,
-                                         None, newCamMtx, (w,h), cv2.CV_16SC2)
-
+	# get capture resolution once
+	h = int(webcam.get(cv2.CAP_PROP_FRAME_HEIGHT))
+	w = int(webcam.get(cv2.CAP_PROP_FRAME_WIDTH))
+	newCamMtx, roi = cv2.getOptimalNewCameraMatrix(
+		camera_matrix, distortion_coeffs, (w, h), alpha=1
+	)
+	mapx, mapy = cv2.initUndistortRectifyMap(
+		camera_matrix, distortion_coeffs, None,
+		newCamMtx, (w, h), cv2.CV_16SC2
+	)
+	x0, y0, w_roi, h_roi = roi
+	
 	# Continue processing frames while is_running is True
 	while (is_running):
 		with frame_lock:
-			und = cv2.remap(color_frame, mapx, mapy, cv2.INTER_LINEAR)
-			# optional crop:
-			x, y, w, h = roi
-			snap = und[y:y+h, x:x+w]
-			
-		if snap is None:
-			time.sleep(1)
+			raw = color_frame.copy if color_frame is not None else None
+
+		if raw is None:
+			time.sleep(0.01)
 			continue
+
+		# 2) undistort / remap
+		und = cv2.remap(raw, mapx, mapy, cv2.INTER_LINEAR)
+		snap = und[y0 : y0 + h_roi, x0 : x0 + w_roi]
 		
 		if need_color:
 			hsv = cv2.cvtColor(snap, cv2.COLOR_BGR2HSV)
