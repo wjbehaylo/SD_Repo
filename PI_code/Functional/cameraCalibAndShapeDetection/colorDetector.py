@@ -92,16 +92,16 @@ def debris_detect():
 			print("In debris color")
 		
 			# red
-			lower1 = np.array([170, 120, 70], np.uint8)
+			lower1 = np.array([170, 150, 100], np.uint8)
 			upper1 = np.array([180, 255, 255], np.uint8)
-			lower2 = np.array([0, 120, 70], np.uint8)
-			upper2 = np.array([10, 255, 255], np.uint8)
+			lower2 = np.array([0, 150, 170], np.uint8)
+			upper2 = np.array([20, 255, 255], np.uint8)
 			red_mask1 = cv2.inRange(hsv, lower1, upper1)
 			red_mask2 = cv2.inRange(hsv, lower2, upper2)
 
 			#Set range for green color and define mask
-			green_lower = np.array([50, 100, 100], np.uint8)
-			green_upper = np.array([70, 255, 255], np.uint8)
+			green_lower = np.array([50, 100, 70], np.uint8)
+			green_upper = np.array([70, 255, 155], np.uint8)
 			green_mask = cv2.inRange(hsv, green_lower, green_upper) 
 
 			# Set range for blue color and define mask
@@ -170,7 +170,7 @@ def debris_detect():
 			# — Blue
 			contoursB, hierarchy = cv2.findContours(blue_mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 			for pic, contour in enumerate(contoursB):
-				if cv2.contourArea(contour) > 300:
+				if cv2.contourArea(contour) > 100:
 					x, y, w, h = cv2.boundingRect(contour)
 					snap = cv2.rectangle(snap, (x, y), (x + w, y + h), (255, 0, 0), 2)
 					if len(contoursB) >= 6:
