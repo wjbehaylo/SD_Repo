@@ -354,7 +354,7 @@ def stateF():
     global new_status
 
     #we need to determine the object type and how we are going to close the arms
-    detecting_object == 0
+    detecting_object = 0
 
     #run CV classifier (implement in cameraCalibAndShapeDetector)
     obj_type = colorDetector()
@@ -401,7 +401,7 @@ def stateF():
         new_status = 1
         #Open: move -> ARD_wait -> rotate -> ARD_Wait
         return stateC
-        
+    
     
 def stateQ():
     global is_running, program_quit

@@ -413,7 +413,13 @@ void Pi_Data_Receive(){
         instruction[messageLength] = Wire.read(); //get the next byte of info
         messageLength++;
     }
-
+    if(offset==0 || offset==1 || offset==2){
+      //getting the full message
+      while(Wire.available()){
+        instruction[messageLength] = Wire.read(); //get the next byte of info
+        messageLength++;
+      }
+    }
     //now we need to decide what to do with the message based on the input offset
     //if offset=0, we are getting sent the target steps for pair0
     if(offset==0){
@@ -444,6 +450,10 @@ void Pi_Data_Receive(){
         moving0 = true;
         moving1 = true;
     }
+    //
+    else if(offset==3 || offset==4 || offset==5){
+        Serial.println("Preparing to be read");
+    }
     else{
         //debugging
         Serial.println("Unknown offset");
@@ -451,11 +461,45 @@ void Pi_Data_Receive(){
     //Because we have multiple offsets to read from for the status, 
     newMessage = true;
     messageLength = 0;
-
 }
 
 //this function gets called whenever the Pi requests data from the Arduino about the execution status
 void Pi_Data_Request(){
   //I think we need to get the offset first?
+  //I think this is done in the Pi_Data_Receive, so offset should be properly set already
+  //for the pair0 information
+  if(offset==3){
+    Wire.write(executionStatus0);
+    //also make sure that if the status is as desired we continue
+    if(executionStatus0!=0){
+      executionStatus0=0;
+      messageReceived=1;
+    }
+  }
+  //for the pair1 information
+  else if(offset==4){
+    Wire.write(executionStatus1);
+    //also make sure that if the Pi read status correctly we continue
+    if(executionStatus1!=10){
+      executionStatus1=10;
+      messageReceived=1;
+    }
+  }
+  //for both the pairs' information
+  else if(offset==5){
+    uint8_t status_block[2] = {pair0_status, pair1_status}; //note that this might be out of order compared to how it will be received, I need to check though
+    Wire.write(status_block, 2);
+    //if both are done executing
+    if(executionStatus0 != 0 && executionStatus1 != 10){
+      executionStatus0 = 0;
+      executionStatus1 = 10;
+      messageReceived = 1;
+    }
+  }
+  else{
+    Serial.println("Unknown offset");
+  }
+  //honestly I think that is all that there is in this area.
+
 
 }
