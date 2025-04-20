@@ -75,6 +75,9 @@ status_UART=""
 #after it is sent out over the ser_write stuff, new_status will be set back to 0
 new_status=0
 
+#variable offset to be set based on user input
+offset = 0
+
 
 '''ACTUAL TEST'''
 #at this point, we should theoretically have the necessary global variables and flags for functionality
@@ -109,7 +112,7 @@ while True:
         while(True):
             try:
                 print("Rotating into the '+' configuration (45).")
-                rotate_amount= 45.0
+                offset= 2
             except:
                 print("Enter a correct number")
                 continue
@@ -119,7 +122,7 @@ while True:
         while(True):
             try:
                 print("Rotating into the '=' configuration (0).")
-                rotate_amount= 0.0
+                offset=1
             except:
                 print("Enter a correct number")
                 continue
@@ -129,10 +132,10 @@ while True:
         continue
             
     #now we need to tell the Arduino to move that far, and wait for it to move that far
-    rot_ARD_Write(0, rotate_amount)
+    rot_ARD_Write(offset, rotate_amount)
         
     #debugging
-    print("Wrote "+ str(rotate_amount) + " to Arduino")
+    print("Wrote offset: "+ str(offset) + " and rotate_amount: " + str(rotate_amount) + " to Arduino")
         
     result = rot_ARD_Read(3)
     status_msg = Generate_Status(result)

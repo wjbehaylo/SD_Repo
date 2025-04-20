@@ -385,14 +385,6 @@ void stepper1_move(){
 
 }
 
-
-
-void stepper_moveMM (AccelStepper &stepper, float mm) {
-  float steps = (mm*steps_rev)/(200*lead_step);
-  stepper.moveTo(steps);
-  stepper.runToPosition();
-}
-
 void steppers_moveMM (MultiStepper &steppers, float mm, int numSteppers) {
   long positions[numSteppers];
   float steps = (mm*steps_rev)/(200*lead_step);
