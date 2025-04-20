@@ -76,7 +76,7 @@ def capture_frame():
 
 
 def debris_detect():
-	global is_running, need_color, debris_color
+	global is_running, debris_color
 
 	# Continue processing frames while is_running is True
 	while (is_running):
@@ -87,109 +87,108 @@ def debris_detect():
 			time.sleep(1)
 			continue
 		
-		if need_color:
-			hsv = cv2.cvtColor(snap, cv2.COLOR_BGR2HSV)
-			print("In debris color")
+		hsv = cv2.cvtColor(snap, cv2.COLOR_BGR2HSV)
+		print("In debris color")
+	
+		# red
+		lower1 = np.array([170, 150, 100], np.uint8)
+		upper1 = np.array([180, 255, 255], np.uint8)
+		lower2 = np.array([0, 150, 170], np.uint8)
+		upper2 = np.array([20, 255, 255], np.uint8)
+		red_mask1 = cv2.inRange(hsv, lower1, upper1)
+		red_mask2 = cv2.inRange(hsv, lower2, upper2)
+
+		#Set range for green color and define mask
+		green_lower = np.array([50, 100, 70], np.uint8)
+		green_upper = np.array([70, 255, 155], np.uint8)
+		green_mask = cv2.inRange(hsv, green_lower, green_upper) 
+
+		# Set range for blue color and define mask
+		blue_lower = np.array([100, 50, 50], np.uint8)
+		blue_upper = np.array([130, 255, 255], np.uint8)
+		blue_mask = cv2.inRange(hsv, blue_lower, blue_upper)
+
+		kernel = np.ones((5, 5), "uint8")
+		red_mask1 = cv2.dilate(red_mask1, kernel) 
+		red_mask2 = cv2.dilate(red_mask2, kernel) 
+		mask_red = cv2.bitwise_or(red_mask1, red_mask2)
+		res_red1   = cv2.bitwise_and(snap, snap, mask=red_mask1)
+		res_red2   = cv2.bitwise_and(snap, snap, mask=red_mask2)
+
+		# For green color 
+		green_mask = cv2.dilate(green_mask, kernel) 
+		res_green   = cv2.bitwise_and(snap, snap, mask=green_mask)
+
+		#For blue
+		blue_mask = cv2.dilate(blue_mask, kernel)
+		res_blue   = cv2.bitwise_and(snap, snap, mask=blue_mask)
+
+		# ─── Detection flags ─────────────────────────────────────────
+		redDetected   = False
+		greenDetected = False
+		blueDetected  = False
+
+		contoursR1, hierarchy = cv2.findContours(red_mask1, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+		for pic, contour in enumerate(contoursR1):
+			if cv2.contourArea(contour) > 500:
+				x, y, w, h = cv2.boundingRect(contour)
+				snap = cv2.rectangle(snap, (x, y), (x + w, y + h), (0, 0, 255), 2)
+				if len(contoursR1) >= 6:
+					cv2.putText(snap, "RocketBody Detected!", (x, y - 10),
+							cv2.FONT_HERSHEY_SIMPLEX, 1.0, (0, 0, 255), 2)
+					debris_color = "red"
+					need_color   = False
+					redDetected  = True
 		
-			# red
-			lower1 = np.array([170, 150, 100], np.uint8)
-			upper1 = np.array([180, 255, 255], np.uint8)
-			lower2 = np.array([0, 150, 170], np.uint8)
-			upper2 = np.array([20, 255, 255], np.uint8)
-			red_mask1 = cv2.inRange(hsv, lower1, upper1)
-			red_mask2 = cv2.inRange(hsv, lower2, upper2)
-
-			#Set range for green color and define mask
-			green_lower = np.array([50, 100, 70], np.uint8)
-			green_upper = np.array([70, 255, 155], np.uint8)
-			green_mask = cv2.inRange(hsv, green_lower, green_upper) 
-
-			# Set range for blue color and define mask
-			blue_lower = np.array([75, 50, 50], np.uint8)
-			blue_upper = np.array([130, 255, 255], np.uint8)
-			blue_mask = cv2.inRange(hsv, blue_lower, blue_upper)
-
-			kernel = np.ones((5, 5), "uint8")
-			red_mask1 = cv2.dilate(red_mask1, kernel) 
-			red_mask2 = cv2.dilate(red_mask2, kernel) 
-			mask_red = cv2.bitwise_or(red_mask1, red_mask2)
-			res_red1   = cv2.bitwise_and(snap, snap, mask=red_mask1)
-			res_red2   = cv2.bitwise_and(snap, snap, mask=red_mask2)
-
-			# For green color 
-			green_mask = cv2.dilate(green_mask, kernel) 
-			res_green   = cv2.bitwise_and(snap, snap, mask=green_mask)
-
-			#For blue
-			blue_mask = cv2.dilate(blue_mask, kernel)
-			res_blue   = cv2.bitwise_and(snap, snap, mask=blue_mask)
-
-			# ─── Detection flags ─────────────────────────────────────────
-			redDetected   = False
-			greenDetected = False
-			blueDetected  = False
-
-			contoursR1, hierarchy = cv2.findContours(red_mask1, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-			for pic, contour in enumerate(contoursR1):
-				if cv2.contourArea(contour) > 500:
-					x, y, w, h = cv2.boundingRect(contour)
-					snap = cv2.rectangle(snap, (x, y), (x + w, y + h), (0, 0, 255), 2)
-					if len(contoursR1) >= 6:
-						cv2.putText(snap, "RocketBody Detected!", (x, y - 10),
-								cv2.FONT_HERSHEY_SIMPLEX, 1.0, (0, 0, 255), 2)
-						debris_color = "red"
-						need_color   = False
-						redDetected  = True
-			
-			
-			contoursR2, hierarchy = cv2.findContours(red_mask2, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-			for pic, contour in enumerate(contoursR2):
-				if cv2.contourArea(contour) > 300:
-					x, y, w, h = cv2.boundingRect(contour)
-					snap = cv2.rectangle(snap, (x, y), (x + w, y + h), (0, 0, 255), 2)
-					if len(contoursR2) >= 6:
-						cv2.putText(snap, "RocketBody Detected!", (x, y - 10),
-								cv2.FONT_HERSHEY_SIMPLEX, 1.0, (0, 0, 255), 2)
-						debris_color = "red"
-						need_color   = False
-						redDetected  = True
-
-			# — Green
-			contoursG, hierarchy = cv2.findContours(green_mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-			for pic, contour in enumerate(contoursG):
-				if cv2.contourArea(contour) > 300:
-					x, y, w, h = cv2.boundingRect(contour)
-					snap = cv2.rectangle(snap, (x, y), (x + w, y + h), (0, 255, 0), 2)
-					if len(contoursG) >= 6:
-						cv2.putText(snap, "Starlink Detected!", (x, y - 10),
-								cv2.FONT_HERSHEY_SIMPLEX, 1.0, (0, 255, 0), 2)
-						debris_color = "green"
-						need_color = False
-						greenDetected = True
-
-			# — Blue
-			contoursB, hierarchy = cv2.findContours(blue_mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-			for pic, contour in enumerate(contoursB):
-				if cv2.contourArea(contour) > 100:
-					x, y, w, h = cv2.boundingRect(contour)
-					snap = cv2.rectangle(snap, (x, y), (x + w, y + h), (255, 0, 0), 2)
-					if len(contoursB) >= 6:
-						cv2.putText(snap, "CubeSat Detected!", (x, y - 10),
-								cv2.FONT_HERSHEY_SIMPLEX, 1.0, (255, 0, 0), 2)
-						debris_color = "blue"
-						need_color   = False
-						blueDetected = True
 		
+		contoursR2, hierarchy = cv2.findContours(red_mask2, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+		for pic, contour in enumerate(contoursR2):
+			if cv2.contourArea(contour) > 300:
+				x, y, w, h = cv2.boundingRect(contour)
+				snap = cv2.rectangle(snap, (x, y), (x + w, y + h), (0, 0, 255), 2)
+				if len(contoursR2) >= 6:
+					cv2.putText(snap, "RocketBody Detected!", (x, y - 10),
+							cv2.FONT_HERSHEY_SIMPLEX, 1.0, (0, 0, 255), 2)
+					debris_color = "red"
+					need_color   = False
+					redDetected  = True
+
+		# — Green
+		contoursG, hierarchy = cv2.findContours(green_mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+		for pic, contour in enumerate(contoursG):
+			if cv2.contourArea(contour) > 300:
+				x, y, w, h = cv2.boundingRect(contour)
+				snap = cv2.rectangle(snap, (x, y), (x + w, y + h), (0, 255, 0), 2)
+				if len(contoursG) >= 6:
+					cv2.putText(snap, "Starlink Detected!", (x, y - 10),
+							cv2.FONT_HERSHEY_SIMPLEX, 1.0, (0, 255, 0), 2)
+					debris_color = "green"
+					need_color = False
+					greenDetected = True
+
+		# — Blue
+		contoursB, hierarchy = cv2.findContours(blue_mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+		for pic, contour in enumerate(contoursB):
+			if cv2.contourArea(contour) > 100:
+				x, y, w, h = cv2.boundingRect(contour)
+				snap = cv2.rectangle(snap, (x, y), (x + w, y + h), (255, 0, 0), 2)
+				if len(contoursB) >= 2:
+					cv2.putText(snap, "CubeSat Detected!", (x, y - 10),
+							cv2.FONT_HERSHEY_SIMPLEX, 1.0, (255, 0, 0), 2)
+					debris_color = "blue"
+					need_color   = False
+					blueDetected = True
+	
 
 
 
-			# show and check for quit
-			cv2.imshow("Debris Detection", snap)
-			if cv2.waitKey(1) & 0xFF == ord('q'):
-				is_running = False
-				webcam.release() 
-				cv2.destroyAllWindows() 
-				break
+		# show and check for quit
+		cv2.imshow("Debris Detection", snap)
+		if cv2.waitKey(1) & 0xFF == ord('q'):
+			is_running = False
+			webcam.release() 
+			cv2.destroyAllWindows() 
+			break
 
 if __name__ == "__main__":
 	# start threads
