@@ -43,10 +43,20 @@ starter = True
 count_to_over = 0
 searcher = True
 
+HEIGHT = 1080
+WIDTH = 1920
+
 
 # Initialize webcam
 webcam = cv2.VideoCapture(0)
-#webcam.set(cv2.CAP_PROP_FPS, 30) #set frames per second so the camera doesn't get overwhelmed
+webcam.set(cv2.CAP_PROP_FRAME_WIDTH, WIDTH)
+webcam.set(cv2.CAP_PROP_FRAME_HEIGHT, HEIGHT)
+webcam.set(cv2.CAP_PROP_AUTO_EXPOSURE, 3)
+webcam.set(cv2.CAP_PROP_AUTO_EXPOSURE, 1)
+webcam.set(cv2.CAP_PROP_BRIGHTNESS, 250)
+webcam..set(cv2.CAP_PROP_EXPOSURE, 39) 
+webcam..set(cv2.CAP_PROP_BUFFERSIZE, 1) 
+webcam.set(cv2.CAP_PROP_FPS, 120)
 
 
 def capture_frame(): 
@@ -74,30 +84,14 @@ def capture_frame():
 def debris_detect():
 	global is_running, need_color, debris_color
 
-	# get capture resolution once
-	h = int(webcam.get(cv2.CAP_PROP_FRAME_HEIGHT))
-	w = int(webcam.get(cv2.CAP_PROP_FRAME_WIDTH))
-	newCamMtx, roi = cv2.getOptimalNewCameraMatrix(
-		camera_matrix, distortion_coeffs, (w, h), alpha=1
-	)
-	mapx, mapy = cv2.initUndistortRectifyMap(
-		camera_matrix, distortion_coeffs, None,
-		newCamMtx, (w, h), cv2.CV_16SC2
-	)
-	x0, y0, w_roi, h_roi = roi
-	
 	# Continue processing frames while is_running is True
 	while (is_running):
 		with frame_lock:
-			raw = color_frame.copy if color_frame is not None else None
-
-		if raw is None:
-			time.sleep(0.01)
+			snap = color_frame.copy() if color_frame is not None else None
+			
+		if snap is None:
+			time.sleep(1)
 			continue
-
-		# 2) undistort / remap
-		und = cv2.remap(raw, mapx, mapy, cv2.INTER_LINEAR)
-		snap = und[y0 : y0 + h_roi, x0 : x0 + w_roi]
 		
 		if need_color:
 			hsv = cv2.cvtColor(snap, cv2.COLOR_BGR2HSV)
