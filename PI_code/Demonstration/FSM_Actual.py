@@ -186,8 +186,8 @@ def stateE():
     global initialize
     global capture_start
     #set the offsets that will be read from in either scenario
-    MOVE_OFFSET=pair_select
-    ROTATE_OFFSET=0+configuring_arm+arm_configuration
+    MOVE_OFFSET=pair_select+3 #note that there is a +3 because when moving, our offset starts at 3, 4, 5 for pair0, pair1, pairboth, in terms of reading
+    ROTATE_OFFSET=3 #we only read from the one location on the rotational one, so this is kinda unnecessary
     #I think we need to consider initializing, then capturing, then pure movement
     '''
     Initializing:
@@ -230,7 +230,7 @@ def stateE():
             #if pair0 and pair1 did stuff, we add that to the status_UART
             if(move_status[0]!=0):
                 status_UART+=Generate_Status(move_status[0])+"\r\n"
-            if(move_status[1]!=0):
+            if(move_status[1]!=10):
                 status_UART+=Generate_Status(move_status[1])+"\r\n"
             new_status=1            
             moving_arm=0 #need to set this back to 0 so we don't come here again
@@ -286,7 +286,7 @@ def stateE():
             #if pair0 and pair1 did stuff, we add that to the status_UART
             if(move_status[0]!=0):
                 status_UART+=Generate_Status(move_status[0])+"\r\n"
-            if(move_status[1]!=0):
+            if(move_status[1]!=10):
                 status_UART+=Generate_Status(move_status[1])+"\r\n"
             new_status=1            
             moving_arm=0 #need to set this back to 0 so we don't come here again
@@ -308,7 +308,7 @@ def stateE():
         #if pair0 and pair1 did stuff, we add that to the status_UART
         if(move_status[0]!=0):
             status_UART+=Generate_Status(move_status[0])+"\r\n"
-        if(move_status[1]!=0):
+        if(move_status[1]!=10):
             status_UART+=Generate_Status(move_status[1])+"\r\n"
         new_status=1            
         moving_arm=0 #need to set this back to 0 so we don't come here again

@@ -107,6 +107,7 @@ const int increment = 1; //I think its probably fine to have it move 1 step at a
 
 AccelStepper stepper_lin0(AccelStepper::DRIVER, PAIR0_STP_PIN, PAIR0_DIR_PIN);
 AccelStepper stepper_lin1(AccelStepper::DRIVER, PAIR1_STP_PIN, PAIR1_DIR_PIN);
+MultiStepper steppers_lin;
 
 // MultiStepper steppers_lin;
 int numSteppers = 2; // Number of steppers in MultiStepper
@@ -119,6 +120,9 @@ void setup() {
     // stepper_lin1.setCurrentPosition(0); // Set current position for stepper
     stepper_lin1.setMaxSpeed(maxSpeed);
     stepper_lin1.setAcceleration(maxAccel);
+
+    steppers_lin.add(stepper_lin0);
+    steppers_lin.add(stepper_lin1);
 
     //initializing the end stops
     pinMode(ENDSTOP_TOP_0_PIN, INPUT_PULLUP);
@@ -152,7 +156,7 @@ void loop() {
  
  //debugging
  //Serial.println(state); //0 is waiting for message, 1 is moving, 2 is done
- delay(3000); //wait 3 seconds between this, just for debugging
+ //delay(3000); //wait 3 seconds between this, just for debugging
  
  
   switch(state){
@@ -385,6 +389,9 @@ void stepper1_move(){
 
 }
 
+
+//the challenging part here is that I need to get both of them to move together now.
+
 void steppers_moveMM (MultiStepper &steppers, float mm, int numSteppers) {
   long positions[numSteppers];
   float steps = (mm*steps_rev)/(200*lead_step);
@@ -444,5 +451,11 @@ void Pi_Data_Receive(){
     //Because we have multiple offsets to read from for the status, 
     newMessage = true;
     messageLength = 0;
+
+}
+
+//this function gets called whenever the Pi requests data from the Arduino about the execution status
+void Pi_Data_Request(){
+  //I think we need to get the offset first?
 
 }

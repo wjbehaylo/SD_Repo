@@ -142,6 +142,15 @@ Libraries to be included:
  //I'm not sure what Input_Pullup is, I think it is that if input is 1 (pressed) it sets the logic to 1
  pinMode(ENDSTOP_0_SIGNAL_PIN, INPUT_PULLUP);
  pinMode(ENDSTOP_90_SIGNAL_PIN, INPUT_PULLUP);
+  //initialize the I2C slave
+ Wire.begin(ROT_ARD_ADD); 
+ Wire.onReceive(PiDataReceive); //this is triggered when Raspberry Pi sends data
+ Wire.onRequest(PiDataRequest); //this is triggered when Raspberry Pi requests data
+ 
+ //Start serial for debugging
+ //Note that you get rid of this and all serial statements if no longer debugging
+ Serial.begin(9600);
+ Serial.println("Rotational Arduino Initialized.");
  
  //now we're gonna rotate until we hit the ENDSTOP_0_SIGNAL_PIN, remember that it is active low
  while(digitalRead(ENDSTOP_0_SIGNAL_PIN)==HIGH){
@@ -167,15 +176,7 @@ Libraries to be included:
  //attachInterrupt(digitalPinToInterrupt(ENDSTOP_90_SIGNAL_PIN), triggered90Interrupt, CHANGE);
  
  
- //initialize the I2C slave
- Wire.begin(ROT_ARD_ADD); 
- Wire.onReceive(PiDataReceive); //this is triggered when Raspberry Pi sends data
- Wire.onRequest(PiDataRequest); //this is triggered when Raspberry Pi requests data
- 
- //Start serial for debugging
- //Note that you get rid of this and all serial statements if no longer debugging
- Serial.begin(9600);
- Serial.println("Rotational Arduino Initialized.");
+
  }
  
  void loop() {
@@ -313,6 +314,7 @@ void stepper_rotate () {
   if(int(targetAngle) == int(currentAngle)){
     if(configuring == true){
       executionStatus = 22;
+      configuring = false; //reset this now
       return;
     }
     else {

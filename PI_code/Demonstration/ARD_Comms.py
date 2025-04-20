@@ -88,7 +88,9 @@ OFFSET:
         This is for both arm movement. 
         Note that for this, each of the output bytes will be set to non-10 divisible values, meaning they will both contribute to UART status when checked
         
-        The bytes will be interpretted as separate integers. The byte0 is pair0, byte1 is pair1. Thus they use the same encoding as above
+        the two different numbers representing the status of the pairs will be sent individually, and interpretted individually
+        so there are technically 36 options (6 * 6 cause each has 6), but I'm not going to write them all here.
+        On the Pi's side of the communication, there will have to be some thinking based on global flags to properly interpret the status
         Status:
             0:
                 pair0 Still moving/completing task
@@ -197,43 +199,45 @@ def lin_ARD_Write(OFFSET, MESSAGE):
     return 0
 
 #This function reads from the target offset of the Arduino
-#It will return the status of the movement
+#It will return the status of the movement.
 def lin_ARD_Read(OFFSET):
+    
     global i2c_arduino
-    status={0,0}
+    status={0,10} #first is status of pair0, second is status of pair1
     try:
         while True:
             sleep(1)
             #read block of data from arduino reg based on arduino's offset
-            if OFFSET == 0 or OFFSET == 1:
-                status[OFFSET] = i2c_arduino.read_byte_data(lin_ard_add, OFFSET)
-                print(f"Pair {OFFSET} Status: {status[OFFSET]}")
+            if ((OFFSET == 3) or (OFFSET == 4)):
+                status[OFFSET-3] = i2c_arduino.read_byte_data(lin_ard_add, OFFSET)
+                print(f"Pair {OFFSET-3} Status: {status[OFFSET-3]}")
 
                 #interpret the status 
                 #note that this is just for debugging, the function will return the actual value
                 #the #10 works since the arms have the same things here.
                 if status[OFFSET]%10 == 0:
-                    print(f"Pair {OFFSET} Still moving/completing task")
+                    print(f"Pair {OFFSET-3} Still moving/completing task")
                     continue
                 else:
                     #Use our trusty Generate_Status function
-                    print(Generate_Status(status[OFFSET]))
+                    print(Generate_Status(status[OFFSET-3]))
+                    return status
                 
             
-            elif OFFSET ==2:
+            elif (OFFSET == 5):
                 #read 2 bytes,1 for each pair.
                 #The return of the function here will be
                 status = i2c_arduino.read_block_data(lin_ard_add, OFFSET, 2)
             
                 #This should just go twice, once for each motor's status
-                for i in status:
+                for i in range(2):
                     if(status[i]%10) == 0:
                         print(f"Pair {i} Status: Still moving/completing task")
                     else:
-                        print(Generate_Status(status[OFFSET]))
+                        print(Generate_Status(status[i]))
             
                 # Break if the status of each pair is nonzero. Otherwise, one is still executing
-                    if status[0] != 0 and status[1] != 0:
+                    if status[0] != 0 and status[1] != 10:
                         return status
                     
                 
