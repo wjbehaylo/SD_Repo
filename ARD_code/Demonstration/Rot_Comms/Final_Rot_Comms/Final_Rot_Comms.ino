@@ -128,7 +128,7 @@ Libraries to be included:
  stepper_gear1.setMaxSpeed(500);
  stepper_gear1.setAcceleration(500);
  stepper_gear1.setCurrentPosition(0);
- 
+
  //debugging
  /*
  stepper_gear1.moveTo(20);
@@ -143,6 +143,17 @@ Libraries to be included:
  pinMode(ENDSTOP_0_SIGNAL_PIN, INPUT_PULLUP);
  pinMode(ENDSTOP_90_SIGNAL_PIN, INPUT_PULLUP);
  
+ //now we're gonna rotate until we hit the ENDSTOP_0_SIGNAL_PIN, remember that it is active low
+ while(digitalRead(ENDSTOP_0_SIGNAL_PIN)==HIGH){
+   stepper_moveTheta(currentAngle - increment); // need to confirm direction (+/-),
+   currentAngle-=increment;
+ }
+ //at this point, the 0 degree end stop should be triggered
+ currentAngle=0;
+ stepper_gear1.setCurrentPosition(0); //need to do this again now that it's initialized
+
+
+
  //I am declaring those pins as interrupts so that they can set global flags that will stop movement
  /*
     note a slight concern I am having is that if the movement is started when one is triggered it might be immediately stopped, functionally trapping us there. 
