@@ -64,15 +64,17 @@ Libraries to be included:
 //Honestly I'm not sure what of these I will/won't need, I will probably get rid of some and add some as I go through
 volatile uint8_t instruction[32] = {0}; //content of the message
 volatile uint8_t messageLength=0; //length of the message sent
-volatile uint8_t newMessage=0; //1 when we have a message to interpret
+volatile bool newMessage=false; //1 when we have a message to interpret
 
 
-volatile uint8_t messageReceived=0; //1 if the Pi has prompted the non 20 status, indicating that 'DONE' state is done
-volatile bool configuring = false;
-volatile short ctrlBusy=0; //whether or not the control system is actively busy or not
-volatile short ctrlDone=0; //whether or not the control system is done (1) or not.
+volatile bool messageReceived=false; //1 if the Pi has prompted the non 20 status, indicating that 'DONE' state is done
+volatile bool ctrlBusy=false; //whether or not the control system is actively busy or not
+volatile bool ctrlDone=false; //whether or not the control system is done (1) or not.
+volatile bool moving0 = false; //if moving pair 0
+volatile bool moving1 = false; //if moving pair 1
 
 //these are the volatile things to record the position and target position of each of the motors, as well as their execution status
+//note that for now we are communicating steps, not mm of movement
 volatile uint8_t executionStatus0=0; //the status of the capturing execution for pair 0
 volatile uint8_t executionStatus1=10; //the status of the capturing execution for pair 1
 volatile long targ_steps_pair0 = 0;
@@ -101,6 +103,7 @@ const int steps_rev = 400; // 1/2 microstep: Steps/Rev = 200 (no microstep)
 const int threshold = 60;
 const int maxSpeed = 500;
 const int maxAccel = 500;
+const int increment = 1; //I think its probably fine to have it move 1 step at a time, if too slow we could increase this though
 
 AccelStepper stepper_lin0(AccelStepper::DRIVER, PAIR0_STP_PIN, PAIR0_DIR_PIN);
 AccelStepper stepper_lin1(AccelStepper::DRIVER, PAIR1_STP_PIN, PAIR1_DIR_PIN);
@@ -141,8 +144,248 @@ void setup() {
 }
 
 void loop() {
-  
+  //what we need here is to just wait to see if new thing to rotate to has been sent or not
+ static int state = WAIT; //our state we are initializing to. Could be moving or done alternatively
+ //based on what we get from 'on receive', we might change states
+ 
+ //the functionality varies depending on what we are actively doing
+ 
+ //debugging
+ //Serial.println(state); //0 is waiting for message, 1 is moving, 2 is done
+ delay(3000); //wait 3 seconds between this, just for debugging
+ 
+ 
+  switch(state){
+    case WAIT:
+      //Serial.println("Waiting for message");
+      if(newMessage==true){
+        //debugging
+        //Serial.print("newMessage: ");
+        //Serial.println(newMessage);
+        
+        //here we will go into the moving state, and begin to move
+        //the targetAngle is set in the receiveData ISR, 
+        state=MOVING;
+        //we also need to signal that we no longer have a new message
+        newMessage=false;
+        break;
+      }
+      else{
+        state=WAIT;
+        break;
+      }
+    case MOVING:
+      //debugging:
+      //Serial.print("ctrlDone: ");
+      //Serial.println(ctrlDone);
+      //Serial.print("ctrlBusy: ");
+      //Serial.println(ctrlBusy);
+      
+      //if we are not actively controlling the system, 
+      if(ctrlDone==true){
+        //if we are done moving, we will go to the next state, and set the value of 'execution status' to the resulf of our move.
+        ctrlDone=false;
+        state=DONE;
+        break;
+      }
+      if(ctrlBusy==false){
+        //here we add in whatever move function
+        ctrlBusy=true;
+        //============MOVE FUNCTION=================
+        //debugging
+        //Serial.println("Starting moving!");
+        if(moving0 == true && moving1 == true){
+          steppers_move();
+        }
+        else if (moving0 == true){
+          stepper0_move();
+        }
+        else if (moving1 == true){
+          stepper1_move();
+        }
+        else{
+          Serial.println("No steppers to move");
+        }
+        state=MOVING;
+        break;
+      }
+      
+      //if we are here we haven't just started or just finished moving
+      //Serial.println("Still Moving");
+    break;
+  case DONE:
+  //if the Pi has received our updated message, we can move back to waiting
+    if(messageReceived==true){
+      //debugging
+      //Serial.println("Pi has sampled the non-20 messsage");
+      
+      messageReceived=false;
+      state=WAIT;
+      break;
+    }
+    else{
+      state=DONE;
+      break;
+    }
+  }
+ //at this point, we are done with state transition logic. 
+ //I am a bit concerned at the simplicity as compared to seed lab to be honest, but I think this all makes sense
+ //there was just much more logic in the other one after the loop ended. 
 }
+//Note that for all of these, positive steps is moving arms up, cable tree down, negative steps is moving arms down, cable tree up
+
+
+//stpper_lin0 is defined as a global variable, so we control it by changing its value globally rather than a pass by reference or whatever
+void stepper0_move(){
+  //the amount to move should be stored in targ_steps_pair0
+  //and this would be updated when messages are sent or received
+
+  
+    //debugging
+    Serial.print("Moving pair0\ncurr_steps_pair0: ");
+    Serial.println(curr_steps_pair0);
+    Serial.print("targ_steps_pair0: ");
+    Serial.println(targ_steps_pair0);
+
+  //if we want to move to more steps than we're at, we are actually closing the arm/moving tree down rn
+  if(targ_steps_pair0>curr_steps_pair0){
+    //we want to keep looping as long as the following things are true
+    // we have more steps to move
+    // we haven't triggered the low end stop (maximum closure)
+    // we haven't gotten pressure on the sensors, which output a number 0-1023 when read, with 1023 being that they are experiencing full force
+    
+    while(targ_steps_pair0 > curr_steps_pair0 && digitalRead(ENDSTOP_BOT_0_PIN)==HIGH && analogRead(FORCE0_PIN)<1000 && analogRead(FORCE1_PIN<1000)){
+      stepper_lin0.moveTo(curr_steps_pair0+increment);
+      stepper_lin0.runToPosition();
+      curr_steps_pair0+=increment;
+    }
+  }
+  //we are opening the pair/moving tree up here
+  else if (targ_steps_pair0<curr_steps_pair0){
+    //we want to keep looping as long as the following things are true
+    // we have more steps to move
+    // we haven't triggered the high end stop (maximum closure)
+    
+    while(targ_steps_pair0 < curr_steps_pair0 && digitalRead(ENDSTOP_TOP_0_PIN)==HIGH){
+      stepper_lin0.moveTo(curr_steps_pair0-increment);
+      stepper_lin0.runToPosition();
+      curr_steps_pair0-=increment;
+    }
+  }
+  //if we get here, we aren't moving this pair for some reason
+  else{
+    Serial.println("No pair0 movement");
+  }
+  //now we have finished moving stepper0
+  moving0 = false;
+  ctrlBusy = false;
+  ctrlDone = true;
+  
+  //now we need to determine our output status based on what flags are set
+  //our priority will go: force sensor, end stop, normal movement
+  if(analogRead(FORCE0_PIN)<1000 || analogRead(FORCE1_PIN<1000)){
+    executionStatus0 = 4;
+    return;
+  }
+  //fully open end stop
+  else if(digitalRead(ENDSTOP_TOP_0_PIN)==LOW){
+    executionStatus0 = 2;
+    return;
+  }
+  //fully closed end stop
+  else if(digitalRead(ENDSTOP_BOT_0_PIN)==LOW){
+    executionStatus0 = 3;
+    return;
+  }
+  //movement without force sensors or end stops
+  else if (targ_steps_pair0==curr_steps_pair0){
+    executionStatus0 = 1;
+    return;
+  }
+  //unrecognized command/result/failed output
+  else{
+    executionStatus0 = 5;
+    return;
+  }
+
+}
+
+//stepper_lin1 is defined as a global variable as well, so we control it by accessing it locally not passing by reference
+void stepper1_move(){
+  //the amount to move should be stored in targ_steps_pair0
+  //and this would be updated when messages are sent or received
+
+  
+    //debugging
+    Serial.print("Moving pair1\ncurr_steps_pair1: ");
+    Serial.println(curr_steps_pair1);
+    Serial.print("targ_steps_pair1: ");
+    Serial.println(targ_steps_pair1);
+
+  //if we want to move to more steps than we're at, we are actually closing the arm/moving tree down rn
+  if(targ_steps_pair1>curr_steps_pair1){
+    //we want to keep looping as long as the following things are true
+    // we have more steps to move
+    // we haven't triggered the low end stop (maximum closure)
+    // we haven't gotten pressure on the sensors, which output a number 0-1023 when read, with 1023 being that they are experiencing full force
+    
+    while(targ_steps_pair1 > curr_steps_pair1 && digitalRead(ENDSTOP_BOT_1_PIN)==HIGH && analogRead(FORCE2_PIN)<1000 && analogRead(FORCE3_PIN<1000)){
+      stepper_lin1.moveTo(curr_steps_pair1+increment);
+      stepper_lin1.runToPosition();
+      curr_steps_pair1+=increment;
+    }
+  }
+  //we are opening the pair/moving tree up here
+  else if (targ_steps_pair1<curr_steps_pair1){
+    //we want to keep looping as long as the following things are true
+    // we have more steps to move
+    // we haven't triggered the high end stop (maximum closure)
+    
+    while(targ_steps_pair1 < curr_steps_pair1 && digitalRead(ENDSTOP_TOP_1_PIN)==HIGH){
+      stepper_lin1.moveTo(curr_steps_pair1-increment);
+      stepper_lin1.runToPosition();
+      curr_steps_pair1-=increment;
+    }
+  }
+  //if we get here, we aren't moving this pair for some reason
+  else{
+    Serial.println("No pair1 movement");
+  }
+  //now we have finished moving stepper0
+  moving1 = false;
+  ctrlBusy = false;
+  ctrlDone = true;
+  
+  //now we need to determine our output status based on what flags are set
+  //our priority will go: force sensor, end stop, normal movement
+  if(analogRead(FORCE2_PIN)<1000 || analogRead(FORCE3_PIN<1000)){
+    executionStatus1 = 14;
+    return;
+  }
+  //fully open end stop
+  else if(digitalRead(ENDSTOP_TOP_1_PIN)==LOW){
+    executionStatus1 = 12;
+    return;
+  }
+  //fully closed end stop
+  else if(digitalRead(ENDSTOP_BOT_1_PIN)==LOW){
+    executionStatus1 = 13;
+    return;
+  }
+  //movement without force sensors or end stops
+  else if (targ_steps_pair1==curr_steps_pair1){
+    executionStatus1 = 11;
+    return;
+  }
+  //unrecognized command/result/failed output
+  else{
+    executionStatus1 = 15;
+    return;
+  }
+
+}
+
+
 
 void stepper_moveMM (AccelStepper &stepper, float mm) {
   float steps = (mm*steps_rev)/(200*lead_step);
@@ -180,6 +423,7 @@ void Pi_Data_Receive(){
         byteFloat.bytes[2] = instruction[1];
         byteFloat.bytes[3] = instruction[0];
         targ_steps_pair0 = byteFloat.floatValue + curr_steps_pair0;
+        moving0 = true;
     }
     //if offset=1, we are getting sent the target steps for pair1
     else if(offset==1){
@@ -188,6 +432,7 @@ void Pi_Data_Receive(){
         byteFloat.bytes[2] = instruction[1];
         byteFloat.bytes[3] = instruction[0];
         targ_steps_pair1 = byteFloat.floatValue + curr_steps_pair1;
+        moving1 = true;
     }
     //if offset=2, we are getting the steps for both pairs
     else if(offset==2){
@@ -197,11 +442,15 @@ void Pi_Data_Receive(){
         byteFloat.bytes[3] = instruction[0];
         targ_steps_pair0 = byteFloat.floatValue + curr_steps_pair0;
         targ_steps_pair1 = byteFloat.floatValue + curr_steps_pair1;
+        moving0 = true;
+        moving1 = true;
     }
     else{
         //debugging
         Serial.println("Unknown offset");
     }
     //Because we have multiple offsets to read from for the status, 
+    newMessage = true;
+    messageLength = 0;
 
 }

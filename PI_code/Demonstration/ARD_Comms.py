@@ -203,7 +203,7 @@ def lin_ARD_Read(OFFSET):
     status={0,0}
     try:
         while True:
-            sleep(10)
+            sleep(1)
             #read block of data from arduino reg based on arduino's offset
             if OFFSET == 0 or OFFSET == 1:
                 status[OFFSET] = i2c_arduino.read_byte_data(lin_ard_add, OFFSET)
@@ -272,7 +272,8 @@ def rot_ARD_Read(OFFSET):
     global i2c_arduino
     try:
         while True:
-            sleep(10)
+            sleep(1)
+            
             if(OFFSET==3):
                 #debugging
                 print("Trying to read byte data")
