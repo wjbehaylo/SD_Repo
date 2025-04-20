@@ -403,6 +403,26 @@ def stateF():
         return stateC
         
     
+def stateQ():
+    global is_running, program_quit
+
+    print("Program terminated. Shutting down the system...")
+
+    program_quit = 1
+    is_running = False
+
+    #close any open connections
+    try:
+        i2c_arduino.close()
+    except: 
+        pass
+    try:
+        ser.close()
+    except:
+        pass
+
+    #function for stopping the camera?
+    return stateQ
 #At this point, we are actually in the program that will be running to execute it all.
 
 #state transition dictionary
