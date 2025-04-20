@@ -88,9 +88,9 @@ new_status=0
 #
 
 while(True):
-    command = input("Enter Y to start, or Q to quit: ")
+    command = input("Enter 'Y' to rotate an arbitrary amount, '+' for plus config, '=' for equals config, or 'Q' to quit: ")
     while(command != "Y" and command != "Q"):
-        command = input("Enter Y to start, or Q to quit: ")
+        command = input("Enter 'Y' to rotate an arbitrary amount, '+' for plus config, '=' for equals config, or 'Q' to quit: ")
     if(command == "Q"):
         print("Entered Q, exiting test")
         break
@@ -102,14 +102,39 @@ while(True):
                 print("Enter a correct number")
                 continue
             break
+    #in the plus configuration we have both pairs at 45 
+    elif(command == "+"):
+        while(True):
+            try:
+                print("Rotating into the '+' configuration (45).")
+                rotate_amount= 45.0
+            except:
+                print("Enter a correct number")
+                continue
+            break
+    #in the equals configuration we have both pairs at 0
+    elif(command == "="):
+        while(True):
+            try:
+                print("Rotating into the '=' configuration (0).")
+                rotate_amount= 0.0
+            except:
+                print("Enter a correct number")
+                continue
+            break
+    else: 
+        #invalid entry; loop back
+        continue
             
-        #now we need to tell the Arduino to move that far, and wait for it to move that far
-        rot_ARD_Write(0, rotate_amount)
+    #now we need to tell the Arduino to move that far, and wait for it to move that far
+    rot_ARD_Write(0, rotate_amount)
         
-        #debugging
-        print("Wrote "+ str(rotate_amount) + " to Arduino")
+    #debugging
+    print("Wrote "+ str(rotate_amount) + " to Arduino")
         
-        result = rot_ARD_Read(3)
+    result = rot_ARD_Read(3)
+    status_msg = Generate_Status(result)
+    print(status_msg)
         #now that we've written to it and read from it, result should store the non '20' output
         #so we can use generate status function and continue with the loop
         
