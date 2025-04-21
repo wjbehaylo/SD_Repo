@@ -346,8 +346,8 @@ void PiDataReceive(){
   offset = Wire.read(); //this is the offset of the data
   
   //debugging
-  //Serial.print("We got offset: ");
-  //Serial.println(offset);
+  Serial.print("We got offset: ");
+  Serial.println(offset);
   
   //now we want the rest of the message
   while(Wire.available()){
@@ -380,7 +380,7 @@ void PiDataReceive(){
     Serial.println("Unknown offset");
   } 
   //debugging check tbh
-  //Serial.println("Rotating to angle: " + String(targetAngle));
+  Serial.println("Rotating to angle: " + String(targetAngle));
   //now we have interpretted the message, so we have to signal that we have a new message so our FSM can progress
   newMessage=1;
   messageLength=0; //we don't need this anymore
