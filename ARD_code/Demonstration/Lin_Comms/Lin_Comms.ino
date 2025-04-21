@@ -581,8 +581,15 @@ void steppers_moveMM (MultiStepper &steppers, float mm, int numSteppers) {
 //This gets called when the Pi tries to send data over
 //
 void PiDataReceive(){
+    //debugging
+    Serial.println("Entering PiDataReceive");
+
     //getting the offset
     offset = Wire.read();
+
+    //debugging
+    Serial.print("We are receiving offset: ");
+    Serial.println(offset);
 
     //getting the full message
     while(Wire.available()){
@@ -644,6 +651,12 @@ void PiDataRequest(){
   //I think we need to get the offset first?
   //I think this is done in the Pi_Data_Receive, so offset should be properly set already
   //for the pair0 information
+
+  //debugging
+  Serial.println("Entering PiDataRequest");
+  Serial.print("Offset is: ");
+  Serial.println(offset);
+
   if(offset==3){
     Wire.write(executionStatus0);
     //also make sure that if the status is as desired we continue
