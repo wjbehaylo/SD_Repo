@@ -103,6 +103,7 @@ while True:
         while(True):
             try:
                 rotate_amount= float(input("Enter a number of degrees to rotate: "))
+                offset = 0
             except:
                 print("Enter a correct number")
                 continue
