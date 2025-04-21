@@ -111,7 +111,7 @@ while True:
         print(f"Sent to Arduino: pair={pair_select}, steps={move_amount}")
         
     #debugging
-    print("Wrote offset: "+ str(offset) + " and move_amount: " + str(move_amount) + " to Arduino")
+    print("Wrote offset: "+ str(pair_select) + " and move_amount: " + str(move_amount) + " to Arduino")
     sleep(5)
     result=[0,0] #This is just so it is initialized properly
     result = lin_ARD_Read(3+pair_select)
