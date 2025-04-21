@@ -648,7 +648,7 @@ void PiDataReceive(){
         byteFloat.bytes[2] = instruction[1];
         byteFloat.bytes[3] = instruction[0];
         targ_steps_pair[0] = byteFloat.floatValue + curr_steps_pair[0];
-        targ_steps_pair[1] = byteFloat.floatValue + curr_steps_pair[0];
+        targ_steps_pair[1] = byteFloat.floatValue + curr_steps_pair[1];
         moving0 = true;
         moving1 = true;
     }
