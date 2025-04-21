@@ -147,8 +147,19 @@ void setup() {
     Serial.println("Fully opening claw:");
     
     //we need to initialize their positions
+    //debugging, note that the '+' in the below code need to be - for proper functionality
+
     curr_steps_pair[0]=0;
     curr_steps_pair[1]=0;
+
+    //debugging
+    if(digitalRead(ENDSTOP_TOP_0_PIN)==HIGH){
+      Serial.println("ENDSTOP_TOP_0_PIN is HIGH");
+    }
+    if(digitalRead(ENDSTOP_TOP_1_PIN)==HIGH){
+      Serial.println("ENDSTOP_TOP_1_PIN is HIGH");
+    }
+
     while(digitalRead(ENDSTOP_TOP_0_PIN)==HIGH && digitalRead(ENDSTOP_TOP_1_PIN)==HIGH){
       curr_steps_pair[0] = curr_steps_pair[0] - increment;
       curr_steps_pair[1] = curr_steps_pair[1] - increment;
