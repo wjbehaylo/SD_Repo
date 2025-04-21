@@ -97,7 +97,7 @@ volatile uint8_t offset = 0; //offset of the message
 const float lead_step = 0.01; // 0.01mm: Lead/Revolution = 2mm
 const int steps_rev = 400; // 1/2 microstep: Steps/Rev = 200 (no microstep)
 const int threshold = 60;
-const int maxSpeed = 1000;
+const int maxSpeed = 500; //the max speed being too high (1000) when we run both together results in a loud buzzing noise and no movement
 const int maxAccel = 500;
 const int increment = 10; //I think its probably fine to have it move 1 step at a time, if too slow we could increase this though
 
@@ -160,23 +160,25 @@ void setup() {
       Serial.println("ENDSTOP_TOP_1_PIN is HIGH");
     }
 
+    //debugging, the '+' should be '-', but I just want to see if it goes up fast too in this version
+
     while(digitalRead(ENDSTOP_TOP_0_PIN)==HIGH && digitalRead(ENDSTOP_TOP_1_PIN)==HIGH){
-      curr_steps_pair[0] = curr_steps_pair[0] - increment;
-      curr_steps_pair[1] = curr_steps_pair[1] - increment;
+      curr_steps_pair[0] = curr_steps_pair[0] + increment;
+      curr_steps_pair[1] = curr_steps_pair[1] + increment;
       steppers_lin.moveTo(curr_steps_pair);
       steppers_lin.runSpeedToPosition();
     }
     //at this point, at least one of the arms has hit its position, so we do the other
     while(digitalRead(ENDSTOP_TOP_0_PIN)==HIGH){
-      stepper_lin0.moveTo(curr_steps_pair[0]-increment);
+      stepper_lin0.moveTo(curr_steps_pair[0]+increment);
       stepper_lin0.runSpeedToPosition();
-      curr_steps_pair[0]=curr_steps_pair[0]-increment;
+      curr_steps_pair[0]=curr_steps_pair[0]+increment;
     }
     //if it wasn't that one, it must be this one
     while(digitalRead(ENDSTOP_TOP_1_PIN)==HIGH){
-      stepper_lin1.moveTo(curr_steps_pair[1]-increment);
+      stepper_lin1.moveTo(curr_steps_pair[1]+increment);
       stepper_lin1.runSpeedToPosition();
-      curr_steps_pair[1]=curr_steps_pair[1]-increment;
+      curr_steps_pair[1]=curr_steps_pair[1]+increment;
     }
     //we need to initialize their position that will be stored and changed and whatnot
     curr_steps_pair[0]=0;
