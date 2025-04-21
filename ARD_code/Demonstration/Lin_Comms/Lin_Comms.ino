@@ -451,8 +451,6 @@ void stepper1_move(){
     return;
   }
   */
-  //movement without force sensors or end stops
-  else 
   //unrecognized command/result/failed output
   else{
     executionStatus1 = 15;
