@@ -192,7 +192,8 @@ def lin_ARD_Write(OFFSET, MESSAGE):
     #This will be passed as input to this function though
     try:
         i2c_arduino.write_i2c_block_data(lin_ard_add, OFFSET, linear_array)
-        sleep(0.1)
+        #debugging. might be necessary though also
+        sleep(1)
     except IOError:
         print("Could not write data to the Arduino")
         return -1
