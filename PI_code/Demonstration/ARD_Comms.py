@@ -215,7 +215,7 @@ def lin_ARD_Read(OFFSET):
                 #interpret the status 
                 #note that this is just for debugging, the function will return the actual value
                 #the #10 works since the arms have the same things here.
-                if status[OFFSET]%10 == 0:
+                if status[OFFSET-3]%10 == 0:
                     print(f"Pair {OFFSET-3} Still moving/completing task")
                     continue
                 else:
