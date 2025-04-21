@@ -300,9 +300,16 @@ void stepper0_move(){
     // we haven't triggered the low end stop (maximum closure)
     // we haven't gotten pressure on the sensors, which output a number 0-1023 when read, with 1023 being that they are experiencing full force
     // debugging, took out this from the while loop since it won't be wired up  && digitalRead(ENDSTOP_BOT_0_PIN)==HIGH
-    
+
     //debugging, make sure to re-include the force sensors later
     while(targ_steps_pair[0] > curr_steps_pair[0]/* && analogRead(FORCE0_PIN)<1000 && analogRead(FORCE1_PIN<1000)*/){
+
+      //debugging
+      Serial.print("Moving pair0\ncurr_steps_pair0: ");
+      Serial.println(curr_steps_pair[0]);
+      Serial.print("targ_steps_pair0: ");
+      Serial.println(targ_steps_pair[0]);
+
       stepper_lin0.moveTo(curr_steps_pair[0]+increment);
       stepper_lin0.runToPosition();
       curr_steps_pair[0]+=increment;
@@ -314,7 +321,13 @@ void stepper0_move(){
     // we have more steps to move
     // we haven't triggered the high end stop (maximum closure)
     
-    while(targ_steps_pair[0] < curr_steps_pair[0] && digitalRead(ENDSTOP_TOP_0_PIN)==HIGH){
+    while(targ_steps_pair[0] < curr_steps_pair[0] && digitalRead(ENDSTOP_TOP_0_PIN)==HIGH){  
+      //debugging
+      Serial.print("Moving pair0\ncurr_steps_pair0: ");
+      Serial.println(curr_steps_pair[0]);
+      Serial.print("targ_steps_pair0: ");
+      Serial.println(targ_steps_pair[0]);
+
       stepper_lin0.moveTo(curr_steps_pair[0]-increment);
       stepper_lin0.runToPosition();
       curr_steps_pair[0]-=increment;
@@ -648,6 +661,7 @@ void PiDataReceive(){
     //
     else if(offset==3 || offset==4 || offset==5){
         Serial.println("Preparing to be read");
+        return;
     }
     else{
         //debugging
