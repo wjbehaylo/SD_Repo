@@ -206,6 +206,10 @@ def lin_ARD_Read(OFFSET):
     status=[0,10] #first is status of pair0, second is status of pair1
     try:
         while True:
+            #debugging
+            print("Trying to lin_ARD_Read again")
+            print(f"Offset is: {OFFSET}")
+            
             #debugging, setting it to 10 for now so that there is a lesser chance of the timing issue
             sleep(10)
             #read block of data from arduino reg based on arduino's offset

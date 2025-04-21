@@ -303,7 +303,6 @@ void stepper0_move(){
 
     //debugging, make sure to re-include the force sensors later
     while(targ_steps_pair[0] > curr_steps_pair[0]/* && analogRead(FORCE0_PIN)<1000 && analogRead(FORCE1_PIN<1000)*/){
-
       //debugging
       Serial.print("Moving pair0\ncurr_steps_pair0: ");
       Serial.println(curr_steps_pair[0]);
