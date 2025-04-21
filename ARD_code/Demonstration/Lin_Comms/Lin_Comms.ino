@@ -97,7 +97,7 @@ volatile uint8_t offset = 0; //offset of the message
 const float lead_step = 0.01; // 0.01mm: Lead/Revolution = 2mm
 const int steps_rev = 400; // 1/2 microstep: Steps/Rev = 200 (no microstep)
 const int threshold = 60;
-const int maxSpeed = 1000;
+const int maxSpeed = 500;
 const int maxAccel = 500;
 const int increment = 10; //I think its probably fine to have it move 1 step at a time, if too slow we could increase this though
 
