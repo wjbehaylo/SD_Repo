@@ -301,7 +301,8 @@ void stepper0_move(){
     // we haven't gotten pressure on the sensors, which output a number 0-1023 when read, with 1023 being that they are experiencing full force
     // debugging, took out this from the while loop since it won't be wired up  && digitalRead(ENDSTOP_BOT_0_PIN)==HIGH
     
-    while(targ_steps_pair[0] > curr_steps_pair[0] && analogRead(FORCE0_PIN)<1000 && analogRead(FORCE1_PIN<1000)){
+    //debugging, make sure to re-include the force sensors later
+    while(targ_steps_pair[0] > curr_steps_pair[0]/* && analogRead(FORCE0_PIN)<1000 && analogRead(FORCE1_PIN<1000)*/){
       stepper_lin0.moveTo(curr_steps_pair[0]+increment);
       stepper_lin0.runToPosition();
       curr_steps_pair[0]+=increment;
@@ -330,12 +331,15 @@ void stepper0_move(){
   
   //now we need to determine our output status based on what flags are set
   //our priority will go: force sensor, end stop, normal movement
+
+  //debugging, make sure to re-include force sensors later
+  /*
   if(analogRead(FORCE0_PIN)<1000 || analogRead(FORCE1_PIN<1000)){
     executionStatus0 = 4;
     return;
   }
   //fully open end stop
-  else if(digitalRead(ENDSTOP_TOP_0_PIN)==LOW){
+  else */if(digitalRead(ENDSTOP_TOP_0_PIN)==LOW){
     executionStatus0 = 2;
     return;
   }
@@ -381,7 +385,9 @@ void stepper1_move(){
     //NOte that this is the previous while loop, but ENDSTOP_BOT_1_PIN will always be high 
     //while(targ_steps_pair[1] > curr_steps_pair[1] && digitalRead(ENDSTOP_BOT_1_PIN)==HIGH && analogRead(FORCE2_PIN)<1000 && analogRead(FORCE3_PIN<1000)){
 
-    while(targ_steps_pair[1] > curr_steps_pair[1] &&  analogRead(FORCE2_PIN)<1000 && analogRead(FORCE3_PIN<1000)){
+    //debugging, remember to reinclude force sensors later
+
+    while(targ_steps_pair[1] > curr_steps_pair[1]/* &&  analogRead(FORCE2_PIN)<1000 && analogRead(FORCE3_PIN<1000)*/){
       stepper_lin1.moveTo(curr_steps_pair[1]+increment);
       stepper_lin1.runToPosition();
       curr_steps_pair[1]+=increment;
@@ -410,12 +416,14 @@ void stepper1_move(){
   
   //now we need to determine our output status based on what flags are set
   //our priority will go: force sensor, end stop, normal movement
-  if(analogRead(FORCE2_PIN)<1000 || analogRead(FORCE3_PIN<1000)){
+
+  //debugging, remember to re-include force sensors later
+  /*if(analogRead(FORCE2_PIN)<1000 || analogRead(FORCE3_PIN<1000)){
     executionStatus1 = 14;
     return;
   }
   //fully open end stop
-  else if(digitalRead(ENDSTOP_TOP_1_PIN)==LOW){
+  else */if(digitalRead(ENDSTOP_TOP_1_PIN)==LOW){
     executionStatus1 = 12;
     return;
   }
@@ -458,8 +466,9 @@ void steppers_move() {
   
 
   //if both will be moving up
+  //debugging, remember to reinclude force sensors later
   if(targ_steps_pair[0]>curr_steps_pair[0] || targ_steps_pair[1]>curr_steps_pair[1]){
-    while((targ_steps_pair[0] > curr_steps_pair[0] && analogRead(FORCE0_PIN)<1000 && analogRead(FORCE1_PIN<1000)) && (targ_steps_pair[1] > curr_steps_pair[1] && analogRead(FORCE2_PIN)<1000 && analogRead(FORCE3_PIN)<1000)){
+    while((targ_steps_pair[0] > curr_steps_pair[0]/* && analogRead(FORCE0_PIN)<1000 && analogRead(FORCE1_PIN<1000)*/) && (targ_steps_pair[1] > curr_steps_pair[1]/* && analogRead(FORCE2_PIN)<1000 && analogRead(FORCE3_PIN)<1000*/)){
       curr_steps_pair[0] = curr_steps_pair[0] + increment;
       curr_steps_pair[1] = curr_steps_pair[1] + increment;
       steppers_lin.moveTo(curr_steps_pair);
@@ -467,13 +476,13 @@ void steppers_move() {
     }
     //at this point, one of the pairs has finished but the other might not have for some reason
     //first, lets check for pair 0
-    while(targ_steps_pair[0] > curr_steps_pair[0] && analogRead(FORCE0_PIN)<1000 && analogRead(FORCE1_PIN<1000)){
+    while(targ_steps_pair[0] > curr_steps_pair[0]/* && analogRead(FORCE0_PIN)<1000 && analogRead(FORCE1_PIN<1000)*/){
       curr_steps_pair[0] = curr_steps_pair[0] + increment;
       stepper_lin0.moveTo(curr_steps_pair[0]);
       stepper_lin0.runToPosition();
     }
     //now, lets check for pair1
-    while(targ_steps_pair[1] > curr_steps_pair[1] && analogRead(FORCE2_PIN)<1000 && analogRead(FORCE3_PIN)<1000){
+    while(targ_steps_pair[1] > curr_steps_pair[1]/* && analogRead(FORCE2_PIN)<1000 && analogRead(FORCE3_PIN)<1000*/){
       curr_steps_pair[1] = curr_steps_pair[1] + increment;
       stepper_lin1.moveTo(curr_steps_pair[1]);
       stepper_lin1.runToPosition();
@@ -512,11 +521,12 @@ void steppers_move() {
   ctrlBusy = false;
   ctrlDone = true;
 //our priority will go: force sensor, end stop, normal movement
-  if(analogRead(FORCE0_PIN)<1000 || analogRead(FORCE1_PIN<1000)){
+//debugging: remember to reinclude force sensors later
+  /*if(analogRead(FORCE0_PIN)<1000 || analogRead(FORCE1_PIN<1000)){
     executionStatus0 = 4;
   }
   //fully open end stop
-  else if(digitalRead(ENDSTOP_TOP_0_PIN)==LOW){
+  else */if(digitalRead(ENDSTOP_TOP_0_PIN)==LOW){
     executionStatus0 = 2;
   }
   //debugging, fully closed end stop, commented because it will never be triggered since meches miss-sized the area and so it isn't worth it to wire up
@@ -538,11 +548,13 @@ void steppers_move() {
   //now we just have to generate the output status stuff
   //now we need to determine our output status based on what flags are set
   //our priority will go: force sensor, end stop, normal movement
-  if(analogRead(FORCE2_PIN)<1000 || analogRead(FORCE3_PIN<1000)){
+  //debugging, remember to reinclude force sensors later
+
+  /*if(analogRead(FORCE2_PIN)<1000 || analogRead(FORCE3_PIN<1000)){
     executionStatus1 = 14;
   }
   //fully open end stop
-  else if(digitalRead(ENDSTOP_TOP_1_PIN)==LOW){
+  else */if(digitalRead(ENDSTOP_TOP_1_PIN)==LOW){
     executionStatus1 = 12;
   }
   //debugging, fully closed end stop, commented because it will always be low since we're not wiring it
