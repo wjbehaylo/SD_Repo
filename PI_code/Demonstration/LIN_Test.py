@@ -111,10 +111,11 @@ while True:
         print(f"Sent to Arduino: pair={pair_select}, steps={move_amount}")
         
     #debugging
-    print("Wrote offset: "+ str(offset) + " and rotate_amount: " + str(rotate_amount) + " to Arduino")
+    print("Wrote offset: "+ str(offset) + " and move_amount: " + str(move_amount) + " to Arduino")
     sleep(0.1) 
-    result = lin_ARD_Read(3)
-    status_msg = Generate_Status(result)
+    result = lin_ARD_Read(3+pair_select)
+    status_msg = Generate_Status(result[0])
+    status_msg +=Generate_Status(result[1])
     print(" Arduino stats:", status_msg)
 
         
