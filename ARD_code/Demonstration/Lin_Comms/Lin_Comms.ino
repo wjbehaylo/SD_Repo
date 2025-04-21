@@ -616,11 +616,6 @@ void PiDataReceive(){
     Serial.print("We are receiving offset: ");
     Serial.println(offset);
 
-    //getting the full message
-    while(Wire.available()){
-        instruction[messageLength] = Wire.read(); //get the next byte of info
-        messageLength++;
-    }
     if(offset==0 || offset==1 || offset==2){
       //getting the full message
       while(Wire.available()){
