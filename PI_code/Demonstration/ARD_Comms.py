@@ -213,24 +213,8 @@ def lin_ARD_Read(OFFSET):
             
             #debugging, setting it to 10 for now so that there is a lesser chance of the timing issue
             sleep(10)
-            #read block of data from arduino reg based on arduino's offset
-            if ((OFFSET == 3) or (OFFSET == 4)):
-                status[OFFSET-3] = i2c_arduino.read_byte_data(lin_ard_add, OFFSET)
-                print(f"Pair {OFFSET-3} Status: {status[OFFSET-3]}")
-
-                #interpret the status 
-                #note that this is just for debugging, the function will return the actual value
-                #the #10 works since the arms have the same things here.
-                if status[OFFSET-3]%10 == 0:
-                    print(f"Pair {OFFSET-3} Still moving/completing task")
-                    continue
-                else:
-                    #Use our trusty Generate_Status function
-                    print(Generate_Status(status[OFFSET-3]))
-                    return status
-                
-            
-            elif (OFFSET == 5):
+            #read block of data from arduino reg based on arduino's offset. Note that we will always read two bytes of data
+            if (OFFSET == 5 or OFFSET == 4 or OFFSET == 3):
                 #read 2 bytes,1 for each pair.
                 #The return of the function here will be
                 status = i2c_arduino.read_block_data(lin_ard_add, OFFSET, 2)
@@ -243,8 +227,8 @@ def lin_ARD_Read(OFFSET):
                         print(Generate_Status(status[i]))
             
                 # Break if the status of each pair is nonzero. Otherwise, one is still executing
-                    if status[0] != 0 and status[1] != 10:
-                        return status
+                if status[0] != 0 and status[1] != 10:
+                    return status
                     
                 
             else:

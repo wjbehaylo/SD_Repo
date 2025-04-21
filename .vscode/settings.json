@@ -2,6 +2,7 @@
     "terminal.explorerKind": "both",
     "files.associations": {
         "ostream": "cpp",
-        "cstdint": "cpp"
+        "cstdint": "cpp",
+        "*.tcc": "cpp"
     }
 }
