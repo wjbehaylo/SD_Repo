@@ -99,7 +99,7 @@ const int steps_rev = 400; // 1/2 microstep: Steps/Rev = 200 (no microstep)
 const int threshold = 60;
 const int maxSpeed = 1000;
 const int maxAccel = 500;
-const int increment = 1; //I think its probably fine to have it move 1 step at a time, if too slow we could increase this though
+const int increment = 10; //I think its probably fine to have it move 1 step at a time, if too slow we could increase this though
 
 AccelStepper stepper_lin0(AccelStepper::DRIVER, PAIR0_STP_PIN, PAIR0_DIR_PIN);
 AccelStepper stepper_lin1(AccelStepper::DRIVER, PAIR1_STP_PIN, PAIR1_DIR_PIN);
