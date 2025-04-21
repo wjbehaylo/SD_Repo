@@ -197,8 +197,8 @@ void loop() {
  //the functionality varies depending on what we are actively doing
  
  //debugging
- Serial.println(state); //0 is waiting for message, 1 is moving, 2 is done
- delay(3000); //wait 3 seconds between this, just for debugging
+ //Serial.println(state); //0 is waiting for message, 1 is moving, 2 is done
+ //delay(3000); //wait 3 seconds between this, just for debugging
  
  
   switch(state){
@@ -660,7 +660,7 @@ void PiDataReceive(){
     }
     //
     else if(offset==3 || offset==4 || offset==5){
-        Serial.println("Preparing to be read");
+        //Serial.println("Preparing to be read");
         return;
     }
     else{
