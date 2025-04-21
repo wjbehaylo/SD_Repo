@@ -221,12 +221,16 @@ def lin_ARD_Read(OFFSET):
                 status = i2c_arduino.read_i2c_block_data(lin_ard_add, OFFSET, 2)
             
                 #This should just go twice, once for each motor's status
+                
+                #debugging
+                '''
                 for i in range(2):
                     if(status[i]%10) == 0:
                         print(f"Pair {i} Status: Still moving/completing task")
                     else:
                         print(Generate_Status(status[i]))
-            
+                '''
+                
                 # Break if the status of each pair is nonzero. Otherwise, one is still executing
                 
                 #based on the offset, different ones need to be nonzero to indicate completion
