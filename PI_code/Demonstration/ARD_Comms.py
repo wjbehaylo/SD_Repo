@@ -203,7 +203,7 @@ def lin_ARD_Write(OFFSET, MESSAGE):
 def lin_ARD_Read(OFFSET):
     
     global i2c_arduino
-    status={0,10} #first is status of pair0, second is status of pair1
+    status=[0,10] #first is status of pair0, second is status of pair1
     try:
         while True:
             sleep(1)
