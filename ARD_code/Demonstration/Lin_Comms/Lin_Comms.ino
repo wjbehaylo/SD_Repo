@@ -311,7 +311,7 @@ void stepper0_move(){
 
       stepper_lin0.moveTo(curr_steps_pair[0]+increment);
       stepper_lin0.runSpeedToPosition();
-      curr_steps_pair[0]+=increment;
+      curr_steps_pair[0]=curr_steps_pair[0]+increment;
     }
   }
   //we are opening the pair/moving tree up here
@@ -329,8 +329,9 @@ void stepper0_move(){
 
       stepper_lin0.moveTo(curr_steps_pair[0]-increment);
       stepper_lin0.runSpeedToPosition();
-      curr_steps_pair[0]-=increment;
+      curr_steps_pair[0]=curr_steps_pair[0]-increment;
     }
+
   }
   //if we get here, we aren't moving this pair for some reason
   else{
@@ -402,7 +403,7 @@ void stepper1_move(){
     while(targ_steps_pair[1] > curr_steps_pair[1]/* &&  analogRead(FORCE2_PIN)<1000 && analogRead(FORCE3_PIN<1000)*/){
       stepper_lin1.moveTo(curr_steps_pair[1]+increment);
       stepper_lin1.runSpeedToPosition();
-      curr_steps_pair[1]+=increment;
+      curr_steps_pair[1]=curr_steps_pair[1]+increment;
     }
   }
   //we are opening the pair/moving tree up here
@@ -414,7 +415,7 @@ void stepper1_move(){
     while(targ_steps_pair[1] < curr_steps_pair[1] && digitalRead(ENDSTOP_TOP_1_PIN)==HIGH){
       stepper_lin1.moveTo(curr_steps_pair[1]-increment);
       stepper_lin1.runSpeedToPosition();
-      curr_steps_pair[1]-=increment;
+      curr_steps_pair[1]=curr_steps_pair[1]-increment;
     }
   }
   //if we get here, we aren't moving this pair for some reason
@@ -489,13 +490,13 @@ void steppers_move() {
     //at this point, one of the pairs has finished but the other might not have for some reason
     //first, lets check for pair 0
     while(targ_steps_pair[0] > curr_steps_pair[0]/* && analogRead(FORCE0_PIN)<1000 && analogRead(FORCE1_PIN<1000)*/){
-      curr_steps_pair[0] = curr_steps_pair[0] + increment;
+      curr_steps_pair[0] = stepper_lin0.currentPosition() + increment;
       stepper_lin0.moveTo(curr_steps_pair[0]);
       stepper_lin0.runSpeedToPosition();
     }
     //now, lets check for pair1
     while(targ_steps_pair[1] > curr_steps_pair[1]/* && analogRead(FORCE2_PIN)<1000 && analogRead(FORCE3_PIN)<1000*/){
-      curr_steps_pair[1] = curr_steps_pair[1] + increment;
+      curr_steps_pair[1] = stepper_lin1.currentPosition() + increment;
       stepper_lin1.moveTo(curr_steps_pair[1]);
       stepper_lin1.runSpeedToPosition();
     }
@@ -512,13 +513,13 @@ void steppers_move() {
     //at this point, one of the pairs has finished but the other might not have for some reason
     //first, lets check for pair 0
     while(targ_steps_pair[0] < curr_steps_pair[0] && digitalRead(ENDSTOP_TOP_0_PIN)==HIGH){
-      curr_steps_pair[0] = curr_steps_pair[0] - increment;
+      curr_steps_pair[0] = stepper_lin0.currentPosition() - increment;
       stepper_lin0.moveTo(curr_steps_pair[0]);
       stepper_lin0.runSpeedToPosition();
     }
     //now, lets check for pair1
     while(targ_steps_pair[1] < curr_steps_pair[1] && digitalRead(ENDSTOP_TOP_1_PIN)==HIGH){
-      curr_steps_pair[1] = curr_steps_pair[1] - increment;
+      curr_steps_pair[1] = stepper_lin1.currentPosition() - increment;
       stepper_lin1.moveTo(curr_steps_pair[1]);
       stepper_lin1.runSpeedToPosition();
     }
