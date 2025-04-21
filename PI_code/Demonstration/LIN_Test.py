@@ -67,8 +67,6 @@ status_UART=""
 #so when going through the states, if capture_start==1, then they will set 'new_status'=1 to signal that something needs to be sent out.
 #after it is sent out over the ser_write stuff, new_status will be set back to 0
 new_status=0
-#variable to store which pair is moving
-pair_select=0
 
 #variable offset to be set based on user input
 offset = 0

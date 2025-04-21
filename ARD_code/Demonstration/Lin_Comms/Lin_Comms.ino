@@ -654,7 +654,7 @@ void PiDataReceive(){
     }
     //
     else if(offset==3 || offset==4 || offset==5){
-        //Serial.println("Preparing to be read");
+        Serial.println("Preparing to be read");
         return;
     }
     else{
@@ -709,6 +709,9 @@ void PiDataRequest(){
     Serial.println("Unknown offset");
   }
   //honestly I think that is all that there is in this area.
+
+  //debugging
+  Serial.println("Exiting PiDataRequest");
 
 
 }
