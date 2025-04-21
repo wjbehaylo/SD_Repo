@@ -678,7 +678,7 @@ void PiDataRequest(){
   Serial.println(offset);
 
   uint8_t status_block[2] = {executionStatus0, executionStatus1}; //note that this might be out of order compared to how it will be received, I need to check though
-    
+  
   if(offset==3){
     Wire.write(status_block, 2);
     //also make sure that if the status is as desired we continue
