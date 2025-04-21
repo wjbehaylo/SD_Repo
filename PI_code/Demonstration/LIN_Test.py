@@ -112,7 +112,8 @@ while True:
         
     #debugging
     print("Wrote offset: "+ str(offset) + " and move_amount: " + str(move_amount) + " to Arduino")
-    sleep(0.1) 
+    sleep(0.1)
+    result=[0,0] #This is just so it is initialized properly
     result = lin_ARD_Read(3+pair_select)
     status_msg = Generate_Status(result[0])
     status_msg +=Generate_Status(result[1])
