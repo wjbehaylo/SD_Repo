@@ -206,7 +206,8 @@ def lin_ARD_Read(OFFSET):
     status=[0,10] #first is status of pair0, second is status of pair1
     try:
         while True:
-            sleep(1)
+            #debugging, setting it to 10 for now so that there is a lesser chance of the timing issue
+            sleep(10)
             #read block of data from arduino reg based on arduino's offset
             if ((OFFSET == 3) or (OFFSET == 4)):
                 status[OFFSET-3] = i2c_arduino.read_byte_data(lin_ard_add, OFFSET)
