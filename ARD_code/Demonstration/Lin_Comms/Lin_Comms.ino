@@ -8,7 +8,7 @@ Sources: SEED_LAB repository for previous examples
         Stepper Library Documentation (https://www.arduino.cc/reference/en/libraries/stepper/)
 Relevant Files: This file is related to the ARD_Comms.py file located in Demonstration/PI_code, it also goes with the FSM_Actual
 Circuitry: Connect the following listed pins
-  - Note that when things are numbered, i.e. the force sensors or arm pairs, it goes clockwise from low to high, with the pi at 6pm
+  - Note that when things are numbered, i.e. the force sensors or arm pairs, it goes clockwise from low to high, with the pi at 6pm, starting top left
   - SDA on Arduino, second pin from top on left (03) is SDA on Pi
   - SCL on Arduino, third pin from top on left (05) is SCL on Pi
   - Ground on Arduino needs to connect to ground bus from Pi
@@ -24,9 +24,7 @@ Circuitry: Connect the following listed pins
   - Each of these drivers also has ground pins that need to connect to the bus
 
   - Digital 10 on Arduino is end stop 0, top of pair 0
-  - Digital 11 on Arduino is end stop 1, bot of pair 0
-  - Digital 12 on Arduino is end stop 2, bot of pair 1
-  - Digital 13 on Arduino is end stop 3, top of pair 1
+  - Digital 11 on Arduino is end stop 1, top of pair 1
 
   - GND on Arduino to GND bus for rotational end stops
   - 5V on Arduino to 5V bus for rotational end stops
@@ -55,9 +53,7 @@ Libraries to be included:
 #define PAIR1_STP_PIN 5
 
 #define ENDSTOP_TOP_0_PIN 10
-#define ENDSTOP_BOT_0_PIN 11
-#define ENDSTOP_TOP_1_PIN 12
-#define ENDSTOP_BOT_1_PIN 13  //debugging, this one doesn't have its wiring so we lowkey not doing it.
+#define ENDSTOP_TOP_1_PIN 11
 
 #define LIN_ARD_ADD 15
 
@@ -130,9 +126,7 @@ void setup() {
 
     //initializing the end stops
     pinMode(ENDSTOP_TOP_0_PIN, INPUT_PULLUP);
-    pinMode(ENDSTOP_BOT_0_PIN, INPUT_PULLUP);
     pinMode(ENDSTOP_TOP_1_PIN, INPUT_PULLUP);
-    pinMode(ENDSTOP_BOT_1_PIN, INPUT_PULLUP);
 
     //initialize the I2C slave
     Wire.begin(LIN_ARD_ADD); 
