@@ -690,7 +690,7 @@ void PiDataRequest(){
   Serial.print("executionStatus0: ");
   Serial.println(executionStatus0);
   Serial.print("executionStatus1: ");
-  Serial.pritnln(executionStatus1);
+  Serial.println(executionStatus1);
   if(offset==3){
     //debugging
     Serial.println("trying to write offset 3");
@@ -706,7 +706,6 @@ void PiDataRequest(){
   else if(offset==4){
     //debugging
     Serial.println("trying to write offset 4");
-
     Wire.write(status_block, 2);
     //also make sure that if the Pi read status correctly we continue, 
     //note that we only care if the second one is done executing here

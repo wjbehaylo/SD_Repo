@@ -217,7 +217,7 @@ def lin_ARD_Read(OFFSET):
             if (OFFSET == 5 or OFFSET == 4 or OFFSET == 3):
                 #read 2 bytes,1 for each pair.
                 #The return of the function here will be
-                status = i2c_arduino.read_block_data(lin_ard_add, OFFSET, 2)
+                status = i2c_arduino.read_i2c_block_data(lin_ard_add, OFFSET, 2)
             
                 #This should just go twice, once for each motor's status
                 for i in range(2):
