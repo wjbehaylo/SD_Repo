@@ -680,6 +680,9 @@ void PiDataRequest(){
   uint8_t status_block[2] = {executionStatus0, executionStatus1}; //note that this might be out of order compared to how it will be received, I need to check though
   
   if(offset==3){
+    //debugging
+    Serial.println("trying to write offset 3");
+
     Wire.write(status_block, 2);
     //also make sure that if the status is as desired we continue
     if(executionStatus0!=0){
@@ -689,6 +692,9 @@ void PiDataRequest(){
   }
   //for the pair1 information
   else if(offset==4){
+    //debugging
+    Serial.println("trying to write offset 4");
+
     Wire.write(status_block, 2);
     //also make sure that if the Pi read status correctly we continue, 
     //note that we only care if the second one is done executing here
@@ -699,6 +705,9 @@ void PiDataRequest(){
   }
   //for both the pairs' information
   else if(offset==5){
+    //debugging
+    Serial.println("trying to write offset 5");
+    
     Wire.write(status_block, 2);
     //if both are done executing 
     if(executionStatus0 != 0 && executionStatus1 != 10){
