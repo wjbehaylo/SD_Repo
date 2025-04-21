@@ -308,10 +308,9 @@ void stepper0_move(){
       //Serial.println(curr_steps_pair[0]);
       //Serial.print("targ_steps_pair0: ");
       //Serial.println(targ_steps_pair[0]);
-
-      stepper_lin0.moveTo(curr_steps_pair[0]+increment);
+      curr_steps_pair[0] = stepper_lin0.currentPosition() + increment;
+      stepper_lin0.moveTo(curr_steps_pair[0]);
       stepper_lin0.runSpeedToPosition();
-      curr_steps_pair[0]=curr_steps_pair[0]+increment;
     }
   }
   //we are opening the pair/moving tree up here
@@ -326,10 +325,9 @@ void stepper0_move(){
       //Serial.println(curr_steps_pair[0]);
       //Serial.print("targ_steps_pair0: ");
       //Serial.println(targ_steps_pair[0]);
-
-      stepper_lin0.moveTo(curr_steps_pair[0]-increment);
+      curr_steps_pair[0] = stepper_lin0.currentPosition() - increment;
+      stepper_lin0.moveTo(curr_steps_pair[0]);
       stepper_lin0.runSpeedToPosition();
-      curr_steps_pair[0]=curr_steps_pair[0]-increment;
     }
 
   }
@@ -401,9 +399,9 @@ void stepper1_move(){
     //debugging, remember to reinclude force sensors later
 
     while(targ_steps_pair[1] > curr_steps_pair[1]/* &&  analogRead(FORCE2_PIN)<1000 && analogRead(FORCE3_PIN<1000)*/){
-      stepper_lin1.moveTo(curr_steps_pair[1]+increment);
+      curr_steps_pair[1]=stepper_lin1.currentPosition() + increment;
+      stepper_lin1.moveTo(curr_steps_pair[1]);
       stepper_lin1.runSpeedToPosition();
-      curr_steps_pair[1]=curr_steps_pair[1]+increment;
     }
   }
   //we are opening the pair/moving tree up here
@@ -413,9 +411,9 @@ void stepper1_move(){
     // we haven't triggered the high end stop (maximum closure)
     
     while(targ_steps_pair[1] < curr_steps_pair[1] && digitalRead(ENDSTOP_TOP_1_PIN)==HIGH){
-      stepper_lin1.moveTo(curr_steps_pair[1]-increment);
+      curr_steps_pair[1]=stepper_lin1.currentPosition() - increment;
+      stepper_lin1.moveTo(curr_steps_pair[1]);
       stepper_lin1.runSpeedToPosition();
-      curr_steps_pair[1]=curr_steps_pair[1]-increment;
     }
   }
   //if we get here, we aren't moving this pair for some reason
