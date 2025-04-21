@@ -212,7 +212,7 @@ def lin_ARD_Read(OFFSET):
             #print(f"Offset is: {OFFSET}")
             
             #debugging, setting it to 10 for now so that there is a lesser chance of the timing issue
-            #sleep(10)
+            sleep(1)
             
             #read block of data from arduino reg based on arduino's offset. Note that we will always read two bytes of data
             if (OFFSET == 5 or OFFSET == 4 or OFFSET == 3):
