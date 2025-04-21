@@ -606,14 +606,14 @@ void steppers_moveMM (MultiStepper &steppers, float mm, int numSteppers) {
 //
 void PiDataReceive(){
     //debugging
-    Serial.println("Entering PiDataReceive");
+    //Serial.println("Entering PiDataReceive");
 
     //getting the offset
     offset = Wire.read();
 
     //debugging
-    Serial.print("We are receiving offset: ");
-    Serial.println(offset);
+    //Serial.print("We are receiving offset: ");
+    //Serial.println(offset);
 
     if(offset==0 || offset==1 || offset==2){
       //getting the full message
@@ -654,7 +654,7 @@ void PiDataReceive(){
     }
     //
     else if(offset==3 || offset==4 || offset==5){
-        Serial.println("Preparing to be read");
+        //Serial.println("Preparing to be read");
         return;
     }
     else{
@@ -680,20 +680,20 @@ void PiDataRequest(){
   //for the pair0 information
 
   //debugging
-  Serial.println("Entering PiDataRequest");
-  Serial.print("Offset is: ");
-  Serial.println(offset);
+  //Serial.println("Entering PiDataRequest");
+  //Serial.print("Offset is: ");
+  //Serial.println(offset);
 
   uint8_t status_block[2] = {executionStatus0, executionStatus1}; //note that this might be out of order compared to how it will be received, I need to check though
   
   //debugging
-  Serial.print("executionStatus0: ");
-  Serial.println(executionStatus0);
-  Serial.print("executionStatus1: ");
-  Serial.println(executionStatus1);
+  //Serial.print("executionStatus0: ");
+  //Serial.println(executionStatus0);
+  //Serial.print("executionStatus1: ");
+  //Serial.println(executionStatus1);
   if(offset==3){
     //debugging
-    Serial.println("trying to write offset 3");
+    //Serial.println("trying to write offset 3");
 
     Wire.write(status_block, 2);
     //also make sure that if the status is as desired we continue
@@ -705,7 +705,8 @@ void PiDataRequest(){
   //for the pair1 information
   else if(offset==4){
     //debugging
-    Serial.println("trying to write offset 4");
+    //Serial.println("trying to write offset 4");
+    
     Wire.write(status_block, 2);
     //also make sure that if the Pi read status correctly we continue, 
     //note that we only care if the second one is done executing here
@@ -717,7 +718,7 @@ void PiDataRequest(){
   //for both the pairs' information
   else if(offset==5){
     //debugging
-    Serial.println("trying to write offset 5");
+    //Serial.println("trying to write offset 5");
 
     Wire.write(status_block, 2);
     //if both are done executing 
@@ -733,7 +734,7 @@ void PiDataRequest(){
   //honestly I think that is all that there is in this area.
 
   //debugging
-  Serial.println("Exiting PiDataRequest");
+  //Serial.println("Exiting PiDataRequest");
 
 
 }
