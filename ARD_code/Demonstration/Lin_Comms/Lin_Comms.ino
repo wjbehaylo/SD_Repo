@@ -163,22 +163,22 @@ void setup() {
     //debugging, the '+' should be '-', but I just want to see if it goes up fast too in this version
 
     while(digitalRead(ENDSTOP_TOP_0_PIN)==HIGH && digitalRead(ENDSTOP_TOP_1_PIN)==HIGH){
-      curr_steps_pair[0] = curr_steps_pair[0] + increment;
-      curr_steps_pair[1] = curr_steps_pair[1] + increment;
+      curr_steps_pair[0] = curr_steps_pair[0] - increment;
+      curr_steps_pair[1] = curr_steps_pair[1] - increment;
       steppers_lin.moveTo(curr_steps_pair);
       steppers_lin.runSpeedToPosition();
     }
     //at this point, at least one of the arms has hit its position, so we do the other
     while(digitalRead(ENDSTOP_TOP_0_PIN)==HIGH){
-      stepper_lin0.moveTo(curr_steps_pair[0]+increment);
+      stepper_lin0.moveTo(curr_steps_pair[0]-increment);
       stepper_lin0.runSpeedToPosition();
-      curr_steps_pair[0]=curr_steps_pair[0]+increment;
+      curr_steps_pair[0]=curr_steps_pair[0]-increment;
     }
     //if it wasn't that one, it must be this one
     while(digitalRead(ENDSTOP_TOP_1_PIN)==HIGH){
-      stepper_lin1.moveTo(curr_steps_pair[1]+increment);
+      stepper_lin1.moveTo(curr_steps_pair[1]-increment);
       stepper_lin1.runSpeedToPosition();
-      curr_steps_pair[1]=curr_steps_pair[1]+increment;
+      curr_steps_pair[1]=curr_steps_pair[1]-increment;
     }
     //we need to initialize their position that will be stored and changed and whatnot
     curr_steps_pair[0]=0;
