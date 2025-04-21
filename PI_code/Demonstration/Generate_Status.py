@@ -14,7 +14,7 @@ def Generate_Status(status):
     #this is the returned value
     # Nothing important, empty status if you will
     if status==-1:
-        status_string = "Programming or circuitry error\r\n"
+        status_string = "Programming or circuitry error, likely circuitry\r\n"
     elif status == 0:
         status_string = ""
     # 0-25 come from the ARD_Comms file
