@@ -228,8 +228,15 @@ def lin_ARD_Read(OFFSET):
                         print(Generate_Status(status[i]))
             
                 # Break if the status of each pair is nonzero. Otherwise, one is still executing
-                if status[0] != 0 and status[1] != 10:
+                
+                #based on the offset, different ones need to be nonzero to indicate completion
+                if(OFFSET==5 and status[0] != 0 and status[1] != 10):
                     return status
+                if(OFFSET==4 and status[1] != 10):
+                    return status
+                if(OFFSET==3 and status[0] != 0):
+                    return status
+                
                     
                 
             else:
