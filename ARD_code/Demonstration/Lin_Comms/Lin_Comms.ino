@@ -161,7 +161,6 @@ void setup() {
     }
 
     //debugging, the '+' should be '-', but I just want to see if it goes up fast too in this version
-
     while(digitalRead(ENDSTOP_TOP_0_PIN)==HIGH && digitalRead(ENDSTOP_TOP_1_PIN)==HIGH){
       curr_steps_pair[0] = curr_steps_pair[0] - increment;
       curr_steps_pair[1] = curr_steps_pair[1] - increment;
