@@ -101,8 +101,8 @@ const int maxSpeed = 500; //the max speed being too high (1000) when we run both
 const int maxAccel = 500;
 const int increment = 10; //I think its probably fine to have it move 1 step at a time, if too slow we could increase this though
 
-AccelStepper Astepper_lin0(AccelStepper::DRIVER, PAIR0_STP_PIN, PAIR0_DIR_PIN);
-AccelStepper Astepper_lin1(AccelStepper::DRIVER, PAIR1_STP_PIN, PAIR1_DIR_PIN);
+AccelStepper stepper_lin0(AccelStepper::DRIVER, PAIR0_STP_PIN, PAIR0_DIR_PIN);
+AccelStepper stepper_lin1(AccelStepper::DRIVER, PAIR1_STP_PIN, PAIR1_DIR_PIN);
 MultiStepper Msteppers_lin;
 MultiStepper Mstepper_lin0;
 MultiStepper Mstepper_lin1;
