@@ -42,6 +42,7 @@ Libraries to be included:
 
 #include <AccelStepper.h>
 #include <MultiStepper.h>
+#include <Wire.h>
 
 #define FORCE0_PIN A0
 #define FORCE1_PIN A1
@@ -55,8 +56,8 @@ Libraries to be included:
 
 #define ENDSTOP_TOP_0_PIN 10
 #define ENDSTOP_BOT_0_PIN 11
-#define ENDSTOP_BOT_1_PIN 12
-#define ENDSTOP_TOP_1_PIN 13
+#define ENDSTOP_TOP_1_PIN 12
+#define ENDSTOP_BOT_1_PIN 13  //debugging, this one doesn't have its wiring so we lowkey not doing it.
 
 #define LIN_ARD_ADD 15
 
@@ -77,10 +78,9 @@ volatile bool moving1 = false; //if moving pair 1
 //note that for now we are communicating steps, not mm of movement
 volatile uint8_t executionStatus0=0; //the status of the capturing execution for pair 0
 volatile uint8_t executionStatus1=10; //the status of the capturing execution for pair 1
-volatile long targ_steps_pair0 = 0;
-volatile long targ_steps_pair1 = 0;
-static long curr_steps_pair0;
-static long curr_steps_pair1;
+volatile long targ_steps_pair[2] = {0, 0};
+static long curr_steps_pair[2]; //0 is for pair0, 
+
 
 //this is for the FSM states
 //WAIT is while the Arduino is on and waiting for instructions
@@ -121,8 +121,12 @@ void setup() {
     stepper_lin1.setMaxSpeed(maxSpeed);
     stepper_lin1.setAcceleration(maxAccel);
 
-    steppers_lin.add(stepper_lin0);
-    steppers_lin.add(stepper_lin1);
+    //this is temporary, as we are about to have them open fully and will reset this
+    stepper_lin0.setCurrentPosition(0);
+    stepper_lin1.setCurrentPosition(0);
+
+    steppers_lin.addStepper(stepper_lin0);
+    steppers_lin.addStepper(stepper_lin1);
 
     //initializing the end stops
     pinMode(ENDSTOP_TOP_0_PIN, INPUT_PULLUP);
@@ -144,6 +148,39 @@ void setup() {
     //Start serial for debugging
     //Note that you get rid of this and all serial statements if no longer debugging
     Serial.begin(9600);
+
+    //also here, when this is starting being run, we want the arms to fully open up, regardless of where they are at initially. 
+    Serial.println("Fully opening claw:");
+    
+    //we need to initialize their positions
+    curr_steps_pair[0]=0;
+    curr_steps_pair[1]=0;
+    while(digitalRead(ENDSTOP_TOP_0_PIN)==HIGH && digitalRead(ENDSTOP_TOP_1_PIN)==HIGH){
+      curr_steps_pair[0] = curr_steps_pair[0] - increment;
+      curr_steps_pair[1] = curr_steps_pair[1] - increment;
+      steppers_lin.moveTo(curr_steps_pair);
+      steppers_lin.runSpeedToPosition();
+    }
+    //at this point, at least one of the arms has hit its position, so we do the other
+    while(digitalRead(ENDSTOP_TOP_0_PIN)==HIGH){
+      stepper_lin0.moveTo(curr_steps_pair[0]-increment);
+      stepper_lin0.runToPosition();
+      curr_steps_pair[0]=curr_steps_pair[0]-increment;
+    }
+    //if it wasn't that one, it must be this one
+    while(digitalRead(ENDSTOP_TOP_1_PIN)==HIGH){
+      stepper_lin1.moveTo(curr_steps_pair[1]-increment);
+      stepper_lin1.runToPosition();
+      curr_steps_pair[1]=curr_steps_pair[1]-increment;
+    }
+    //we need to initialize their position that will be stored and changed and whatnot
+    curr_steps_pair[0]=0;
+    curr_steps_pair[1]=0;
+    stepper_lin0.setCurrentPosition(0);
+    stepper_lin1.setCurrentPosition(0);
+
+    
+
     Serial.println("Linear Arduino Initialized.");
 }
 
@@ -247,33 +284,34 @@ void stepper0_move(){
   
     //debugging
     Serial.print("Moving pair0\ncurr_steps_pair0: ");
-    Serial.println(curr_steps_pair0);
+    Serial.println(curr_steps_pair[0]);
     Serial.print("targ_steps_pair0: ");
-    Serial.println(targ_steps_pair0);
+    Serial.println(targ_steps_pair[0]);
 
   //if we want to move to more steps than we're at, we are actually closing the arm/moving tree down rn
-  if(targ_steps_pair0>curr_steps_pair0){
+  if(targ_steps_pair[0]>curr_steps_pair[0]){
     //we want to keep looping as long as the following things are true
     // we have more steps to move
     // we haven't triggered the low end stop (maximum closure)
     // we haven't gotten pressure on the sensors, which output a number 0-1023 when read, with 1023 being that they are experiencing full force
+    // debugging, took out this from the while loop since it won't be wired up  && digitalRead(ENDSTOP_BOT_0_PIN)==HIGH
     
-    while(targ_steps_pair0 > curr_steps_pair0 && digitalRead(ENDSTOP_BOT_0_PIN)==HIGH && analogRead(FORCE0_PIN)<1000 && analogRead(FORCE1_PIN<1000)){
-      stepper_lin0.moveTo(curr_steps_pair0+increment);
+    while(targ_steps_pair[0] > curr_steps_pair[0] && analogRead(FORCE0_PIN)<1000 && analogRead(FORCE1_PIN<1000)){
+      stepper_lin0.moveTo(curr_steps_pair[0]+increment);
       stepper_lin0.runToPosition();
-      curr_steps_pair0+=increment;
+      curr_steps_pair[0]+=increment;
     }
   }
   //we are opening the pair/moving tree up here
-  else if (targ_steps_pair0<curr_steps_pair0){
+  else if (targ_steps_pair[0]<curr_steps_pair[0]){
     //we want to keep looping as long as the following things are true
     // we have more steps to move
     // we haven't triggered the high end stop (maximum closure)
     
-    while(targ_steps_pair0 < curr_steps_pair0 && digitalRead(ENDSTOP_TOP_0_PIN)==HIGH){
-      stepper_lin0.moveTo(curr_steps_pair0-increment);
+    while(targ_steps_pair[0] < curr_steps_pair[0] && digitalRead(ENDSTOP_TOP_0_PIN)==HIGH){
+      stepper_lin0.moveTo(curr_steps_pair[0]-increment);
       stepper_lin0.runToPosition();
-      curr_steps_pair0-=increment;
+      curr_steps_pair[0]-=increment;
     }
   }
   //if we get here, we aren't moving this pair for some reason
@@ -296,13 +334,15 @@ void stepper0_move(){
     executionStatus0 = 2;
     return;
   }
-  //fully closed end stop
+  //debugging, fully closed end stop, commented because it will never be triggered since meches miss-sized the area and so it isn't worth it to wire up
+  /*
   else if(digitalRead(ENDSTOP_BOT_0_PIN)==LOW){
     executionStatus0 = 3;
     return;
   }
+  */
   //movement without force sensors or end stops
-  else if (targ_steps_pair0==curr_steps_pair0){
+  else if (targ_steps_pair[0]==curr_steps_pair[0]){
     executionStatus0 = 1;
     return;
   }
@@ -322,33 +362,36 @@ void stepper1_move(){
   
     //debugging
     Serial.print("Moving pair1\ncurr_steps_pair1: ");
-    Serial.println(curr_steps_pair1);
+    Serial.println(curr_steps_pair[1]);
     Serial.print("targ_steps_pair1: ");
-    Serial.println(targ_steps_pair1);
+    Serial.println(targ_steps_pair[1]);
 
   //if we want to move to more steps than we're at, we are actually closing the arm/moving tree down rn
-  if(targ_steps_pair1>curr_steps_pair1){
+  if(targ_steps_pair[1]>curr_steps_pair[1]){
     //we want to keep looping as long as the following things are true
     // we have more steps to move
     // we haven't triggered the low end stop (maximum closure)
     // we haven't gotten pressure on the sensors, which output a number 0-1023 when read, with 1023 being that they are experiencing full force
     
-    while(targ_steps_pair1 > curr_steps_pair1 && digitalRead(ENDSTOP_BOT_1_PIN)==HIGH && analogRead(FORCE2_PIN)<1000 && analogRead(FORCE3_PIN<1000)){
-      stepper_lin1.moveTo(curr_steps_pair1+increment);
+    //NOte that this is the previous while loop, but ENDSTOP_BOT_1_PIN will always be high 
+    //while(targ_steps_pair[1] > curr_steps_pair[1] && digitalRead(ENDSTOP_BOT_1_PIN)==HIGH && analogRead(FORCE2_PIN)<1000 && analogRead(FORCE3_PIN<1000)){
+
+    while(targ_steps_pair[1] > curr_steps_pair[1] &&  analogRead(FORCE2_PIN)<1000 && analogRead(FORCE3_PIN<1000)){
+      stepper_lin1.moveTo(curr_steps_pair[1]+increment);
       stepper_lin1.runToPosition();
-      curr_steps_pair1+=increment;
+      curr_steps_pair[1]+=increment;
     }
   }
   //we are opening the pair/moving tree up here
-  else if (targ_steps_pair1<curr_steps_pair1){
+  else if (targ_steps_pair[1]<curr_steps_pair[1]){
     //we want to keep looping as long as the following things are true
     // we have more steps to move
     // we haven't triggered the high end stop (maximum closure)
     
-    while(targ_steps_pair1 < curr_steps_pair1 && digitalRead(ENDSTOP_TOP_1_PIN)==HIGH){
-      stepper_lin1.moveTo(curr_steps_pair1-increment);
+    while(targ_steps_pair[1] < curr_steps_pair[1] && digitalRead(ENDSTOP_TOP_1_PIN)==HIGH){
+      stepper_lin1.moveTo(curr_steps_pair[1]-increment);
       stepper_lin1.runToPosition();
-      curr_steps_pair1-=increment;
+      curr_steps_pair[1]-=increment;
     }
   }
   //if we get here, we aren't moving this pair for some reason
@@ -371,13 +414,15 @@ void stepper1_move(){
     executionStatus1 = 12;
     return;
   }
-  //fully closed end stop
+  //debugging, fully closed end stop, commented because it will always be low since we're not wiring it
+  /*
   else if(digitalRead(ENDSTOP_BOT_1_PIN)==LOW){
     executionStatus1 = 13;
     return;
   }
+  */
   //movement without force sensors or end stops
-  else if (targ_steps_pair1==curr_steps_pair1){
+  else if (targ_steps_pair[1]==curr_steps_pair[1]){
     executionStatus1 = 11;
     return;
   }
@@ -389,9 +434,134 @@ void stepper1_move(){
 
 }
 
+//this is the shared function for both of the stepper motors' simultaneous movement
+void steppers_move() {
+  //going into this function, we have no assumptions about the current position of the arms
+  //this means that they could be beyond their target locations or before, closing or opening, and may or may not be at the same step value
+
+  //debugging
+  Serial.print("Moving both pairs\ncurr_steps_pair[0]: ");
+  Serial.println(curr_steps_pair[0]);
+  Serial.print("curr_steps_pair[1]: ");
+  Serial.println(curr_steps_pair[1]);
+
+  Serial.print("targ_steps_pair[0]: ");
+  Serial.println(targ_steps_pair[0]);
+  Serial.print("targ_steps_pair[1]: ");
+  Serial.println(targ_steps_pair[1]);
+
+  
+
+  //if both will be moving up
+  if(targ_steps_pair[0]>curr_steps_pair[0] || targ_steps_pair[1]>curr_steps_pair[1]){
+    while((targ_steps_pair[0] > curr_steps_pair[0] && analogRead(FORCE0_PIN)<1000 && analogRead(FORCE1_PIN<1000)) && (targ_steps_pair[1] > curr_steps_pair[1] && analogRead(FORCE2_PIN)<1000 && analogRead(FORCE3_PIN)<1000)){
+      curr_steps_pair[0] = curr_steps_pair[0] + increment;
+      curr_steps_pair[1] = curr_steps_pair[1] + increment;
+      steppers_lin.moveTo(curr_steps_pair);
+      steppers_lin.runSpeedToPosition();
+    }
+    //at this point, one of the pairs has finished but the other might not have for some reason
+    //first, lets check for pair 0
+    while(targ_steps_pair[0] > curr_steps_pair[0] && analogRead(FORCE0_PIN)<1000 && analogRead(FORCE1_PIN<1000)){
+      curr_steps_pair[0] = curr_steps_pair[0] + increment;
+      stepper_lin0.moveTo(curr_steps_pair[0]);
+      stepper_lin0.runToPosition();
+    }
+    //now, lets check for pair1
+    while(targ_steps_pair[1] > curr_steps_pair[1] && analogRead(FORCE2_PIN)<1000 && analogRead(FORCE3_PIN)<1000){
+      curr_steps_pair[1] = curr_steps_pair[1] + increment;
+      stepper_lin1.moveTo(curr_steps_pair[1]);
+      stepper_lin1.runToPosition();
+    }
+  }
+  //the alternative is if both arms will be moving down
+  //if both will be moving up
+  else if(targ_steps_pair[0]<curr_steps_pair[0] || targ_steps_pair[1]<curr_steps_pair[1]){
+    while((targ_steps_pair[0] < curr_steps_pair[0] && digitalRead(ENDSTOP_TOP_0_PIN)==HIGH) && (targ_steps_pair[1] < curr_steps_pair[1] && digitalRead(ENDSTOP_TOP_1_PIN)==HIGH)){
+      curr_steps_pair[0] = curr_steps_pair[0] - increment;
+      curr_steps_pair[1] = curr_steps_pair[1] - increment;
+      steppers_lin.moveTo(curr_steps_pair);
+      steppers_lin.runSpeedToPosition();
+    }
+    //at this point, one of the pairs has finished but the other might not have for some reason
+    //first, lets check for pair 0
+    while(targ_steps_pair[0] < curr_steps_pair[0] && digitalRead(ENDSTOP_TOP_0_PIN)==HIGH){
+      curr_steps_pair[0] = curr_steps_pair[0] - increment;
+      stepper_lin0.moveTo(curr_steps_pair[0]);
+      stepper_lin0.runToPosition();
+    }
+    //now, lets check for pair1
+    while(targ_steps_pair[1] < curr_steps_pair[1] && digitalRead(ENDSTOP_TOP_1_PIN)==HIGH){
+      curr_steps_pair[1] = curr_steps_pair[1] - increment;
+      stepper_lin1.moveTo(curr_steps_pair[1]);
+      stepper_lin1.runToPosition();
+    }
+  }
+  else { //if we get here there must be no movement
+    Serial.println("No movement for both arms");
+  }
+
+  //at this point, for better or worse, all of the movement has been done, which means that all that's left to do is the stuff with the status generation
+  moving0 = false;
+  moving1 = false;
+  ctrlBusy = false;
+  ctrlDone = true;
+//our priority will go: force sensor, end stop, normal movement
+  if(analogRead(FORCE0_PIN)<1000 || analogRead(FORCE1_PIN<1000)){
+    executionStatus0 = 4;
+  }
+  //fully open end stop
+  else if(digitalRead(ENDSTOP_TOP_0_PIN)==LOW){
+    executionStatus0 = 2;
+  }
+  //debugging, fully closed end stop, commented because it will never be triggered since meches miss-sized the area and so it isn't worth it to wire up
+  /*
+  else if(digitalRead(ENDSTOP_BOT_0_PIN)==LOW){
+    executionStatus0 = 3;
+    return;
+  }
+  */
+  //movement without force sensors or end stops
+  else if (targ_steps_pair[0]==curr_steps_pair[0]){
+    executionStatus0 = 1;
+  }
+  //unrecognized command/result/failed output
+  else{
+    executionStatus0 = 5;
+  }
+
+  //now we just have to generate the output status stuff
+  //now we need to determine our output status based on what flags are set
+  //our priority will go: force sensor, end stop, normal movement
+  if(analogRead(FORCE2_PIN)<1000 || analogRead(FORCE3_PIN<1000)){
+    executionStatus1 = 14;
+  }
+  //fully open end stop
+  else if(digitalRead(ENDSTOP_TOP_1_PIN)==LOW){
+    executionStatus1 = 12;
+  }
+  //debugging, fully closed end stop, commented because it will always be low since we're not wiring it
+  /*
+  else if(digitalRead(ENDSTOP_BOT_1_PIN)==LOW){
+    executionStatus1 = 13;
+    return;
+  }
+  */
+  //movement without force sensors or end stops
+  else if (targ_steps_pair[1]==curr_steps_pair[1]){
+    executionStatus1 = 11;
+  }
+  //unrecognized command/result/failed output
+  else{
+    executionStatus1 = 15;
+  }
+  return;
+
+}
+
 
 //the challenging part here is that I need to get both of them to move together now.
-
+/*
 void steppers_moveMM (MultiStepper &steppers, float mm, int numSteppers) {
   long positions[numSteppers];
   float steps = (mm*steps_rev)/(200*lead_step);
@@ -401,10 +571,11 @@ void steppers_moveMM (MultiStepper &steppers, float mm, int numSteppers) {
   steppers.moveTo(positions);
   steppers.runSpeedToPosition();
 }
+*/
 
 //This gets called when the Pi tries to send data over
 //
-void Pi_Data_Receive(){
+void PiDataReceive(){
     //getting the offset
     offset = Wire.read();
 
@@ -427,7 +598,7 @@ void Pi_Data_Receive(){
         byteFloat.bytes[1] = instruction[2];
         byteFloat.bytes[2] = instruction[1];
         byteFloat.bytes[3] = instruction[0];
-        targ_steps_pair0 = byteFloat.floatValue + curr_steps_pair0;
+        targ_steps_pair[0] = byteFloat.floatValue + curr_steps_pair[0];
         moving0 = true;
     }
     //if offset=1, we are getting sent the target steps for pair1
@@ -436,7 +607,7 @@ void Pi_Data_Receive(){
         byteFloat.bytes[1] = instruction[2];
         byteFloat.bytes[2] = instruction[1];
         byteFloat.bytes[3] = instruction[0];
-        targ_steps_pair1 = byteFloat.floatValue + curr_steps_pair1;
+        targ_steps_pair[1] = byteFloat.floatValue + curr_steps_pair[1];
         moving1 = true;
     }
     //if offset=2, we are getting the steps for both pairs
@@ -445,8 +616,8 @@ void Pi_Data_Receive(){
         byteFloat.bytes[1] = instruction[2];
         byteFloat.bytes[2] = instruction[1];
         byteFloat.bytes[3] = instruction[0];
-        targ_steps_pair0 = byteFloat.floatValue + curr_steps_pair0;
-        targ_steps_pair1 = byteFloat.floatValue + curr_steps_pair1;
+        targ_steps_pair[0] = byteFloat.floatValue + curr_steps_pair[0];
+        targ_steps_pair[1] = byteFloat.floatValue + curr_steps_pair[0];
         moving0 = true;
         moving1 = true;
     }
@@ -464,7 +635,7 @@ void Pi_Data_Receive(){
 }
 
 //this function gets called whenever the Pi requests data from the Arduino about the execution status
-void Pi_Data_Request(){
+void PiDataRequest(){
   //I think we need to get the offset first?
   //I think this is done in the Pi_Data_Receive, so offset should be properly set already
   //for the pair0 information
@@ -487,9 +658,9 @@ void Pi_Data_Request(){
   }
   //for both the pairs' information
   else if(offset==5){
-    uint8_t status_block[2] = {pair0_status, pair1_status}; //note that this might be out of order compared to how it will be received, I need to check though
+    uint8_t status_block[2] = {executionStatus0, executionStatus1}; //note that this might be out of order compared to how it will be received, I need to check though
     Wire.write(status_block, 2);
-    //if both are done executing
+    //if both are done executing 
     if(executionStatus0 != 0 && executionStatus1 != 10){
       executionStatus0 = 0;
       executionStatus1 = 10;
