@@ -243,11 +243,15 @@ def lin_ARD_Read(OFFSET):
                 
             else:
                 print(f"Invalid OFFSET {OFFSET}")
-                return -1
+                status[0] = -1
+                status[1] = -1
+                return status
             
     except IOError:
         print("Could not read from Arduino")
-        return -1
+        status[0] = -1
+        status[1] = -1
+        return status
 
 
 #The offset varies depending on a few global variables: rotating_arm, configuring_arm, arm_configuration
