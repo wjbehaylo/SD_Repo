@@ -342,16 +342,21 @@ void stepper0_move(){
   ctrlDone = true;
   
   //now we need to determine our output status based on what flags are set
-  //our priority will go: force sensor, end stop, normal movement
+  //our priority will go: normal movement, force sensor, end stop
 
   //debugging, make sure to re-include force sensors later
+  if (targ_steps_pair[0]==curr_steps_pair[0]){
+    executionStatus0 = 1;
+    return;
+  }
   /*
-  if(analogRead(FORCE0_PIN)<1000 || analogRead(FORCE1_PIN<1000)){
+  else if(analogRead(FORCE0_PIN)>1000 || analogRead(FORCE1_PI)>1000)){
     executionStatus0 = 4;
     return;
   }
   //fully open end stop
-  else */if(digitalRead(ENDSTOP_TOP_0_PIN)==LOW){
+  */
+  else if(digitalRead(ENDSTOP_TOP_0_PIN)==LOW){
     executionStatus0 = 2;
     return;
   }
@@ -362,11 +367,6 @@ void stepper0_move(){
     return;
   }
   */
-  //movement without force sensors or end stops
-  else if (targ_steps_pair[0]==curr_steps_pair[0]){
-    executionStatus0 = 1;
-    return;
-  }
   //unrecognized command/result/failed output
   else{
     executionStatus0 = 5;
@@ -430,12 +430,17 @@ void stepper1_move(){
   //our priority will go: force sensor, end stop, normal movement
 
   //debugging, remember to re-include force sensors later
-  /*if(analogRead(FORCE2_PIN)<1000 || analogRead(FORCE3_PIN<1000)){
+  if (targ_steps_pair[1]==curr_steps_pair[1]){
+    executionStatus1 = 11;
+    return;
+  }
+  /*else if(analogRead(FORCE2_PIN)>1000 || analogRead(FORCE3_PIN)>1000){
     executionStatus1 = 14;
     return;
   }
   //fully open end stop
-  else */if(digitalRead(ENDSTOP_TOP_1_PIN)==LOW){
+  */
+  else if(digitalRead(ENDSTOP_TOP_1_PIN)==LOW){
     executionStatus1 = 12;
     return;
   }
@@ -447,10 +452,7 @@ void stepper1_move(){
   }
   */
   //movement without force sensors or end stops
-  else if (targ_steps_pair[1]==curr_steps_pair[1]){
-    executionStatus1 = 11;
-    return;
-  }
+  else 
   //unrecognized command/result/failed output
   else{
     executionStatus1 = 15;
@@ -534,11 +536,15 @@ void steppers_move() {
   ctrlDone = true;
 //our priority will go: force sensor, end stop, normal movement
 //debugging: remember to reinclude force sensors later
-  /*if(analogRead(FORCE0_PIN)<1000 || analogRead(FORCE1_PIN<1000)){
+  if (targ_steps_pair[0]==curr_steps_pair[0]){
+    executionStatus0 = 1;
+  }
+  /*else if(analogRead(FORCE0_PIN)>1000 || analogRead(FORCE1_PIN)>1000){
     executionStatus0 = 4;
   }
+  */
   //fully open end stop
-  else */if(digitalRead(ENDSTOP_TOP_0_PIN)==LOW){
+  else if(digitalRead(ENDSTOP_TOP_0_PIN)==LOW){
     executionStatus0 = 2;
   }
   //debugging, fully closed end stop, commented because it will never be triggered since meches miss-sized the area and so it isn't worth it to wire up
@@ -548,10 +554,6 @@ void steppers_move() {
     return;
   }
   */
-  //movement without force sensors or end stops
-  else if (targ_steps_pair[0]==curr_steps_pair[0]){
-    executionStatus0 = 1;
-  }
   //unrecognized command/result/failed output
   else{
     executionStatus0 = 5;
@@ -562,11 +564,15 @@ void steppers_move() {
   //our priority will go: force sensor, end stop, normal movement
   //debugging, remember to reinclude force sensors later
 
-  /*if(analogRead(FORCE2_PIN)<1000 || analogRead(FORCE3_PIN<1000)){
+  if (targ_steps_pair[1]==curr_steps_pair[1]){
+    executionStatus1 = 11;
+  }
+  /*else if(analogRead(FORCE2_PIN)>1000 || analogRead(FORCE3_PIN)>1000){
     executionStatus1 = 14;
   }
+  */
   //fully open end stop
-  else */if(digitalRead(ENDSTOP_TOP_1_PIN)==LOW){
+  else if(digitalRead(ENDSTOP_TOP_1_PIN)==LOW){
     executionStatus1 = 12;
   }
   //debugging, fully closed end stop, commented because it will always be low since we're not wiring it
@@ -576,10 +582,7 @@ void steppers_move() {
     return;
   }
   */
-  //movement without force sensors or end stops
-  else if (targ_steps_pair[1]==curr_steps_pair[1]){
-    executionStatus1 = 11;
-  }
+ 
   //unrecognized command/result/failed output
   else{
     executionStatus1 = 15;
