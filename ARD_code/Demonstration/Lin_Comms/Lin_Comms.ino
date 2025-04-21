@@ -197,7 +197,7 @@ void loop() {
  //the functionality varies depending on what we are actively doing
  
  //debugging
- Serial.println(state); //0 is waiting for message, 1 is moving, 2 is done
+ //Serial.println(state); //0 is waiting for message, 1 is moving, 2 is done
  delay(3000); //wait 3 seconds between this, just for debugging
  
  
@@ -304,10 +304,10 @@ void stepper0_move(){
     //debugging, make sure to re-include the force sensors later
     while(targ_steps_pair[0] > curr_steps_pair[0]/* && analogRead(FORCE0_PIN)<1000 && analogRead(FORCE1_PIN<1000)*/){
       //debugging
-      //Serial.print("Moving pair0\ncurr_steps_pair0: ");
-      //Serial.println(curr_steps_pair[0]);
-      //Serial.print("targ_steps_pair0: ");
-      //Serial.println(targ_steps_pair[0]);
+      Serial.print("Moving pair0\ncurr_steps_pair0: ");
+      Serial.println(curr_steps_pair[0]);
+      Serial.print("targ_steps_pair0: ");
+      Serial.println(targ_steps_pair[0]);
 
       stepper_lin0.moveTo(curr_steps_pair[0]+increment);
       stepper_lin0.runSpeedToPosition();
@@ -322,10 +322,10 @@ void stepper0_move(){
     
     while(targ_steps_pair[0] < curr_steps_pair[0] && digitalRead(ENDSTOP_TOP_0_PIN)==HIGH){  
       //debugging
-      //Serial.print("Moving pair0\ncurr_steps_pair0: ");
-      //Serial.println(curr_steps_pair[0]);
-      //Serial.print("targ_steps_pair0: ");
-      //Serial.println(targ_steps_pair[0]);
+      Serial.print("Moving pair0\ncurr_steps_pair0: ");
+      Serial.println(curr_steps_pair[0]);
+      Serial.print("targ_steps_pair0: ");
+      Serial.println(targ_steps_pair[0]);
 
       stepper_lin0.moveTo(curr_steps_pair[0]-increment);
       stepper_lin0.runSpeedToPosition();
