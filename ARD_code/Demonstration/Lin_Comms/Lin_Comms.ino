@@ -491,13 +491,13 @@ void steppers_move() {
     while(targ_steps_pair[0] > curr_steps_pair[0]/* && analogRead(FORCE0_PIN)<1000 && analogRead(FORCE1_PIN<1000)*/){
       curr_steps_pair[0] = curr_steps_pair[0] + increment;
       stepper_lin0.moveTo(curr_steps_pair[0]);
-      stepper_lin0.runToPosition();
+      stepper_lin0.runSpeedToPosition();
     }
     //now, lets check for pair1
     while(targ_steps_pair[1] > curr_steps_pair[1]/* && analogRead(FORCE2_PIN)<1000 && analogRead(FORCE3_PIN)<1000*/){
       curr_steps_pair[1] = curr_steps_pair[1] + increment;
       stepper_lin1.moveTo(curr_steps_pair[1]);
-      stepper_lin1.runToPosition();
+      stepper_lin1.runSpeedToPosition();
     }
   }
   //the alternative is if both arms will be moving down
@@ -514,13 +514,13 @@ void steppers_move() {
     while(targ_steps_pair[0] < curr_steps_pair[0] && digitalRead(ENDSTOP_TOP_0_PIN)==HIGH){
       curr_steps_pair[0] = curr_steps_pair[0] - increment;
       stepper_lin0.moveTo(curr_steps_pair[0]);
-      stepper_lin0.runToPosition();
+      stepper_lin0.runSpeedToPosition();
     }
     //now, lets check for pair1
     while(targ_steps_pair[1] < curr_steps_pair[1] && digitalRead(ENDSTOP_TOP_1_PIN)==HIGH){
       curr_steps_pair[1] = curr_steps_pair[1] - increment;
       stepper_lin1.moveTo(curr_steps_pair[1]);
-      stepper_lin1.runToPosition();
+      stepper_lin1.runSpeedToPosition();
     }
   }
   else { //if we get here there must be no movement
@@ -662,6 +662,13 @@ void PiDataReceive(){
         Serial.println("Unknown offset");
     }
     //Because we have multiple offsets to read from for the status, 
+    //debugging
+    Serial.print("targ_steps_pair[0]: ");
+    Serial.println(targ_steps_pair[0]);
+    Serial.print("targ_steps_pair[1]: ");
+    Serial.println(targ_steps_pair[1]);
+
+
     newMessage = true;
     messageLength = 0;
 }
@@ -679,6 +686,11 @@ void PiDataRequest(){
 
   uint8_t status_block[2] = {executionStatus0, executionStatus1}; //note that this might be out of order compared to how it will be received, I need to check though
   
+  //debugging
+  Serial.print("executionStatus0: ");
+  Serial.println(executionStatus0);
+  Serial.print("executionStatus1: ");
+  Serial.pritnln(executionStatus1);
   if(offset==3){
     //debugging
     Serial.println("trying to write offset 3");
