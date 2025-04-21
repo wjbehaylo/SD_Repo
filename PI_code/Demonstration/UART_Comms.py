@@ -127,7 +127,7 @@ def UART():
                 ser.write(b"    (I): Initialize, resets the system to default configuration\r\n")
                 ser.write(b"    (Q): Quit, terminates the serial connection\r\n\n")
 
-                ser.write(b"    (D): Distance, output distance to the debris\r\n")
+                ser.write(b"!!! (D): Distance, output distance to the debris. Make sure to remove This!!!\r\n")
                 ser.write(b"    (T): Type, output type of debris detected\r\n\n")
                 
                 ser.write(b"    (M): Move, followed by a value, actuate X steps (+ is closing, - is opening)\r\n")
