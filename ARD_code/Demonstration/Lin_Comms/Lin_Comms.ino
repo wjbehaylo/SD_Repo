@@ -310,7 +310,7 @@ void stepper0_move(){
       Serial.println(targ_steps_pair[0]);
 
       stepper_lin0.moveTo(curr_steps_pair[0]+increment);
-      stepper_lin0.runToPosition();
+      stepper_lin0.runSpeedToPosition();
       curr_steps_pair[0]+=increment;
     }
   }
@@ -328,7 +328,7 @@ void stepper0_move(){
       Serial.println(targ_steps_pair[0]);
 
       stepper_lin0.moveTo(curr_steps_pair[0]-increment);
-      stepper_lin0.runToPosition();
+      stepper_lin0.runSpeedToPosition();
       curr_steps_pair[0]-=increment;
     }
   }
@@ -401,7 +401,7 @@ void stepper1_move(){
 
     while(targ_steps_pair[1] > curr_steps_pair[1]/* &&  analogRead(FORCE2_PIN)<1000 && analogRead(FORCE3_PIN<1000)*/){
       stepper_lin1.moveTo(curr_steps_pair[1]+increment);
-      stepper_lin1.runToPosition();
+      stepper_lin1.runSpeedToPosition();
       curr_steps_pair[1]+=increment;
     }
   }
@@ -413,7 +413,7 @@ void stepper1_move(){
     
     while(targ_steps_pair[1] < curr_steps_pair[1] && digitalRead(ENDSTOP_TOP_1_PIN)==HIGH){
       stepper_lin1.moveTo(curr_steps_pair[1]-increment);
-      stepper_lin1.runToPosition();
+      stepper_lin1.runSpeedToPosition();
       curr_steps_pair[1]-=increment;
     }
   }
@@ -707,7 +707,7 @@ void PiDataRequest(){
   else if(offset==5){
     //debugging
     Serial.println("trying to write offset 5");
-    
+
     Wire.write(status_block, 2);
     //if both are done executing 
     if(executionStatus0 != 0 && executionStatus1 != 10){
