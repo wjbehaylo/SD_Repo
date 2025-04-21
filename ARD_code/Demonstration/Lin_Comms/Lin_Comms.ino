@@ -169,13 +169,13 @@ void setup() {
     //at this point, at least one of the arms has hit its position, so we do the other
     while(digitalRead(ENDSTOP_TOP_0_PIN)==HIGH){
       stepper_lin0.moveTo(curr_steps_pair[0]-increment);
-      stepper_lin0.runToPosition();
+      stepper_lin0.runSpeedToPosition();
       curr_steps_pair[0]=curr_steps_pair[0]-increment;
     }
     //if it wasn't that one, it must be this one
     while(digitalRead(ENDSTOP_TOP_1_PIN)==HIGH){
       stepper_lin1.moveTo(curr_steps_pair[1]-increment);
-      stepper_lin1.runToPosition();
+      stepper_lin1.runSpeedToPosition();
       curr_steps_pair[1]=curr_steps_pair[1]-increment;
     }
     //we need to initialize their position that will be stored and changed and whatnot
