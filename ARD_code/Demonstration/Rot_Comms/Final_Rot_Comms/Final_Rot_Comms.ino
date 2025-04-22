@@ -324,10 +324,12 @@ void stepper_rotate () {
   }
   else if(digitalRead(ENDSTOP_0_SIGNAL_PIN)==LOW){
     executionStatus = 23;
+    currentAngle=0;
     return;
   }
   else if(digitalRead(ENDSTOP_90_SIGNAL_PIN)==LOW){
     executionStatus = 24;
+    currentAngle=90; 
     return;
   }
   

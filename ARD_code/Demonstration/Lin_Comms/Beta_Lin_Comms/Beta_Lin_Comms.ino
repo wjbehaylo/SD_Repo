@@ -144,7 +144,7 @@ void setup() {
     Serial.begin(9600);
 
     //also here, when this is starting being run, we want the arms to fully open up, regardless of where they are at initially. 
-    Serial.println("Fully opening claw:");
+    Serial.println("\nFully opening claw:");
     
     //we need to initialize their positions
     //debugging, note that the '+' in the below code need to be - for proper functionality
@@ -198,7 +198,7 @@ void loop() {
  //the functionality varies depending on what we are actively doing
  
  //debugging
- //Serial.println(state); //0 is waiting for message, 1 is moving, 2 is done
+ Serial.println(state); //0 is waiting for message, 1 is moving, 2 is done
  delay(3000); //wait 3 seconds between this, just for debugging
  
  
