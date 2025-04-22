@@ -48,6 +48,9 @@ def capture_frame():
 	
 	#set global flag
 	CAM_running=True
+	#debugging
+	print("Capture frame running")
+ 
 	while SYS_running:
 		#debugging, maybe this should be always running? Maybe only when run_cv is true
 		#if(run_CV==0):
@@ -83,6 +86,9 @@ def debris_detect():
 	#inform that CV is going
 	CV_running = True
 	# Continue processing frames while SYS_running is True
+ 
+	#debugging
+	print("Debris detect running")
 	while (SYS_running):
 		
 		#we only want to run through this loop if run_CV is 1, meaning that the FSM is trying to detect a new object
