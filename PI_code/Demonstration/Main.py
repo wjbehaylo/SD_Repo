@@ -139,7 +139,28 @@ state_machine={
 
 def main():
     global SYS_running
-    current_state = "Initializing"
+    current_state = stateA
+    
+    print("[INFO] Starting main, FSM in state: ", state_machine[current_state])
+    
+    while SYS_running:
+        #Each state function returns a function pointer to the next function that will be called and executed
+        next_state = current_state()
+        #debugging
+        print(f"Transitioning from {state_machine[current_state]} to {state_machine[next_state]}")
+        current_state=next_state #hopefully this just does the name and doesn't actually like call the function, but maybe it would/will
+        #note that the state loops and waiting conditions and stuff happen within them, so there isn't any potential issue with it like going to the same state a ton of times
+    print("[INFO] Ending main, FSM in state: ", state_machine[current_state])
+    return
+    
+if __name__ == "__main__":
+    #debugging/status
+    print("[INFO] Program beginning")
+    main()
+    print("[INFO] Program ending")
+    
+    
+    
 
 
 

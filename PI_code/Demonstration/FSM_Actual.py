@@ -132,6 +132,8 @@ def stateB():
     # they should all properly be set to 0 after execution as well
     #does it matter if I have an infinite loop here instead of recursively calling this function again if none of the things are 0?
     while (True):
+        #adding in sleep to avoid consuming all of CPU
+        sleep(0.1)
         #the next state will be determined based on the set of variables in the UART module
         #generally, only one of these should be 1 when this statement comes up
         if(moving_arm==1):
