@@ -100,7 +100,8 @@ Libraries to be included:
  const int maxSpeed = 500; //the max speed being too high (1000) when we run both together results in a loud buzzing noise and no movement
  const int maxAccel = 500;
  const int increment = 10; //I think its probably fine to have it move 1 step at a time, if too slow we could increase this though
- 
+ const int FORCE_THRESH = 1000; //minimum force to confirm it being triggered by force sensor
+
  AccelStepper stepper_lin0(AccelStepper::DRIVER, PAIR0_STP_PIN, PAIR0_DIR_PIN);
  AccelStepper stepper_lin1(AccelStepper::DRIVER, PAIR1_STP_PIN, PAIR1_DIR_PIN);
  MultiStepper steppers_lin;
@@ -303,7 +304,7 @@ Libraries to be included:
      // debugging, took out this from the while loop since it won't be wired up  && digitalRead(ENDSTOP_BOT_0_PIN)==HIGH
  
      //debugging, make sure to re-include the force sensors later
-     while(targ_steps_pair[0] > curr_steps_pair[0]/* && analogRead(FORCE0_PIN)<1000 && analogRead(FORCE1_PIN<1000)*/){
+     while(targ_steps_pair[0] > curr_steps_pair[0]/* && analogRead(FORCE0_PIN)<FORCE_THRESH && analogRead(FORCE1_PIN)<FORCE_THRESH*/){
        //debugging
        //Serial.print("Moving pair0\ncurr_steps_pair0: ");
        //Serial.println(curr_steps_pair[0]);
@@ -350,7 +351,7 @@ Libraries to be included:
      return;
    }
    /*
-   else if(analogRead(FORCE0_PIN)>1000 || analogRead(FORCE1_PI)>1000)){
+   else if(analogRead(FORCE0_PIN)>FORCE_THRESH || analogRead(FORCE1_PI)>FORCE_THRESH)){
      executionStatus0 = 4;
      return;
    }
@@ -399,7 +400,7 @@ Libraries to be included:
  
      //debugging, remember to reinclude force sensors later
  
-     while(targ_steps_pair[1] > curr_steps_pair[1]/* &&  analogRead(FORCE2_PIN)<1000 && analogRead(FORCE3_PIN<1000)*/){
+     while(targ_steps_pair[1] > curr_steps_pair[1]/* &&  analogRead(FORCE2_PIN)<FORCE_THRESH && analogRead(FORCE3_PIN)<FORCE_THRESH*/){
        curr_steps_pair[1]=stepper_lin1.currentPosition() + increment;
        stepper_lin1.moveTo(curr_steps_pair[1]);
        stepper_lin1.runSpeedToPosition();
@@ -434,7 +435,7 @@ Libraries to be included:
      executionStatus1 = 11;
      return;
    }
-   /*else if(analogRead(FORCE2_PIN)>1000 || analogRead(FORCE3_PIN)>1000){
+   /*else if(analogRead(FORCE2_PIN)>FORCE_THRESH || analogRead(FORCE3_PIN)>FORCE_THRESH){
      executionStatus1 = 14;
      return;
    }
@@ -480,7 +481,7 @@ Libraries to be included:
    //if both will be moving up
    //debugging, remember to reinclude force sensors later
    if(targ_steps_pair[0]>curr_steps_pair[0] || targ_steps_pair[1]>curr_steps_pair[1]){
-     while((targ_steps_pair[0] > curr_steps_pair[0]/* && analogRead(FORCE0_PIN)<1000 && analogRead(FORCE1_PIN<1000)*/) && (targ_steps_pair[1] > curr_steps_pair[1]/* && analogRead(FORCE2_PIN)<1000 && analogRead(FORCE3_PIN)<1000*/)){
+     while((targ_steps_pair[0] > curr_steps_pair[0]/* && analogRead(FORCE0_PIN)<FORCE_THRESH && analogRead(FORCE1_PIN)<FORCE_THRESH*/) && (targ_steps_pair[1] > curr_steps_pair[1]/* && analogRead(FORCE2_PIN)<FORCE_THRESH && analogRead(FORCE3_PIN)<FORCE_THRESH*/)){
        curr_steps_pair[0] = curr_steps_pair[0] + increment;
        curr_steps_pair[1] = curr_steps_pair[1] + increment;
        steppers_lin.moveTo(curr_steps_pair);
@@ -488,13 +489,13 @@ Libraries to be included:
      }
      //at this point, one of the pairs has finished but the other might not have for some reason
      //first, lets check for pair 0
-     while(targ_steps_pair[0] > curr_steps_pair[0]/* && analogRead(FORCE0_PIN)<1000 && analogRead(FORCE1_PIN<1000)*/){
+     while(targ_steps_pair[0] > curr_steps_pair[0]/* && analogRead(FORCE0_PIN)<FORCE_THRESH && analogRead(FORCE1_PIN)<FORCE_THRESH*/){
        curr_steps_pair[0] = stepper_lin0.currentPosition() + increment;
        stepper_lin0.moveTo(curr_steps_pair[0]);
        stepper_lin0.runSpeedToPosition();
      }
      //now, lets check for pair1
-     while(targ_steps_pair[1] > curr_steps_pair[1]/* && analogRead(FORCE2_PIN)<1000 && analogRead(FORCE3_PIN)<1000*/){
+     while(targ_steps_pair[1] > curr_steps_pair[1]/* && analogRead(FORCE2_PIN)<FORCE_THRESH && analogRead(FORCE3_PIN)<FORCE_THRESH*/){
        curr_steps_pair[1] = stepper_lin1.currentPosition() + increment;
        stepper_lin1.moveTo(curr_steps_pair[1]);
        stepper_lin1.runSpeedToPosition();
@@ -565,7 +566,7 @@ Libraries to be included:
    if (targ_steps_pair[1]==curr_steps_pair[1]){
      executionStatus1 = 11;
    }
-   /*else if(analogRead(FORCE2_PIN)>1000 || analogRead(FORCE3_PIN)>1000){
+   /*else if(analogRead(FORCE2_PIN)>FORCE_THRESH || analogRead(FORCE3_PIN)>FORCE_THRESH){
      executionStatus1 = 14;
    }
    */
