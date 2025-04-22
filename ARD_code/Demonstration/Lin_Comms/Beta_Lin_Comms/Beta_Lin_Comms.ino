@@ -163,7 +163,8 @@ Libraries to be included:
      }
  
      //debugging, the '+' should be '-', but I just want to see if it goes up fast too in this version
-     while(digitalRead(ENDSTOP_TOP_0_PIN)==HIGH && digitalRead(ENDSTOP_TOP_1_PIN)==HIGH){
+     while(digitalRead(ENDSTOP_TOP_0_PIN)==HIGH 
+     && digitalRead(ENDSTOP_TOP_1_PIN)==HIGH){
        curr_steps_pair[0] = curr_steps_pair[0] - increment;
        curr_steps_pair[1] = curr_steps_pair[1] - increment;
        steppers_lin.moveTo(curr_steps_pair);
@@ -362,12 +363,10 @@ Libraries to be included:
      return;
    }
    //debugging, fully closed end stop, commented because it will never be triggered since meches miss-sized the area and so it isn't worth it to wire up
-   /*
    else if(digitalRead(ENDSTOP_BOT_0_PIN)==LOW){
      executionStatus0 = 3;
      return;
    }
-   */
    //unrecognized command/result/failed output
    else{
      executionStatus0 = 5;
