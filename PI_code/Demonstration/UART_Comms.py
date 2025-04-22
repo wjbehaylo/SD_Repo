@@ -69,11 +69,11 @@ new_status=0
 #if this gets set to False, everything will exit
 SYS_running = True
 #this is a flag to signal that the UART thread is running
-UART_running=False
+UART_running=True
 #this is a flag to signal that the camera thread is running
-CAM_running=False
+CAM_running=True
 #this is a flag to signal that the CV is running
-CV_running=False
+CV_running=True
 
 
 

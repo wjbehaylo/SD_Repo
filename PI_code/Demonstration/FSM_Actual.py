@@ -66,11 +66,11 @@ color_frame = None
 #Flag to control main loop
 #If this gets set to false, everything will end
 SYS_running = True
-UART_running = False
+UART_running = True
 #this is a flag to signal that the camera thread is running
-CAM_running=False
+CAM_running=True
 #this is a flag to signal that the CV is running
-CV_running=False
+CV_running=True
 
 #Global variables for Arduino Communications
 #establishes what bus to be communicated over
