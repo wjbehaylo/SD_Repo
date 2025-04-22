@@ -363,10 +363,10 @@ Libraries to be included:
      return;
    }
    //debugging, fully closed end stop, commented because it will never be triggered since meches miss-sized the area and so it isn't worth it to wire up
-   else if(digitalRead(ENDSTOP_BOT_0_PIN)==LOW){
+   /*else if(digitalRead(ENDSTOP_BOT_0_PIN)==LOW){
      executionStatus0 = 3;
      return;
-   }
+   }*/
    //unrecognized command/result/failed output
    else{
      executionStatus0 = 5;
@@ -395,10 +395,6 @@ Libraries to be included:
      // we haven't gotten pressure on the sensors, which output a number 0-1023 when read, with 1023 being that they are experiencing full force
      
      //NOte that this is the previous while loop, but ENDSTOP_BOT_1_PIN will always be high 
-     while(targ_steps_pair[1] > curr_steps_pair[1] 
-     && analogRead(FORCE2_PIN)<FORCE_THRESH 
-     && analogRead(FORCE3_PIN<FORCE_THRESH)){
- 
      //debugging, remember to reinclude force sensors later
  
      while(targ_steps_pair[1] > curr_steps_pair[1] 
@@ -449,10 +445,10 @@ Libraries to be included:
      return;
    }
    //debugging, fully closed end stop, commented because it will always be low since we're not wiring it
-   else if(digitalRead(ENDSTOP_BOT_1_PIN)==LOW){
-     executionStatus1 = 13;
-     return;
-   }
+   //else if(digitalRead(ENDSTOP_BOT_1_PIN)==LOW){
+     //executionStatus1 = 13;
+     //return;
+   //}
    //unrecognized command/result/failed output
    else{
      executionStatus1 = 15;
@@ -548,7 +544,7 @@ Libraries to be included:
    if (targ_steps_pair[0]==curr_steps_pair[0]){
      executionStatus0 = 1;
    }
-   else if (analogRead(FORCE0_PIN)>FORCE_THRESH) || analogRead(FORCE1_PIN)>FORCE_THRESH){
+   else if (analogRead(FORCE0_PIN)>FORCE_THRESH || analogRead(FORCE1_PIN)>FORCE_THRESH){
      executionStatus0 = 4;
    }
    //fully open end stop
