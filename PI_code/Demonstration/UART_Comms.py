@@ -350,5 +350,6 @@ def UART():
         message=message_bytes.decode('utf-8')
         print(message)
         ser.write(message_bytes+b"\r\n")
+    
     UART_running = False
     ser.close()
