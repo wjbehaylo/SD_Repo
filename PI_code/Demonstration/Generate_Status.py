@@ -23,7 +23,7 @@ def Generate_Status(status):
     elif status == 2:
         status_string = "Arm pair 0 fully open end stop triggered"
     elif status == 3:
-        status_string = "Arm pair 0 fully closed end stop triggered"
+        status_string = "Arm pair 0 fully closed" #used to include end stop triggered
     elif status == 4:
         status_string = "Arm pair 0 force sensor triggered"
     elif status == 5:
@@ -35,7 +35,7 @@ def Generate_Status(status):
     elif status == 12:
         status_string = "Arm pair 1 fully open end stop triggered"
     elif status == 13:
-        status_string = "Arm pair 1 fully closed end stop triggered"
+        status_string = "Arm pair 1 fully closed" #used to include end stop triggered
     elif status == 14:
         status_string = "Arm pair 1 force sensor triggered"
     elif status == 15:
