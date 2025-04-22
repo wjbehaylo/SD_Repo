@@ -12,7 +12,7 @@ import math
 #Flags 
 #global variables shared with FSM_Actual
 
-is_running = True
+SYS_running = True
 #this is a flag to signal that the camera thread is running
 CAM_running=False
 #this is a flag to signal that the CV is running
@@ -28,8 +28,8 @@ color_frame     = None
 
 def capture_frame(): 
 	# Capture frames from current camera in separate thread
-	global run_CV, color_frame, is_running, CAM_running
-	# Continue capturing frames while is_running is True
+	global run_CV, color_frame, SYS_running, CAM_running
+	# Continue capturing frames while SYS_running is True
 	
 	
 	# Load Camera Calibration Data
@@ -48,7 +48,7 @@ def capture_frame():
 	
 	#set global flag
 	CAM_running=True
-	while is_running:
+	while SYS_running:
 		#debugging, maybe this should be always running? Maybe only when run_cv is true
 		#if(run_CV==0):
 		#	time.sleep(1) #wait 1 second before checking the thread again
@@ -57,7 +57,7 @@ def capture_frame():
 		# Check if frame capture was successful
 		if not ret:
 			print("Failed to capture frame")
-			is_running = False
+			SYS_running = False
 			return
 		#undistort the image
 		und = cv2.undistort(frame, camera_matrix, distortion_coeffs)
@@ -73,7 +73,7 @@ def capture_frame():
 
 
 def debris_detect():
-	global is_running
+	global SYS_running
 	global detected_debris_type
 	global run_CV
 	global CV_running
@@ -82,8 +82,8 @@ def debris_detect():
 	need_color=False
 	#inform that CV is going
 	CV_running = True
-	# Continue processing frames while is_running is True
-	while (is_running):
+	# Continue processing frames while SYS_running is True
+	while (SYS_running):
 		
 		#we only want to run through this loop if run_CV is 1, meaning that the FSM is trying to detect a new object
 		#if CV is 1, we need to set need_color to be true so that it runs and detects the color and whatnot
@@ -200,7 +200,7 @@ def debris_detect():
 		# show and check for quit
 		cv2.imshow("Debris Detection", snap)
     #cv2.destroyAllWindows()
-    #here we are exiting because is_running has been made false
+    #here we are exiting because SYS_running has been made false
 	CV_running = False
 	return
     
@@ -216,7 +216,7 @@ if __name__ == "__main__":
 
 	# wait for detection thread to finish
 	t2.join()
-	# capture thread will exit when is_running → False
+	# capture thread will exit when SYS_running → False
 
 
 '''

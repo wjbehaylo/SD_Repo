@@ -67,7 +67,7 @@ new_status=0
 
 #Flag to control main loop
 #if this gets set to False, everything will exit
-is_running = True
+SYS_running = True
 #this is a flag to signal that the UART thread is running
 UART_running=False
 #this is a flag to signal that the camera thread is running
@@ -92,7 +92,7 @@ def UART():
     #will thread status_UART and check regularly
     global status_UART
     global new_status
-    global is_running
+    global SYS_running
     global UART_running
 
     

@@ -8,6 +8,9 @@
 #   VL53L0X-sensor-code.py contains the code that indicates how the VL53L0X time of flight sensor works
 #   FSM_Outline contains the relevant states that are being used
 # Circuitry: 
+#   This just has files in it
+
+
 #   for the Pi, follow the circuitry outline in UART_Comms, VL53L0X-sensor-code, CameraCalibAndShapeDetection, and I2C_Arduino (exploration file)
 
 #Arduino
@@ -67,7 +70,7 @@ color_frame = None
 
 #Flag to control main loop
 #If this gets set to false, everything will end
-is_running = True
+SYS_running = True
 UART_running = False
 #this is a flag to signal that the camera thread is running
 CAM_running=False
@@ -326,12 +329,12 @@ def stateF():
     
     
 def stateQ():
-    global is_running, program_quit
+    global SYS_running, program_quit
 
     print("Program terminated. Shutting down the system...")
 
     program_quit = 0
-    is_running = False
+    SYS_running = False
 
     #close any open connections
     try:
