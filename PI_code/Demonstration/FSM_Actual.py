@@ -71,21 +71,22 @@ lin_ard_add=15
 
 #Generally, when resetting you open first, then un rotate. When capturing, you rotate first, then close
 
-#Initializing the system, this will go into moving arm then rotating arm
+#Initializing the system, this will start the camera and UART threads, after the start we won't actually go to this state though
 def stateA():
-    global moving_arm
-    global pair_select
-    global move_amount
-    global configuring_arm
-    global arm_configuration
+    #starting UART thread. It is a daemon so that when this FSM program finishes executing it will be done to 
+    uart_thread = threading.Thread(target=UART, daemon = True)
+    cv_thread = threading.Thread(target= , daemon = True)
+    uart_thread.start()
+    cv_thread.start()
+    
     pair_select=2 #opening both pairs of arms
     moving_arm=1 #moving arm
-    move_amount=-1000000 #all the way open
+    move_amount=-16000 #all the way open
     configuring_arm=1 #configuring arm
     arm_configuration=0 #= configuration
     
-    #I'm not sure what all we would want to make sure is open here
-    return stateC
+    #I'm not sure what all we would want to make sure it is rotated to where it needs to be rotated to here
+    return stateD
 
 #UART_Wait
 def stateB():
@@ -255,15 +256,9 @@ def stateE():
 def stateF(): 
 
     global detecting_object
-    global capture_start
-    global rotating_arm
-    global moving_arm
-    global pair_select, move_amount
     global status_UART
     global new_status
-
-    #we need to determine the object type and how we are going to close the arms
-    detecting_object = 0
+    global pair_select
 
     #run CV classifier (implement in cameraCalibAndShapeDetector)
     obj_type = colorDetector()
@@ -273,15 +268,13 @@ def stateF():
         status_UART += f"Detected object: {obj_type}\r\n"
     else:
         status_UART += "Detected object: UNKNOWN\r\n"
-        new_status = 1
-        # ask for new command
-        return stateB
     
     new_status = 1 #queue that message
 
     # set grip parameters based on the type
+    #debugging, these aren't decided yet
     if obj_type == "CubeSat":
-        pair_select = 1    # one claw only
+        pair_select = 0    # one claw only
         move_amount  = 600000 #guessing here, idk
     elif obj_type == "Starlink":
         pair_select = 2    # both claws
@@ -289,27 +282,11 @@ def stateF():
     elif obj_type == "Minotaur":
         pair_select = 2 #both claws
         move_amount = 500000
-    else:
-        # unrecognized – go back to UART_Wait and request a new command
-        return stateB
-
-    #divide into closing the arms vs. opening the arms
-    # schedule the two‑step sequence
-    rotating_arm = 1
-    moving_arm   = 1
-
-    #closing the arms (we detected the object and now we need to capture it)
-    if(capture_start==1):
-        status_UART += "Initiating CLOSE sequence\r\n"
-        new_status = 1
-        #Close: rotate -> ARD_wait -> move -> ARD_Wait
-        return stateD
-    #opening the arms
-    else:
-        status_UART += "Initiating OPEN sequence\r\n"
-        new_status = 1
-        #Open: move -> ARD_wait -> rotate -> ARD_Wait
-        return stateC
+    
+    #we are finished detecting the object
+    detecting_object = 0
+    return stateB
+    
     
     
 def stateQ():
@@ -317,17 +294,13 @@ def stateQ():
 
     print("Program terminated. Shutting down the system...")
 
-    program_quit = 1
+    program_quit = 0
     is_running = False
 
     #close any open connections
     try:
         i2c_arduino.close()
     except: 
-        pass
-    try:
-        ser.close()
-    except:
         pass
 
     #function for stopping the camera?

@@ -82,6 +82,7 @@ def UART():
     
     #will thread status_UART and check regularly
     global status_UART
+    global new_status
     
     #if there are other usb devices connected before this, you may have to replace 0 with 1, 2, or 3 I think. Otherwise just find which port it is. 
     ser = serial.Serial('/dev/ttyAMA0')
@@ -143,6 +144,8 @@ def UART():
                 #I am planning on status_UART being a string, so we need to encode it 
                 ser.write(status_UART.encode("utf-8")+b"\r\n")
                 status_UART=""
+                new_status=0
+                
             case 'M':
                 #this state has the motor move by a certain amount
                 
@@ -197,6 +200,7 @@ def UART():
                 #I am planning on status_UART being a string, so we need to encode it 
                 ser.write(status_UART.encode("utf-8")+b"\r\n")
                 status_UART=""
+                new_status = 0
                 
             case 'O':
                 #this state is just to fully open the arms
@@ -218,7 +222,7 @@ def UART():
                 #note that this number will be positive or negative because of how we want to send it.
                 #TBD pos or negative
                 moving_arm=1
-                move_amount=-1000000 #undetermined positive or negative
+                move_amount=-16000 #undetermined positive or negative
                 while(moving_arm==1):
                     sleep(0.1)
                 ser.write(b"Claw movement finished\r\n")
@@ -226,6 +230,8 @@ def UART():
                 #I am planning on status_UART being a string, so we need to encode it 
                 ser.write(status_UART.encode("utf-8")+b"\r\n")
                 status_UART=""
+                new_status = 0
+                
             case 'C':
                 #this state is just to fully open the arms
                 #here, we get which motors to move
@@ -245,7 +251,7 @@ def UART():
                 #note that this number will be positive or negative because of how we want to send it.
                 #TBD pos or negative
                 moving_arm=1
-                move_amount=1000000 #undetermined positive or negative
+                move_amount=16000 #undetermined positive or negative
                 while(moving_arm==1):
                     sleep(0.1)
                 ser.write(b"Claw movement finished\r\n")
@@ -253,6 +259,8 @@ def UART():
                 #I am planning on status_UART being a string, so we need to encode it 
                 ser.write(status_UART.encode("utf-8")+b"\r\n")
                 status_UART=""
+                new_status=0
+                
             case 'R':
                 #this state has the motor rotate by a certain amount
                 #this while loop is for while we don't have a complete messsage
@@ -294,6 +302,7 @@ def UART():
                 #I am planning on status_UART being a string, so we need to encode it 
                 ser.write(status_UART.encode("utf-8")+b"\r\n")
                 status_UART=""
+                new_status=0
             case '=':
                 ser.write(b"Rotating claw into = configuration\r\n")
                 rotating_arm=1
@@ -306,6 +315,8 @@ def UART():
                 #I am planning on status_UART being a string, so we need to encode it 
                 ser.write(status_UART.encode("utf-8")+b"\r\n")
                 status_UART=""
+                new_status = 0
+                
             case '+':
                 ser.write(b"Rotating claw into + configuration\r\n")
                 rotating_arm=1
@@ -318,6 +329,7 @@ def UART():
                 #I am planning on status_UART being a string, so we need to encode it 
                 ser.write(status_UART.encode("utf-8")+b"\r\n")
                 status_UART=""
+                new_status = 0
             case _:
                 ser.write(b"Command "+message_bytes+b" not supported.\r\nPlease make a valid selection ('?' for help)\r\n")
         
