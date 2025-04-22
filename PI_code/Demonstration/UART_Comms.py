@@ -121,7 +121,8 @@ def UART():
     ser.write(message_bytes+b"\r\n")
 
     print(message)
-    while(message != 'Q'):
+    #I had to change this from 'while message !=Q' to True, because when message = Q it will break out anyways, and otherwise we weren't getting what we needed
+    while(True):
         match message:
             case '?':
                 ser.write(b"Usage Guidelines:\r\nThe following is a list of possible one character messages that can be sent\r\n")
