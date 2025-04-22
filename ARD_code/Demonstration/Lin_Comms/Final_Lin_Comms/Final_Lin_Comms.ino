@@ -101,33 +101,28 @@ const int maxSpeed = 500; //the max speed being too high (1000) when we run both
 const int maxAccel = 500;
 const int increment = 10; //I think its probably fine to have it move 1 step at a time, if too slow we could increase this though
 
-AccelStepper Astepper_lin0(AccelStepper::DRIVER, PAIR0_STP_PIN, PAIR0_DIR_PIN);
-AccelStepper Astepper_lin1(AccelStepper::DRIVER, PAIR1_STP_PIN, PAIR1_DIR_PIN);
-MultiStepper Msteppers_lin;
-MultiStepper Mstepper_lin0;
-MultiStepper Mstepper_lin1;
+AccelStepper stepper_lin0(AccelStepper::DRIVER, PAIR0_STP_PIN, PAIR0_DIR_PIN);
+AccelStepper stepper_lin1(AccelStepper::DRIVER, PAIR1_STP_PIN, PAIR1_DIR_PIN);
+MultiStepper steppers_lin;
 
 // MultiStepper steppers_lin;
 int numSteppers = 2; // Number of steppers in MultiStepper
 
 void setup() {
     // Declare pins as output:
-    Astepper_lin0.setMaxSpeed(maxSpeed); // Set max speed stepper
-    Astepper_lin0.setAcceleration(maxAccel);
+    stepper_lin0.setMaxSpeed(maxSpeed); // Set max speed stepper
+    stepper_lin0.setAcceleration(maxAccel);
     // Accel not supported for AccelStepper
     // stepper_lin1.setCurrentPosition(0); // Set current position for stepper
-    Astepper_lin1.setMaxSpeed(maxSpeed);
-    Astepper_lin1.setAcceleration(maxAccel);
+    stepper_lin1.setMaxSpeed(maxSpeed);
+    stepper_lin1.setAcceleration(maxAccel);
 
     //this is temporary, as we are about to have them open fully and will reset this
-    Astepper_lin0.setCurrentPosition(0);
-    Astepper_lin1.setCurrentPosition(0);
+    stepper_lin0.setCurrentPosition(0);
+    stepper_lin1.setCurrentPosition(0);
 
-    Msteppers_lin.addStepper(Astepper_lin0);
-    Msteppers_lin.addStepper(Astepper_lin1);
-    Mstepper_lin0.addStepper(Astepper_lin0);
-    Mstepper_lin1.addStepper(Astepper_lin1);
-
+    steppers_lin.addStepper(stepper_lin0);
+    steppers_lin.addStepper(stepper_lin1);
 
     //initializing the end stops
     pinMode(ENDSTOP_TOP_0_PIN, INPUT_PULLUP);
@@ -149,7 +144,7 @@ void setup() {
     Serial.begin(9600);
 
     //also here, when this is starting being run, we want the arms to fully open up, regardless of where they are at initially. 
-    Serial.println("Fully opening claw:");
+    Serial.println("\nFully opening claw:");
     
     //we need to initialize their positions
     //debugging, note that the '+' in the below code need to be - for proper functionality
@@ -169,26 +164,26 @@ void setup() {
     while(digitalRead(ENDSTOP_TOP_0_PIN)==HIGH && digitalRead(ENDSTOP_TOP_1_PIN)==HIGH){
       curr_steps_pair[0] = curr_steps_pair[0] - increment;
       curr_steps_pair[1] = curr_steps_pair[1] - increment;
-      Msteppers_lin.moveTo(curr_steps_pair);
-      Msteppers_lin.runSpeedToPosition();
+      steppers_lin.moveTo(curr_steps_pair);
+      steppers_lin.runSpeedToPosition();
     }
     //at this point, at least one of the arms has hit its position, so we do the other
     while(digitalRead(ENDSTOP_TOP_0_PIN)==HIGH){
-      Mstepper_lin0.moveTo(curr_steps_pair[0]-increment);
-      Mstepper_lin0.runSpeedToPosition();
+      stepper_lin0.moveTo(curr_steps_pair[0]-increment);
+      stepper_lin0.runSpeedToPosition();
       curr_steps_pair[0]=curr_steps_pair[0]-increment;
     }
     //if it wasn't that one, it must be this one
     while(digitalRead(ENDSTOP_TOP_1_PIN)==HIGH){
-      Mstepper_lin1.moveTo(curr_steps_pair[1]-increment);
-      Mstepper_lin1.runSpeedToPosition();
+      stepper_lin1.moveTo(curr_steps_pair[1]-increment);
+      stepper_lin1.runSpeedToPosition();
       curr_steps_pair[1]=curr_steps_pair[1]-increment;
     }
     //we need to initialize their position that will be stored and changed and whatnot
     curr_steps_pair[0]=0;
     curr_steps_pair[1]=0;
-    Astepper_lin0.setCurrentPosition(0);
-    Astepper_lin1.setCurrentPosition(0);
+    stepper_lin0.setCurrentPosition(0);
+    stepper_lin1.setCurrentPosition(0);
 
     
 
@@ -203,7 +198,7 @@ void loop() {
  //the functionality varies depending on what we are actively doing
  
  //debugging
- //Serial.println(state); //0 is waiting for message, 1 is moving, 2 is done
+ Serial.println(state); //0 is waiting for message, 1 is moving, 2 is done
  delay(3000); //wait 3 seconds between this, just for debugging
  
  
@@ -314,9 +309,9 @@ void stepper0_move(){
       //Serial.println(curr_steps_pair[0]);
       //Serial.print("targ_steps_pair0: ");
       //Serial.println(targ_steps_pair[0]);
-      curr_steps_pair[0] = curr_steps_pair[0] + increment;
-      Mstepper_lin0.moveTo(curr_steps_pair[0]);
-      Mstepper_lin0.runSpeedToPosition();
+      curr_steps_pair[0] = stepper_lin0.currentPosition() + increment;
+      stepper_lin0.moveTo(curr_steps_pair[0]);
+      stepper_lin0.runSpeedToPosition();
     }
   }
   //we are opening the pair/moving tree up here
@@ -331,9 +326,9 @@ void stepper0_move(){
       //Serial.println(curr_steps_pair[0]);
       //Serial.print("targ_steps_pair0: ");
       //Serial.println(targ_steps_pair[0]);
-      curr_steps_pair[0] = curr_steps_pair[0] - increment;
-      Mstepper_lin0.moveTo(curr_steps_pair[0]);
-      Mstepper_lin0.runSpeedToPosition();
+      curr_steps_pair[0] = stepper_lin0.currentPosition() - increment;
+      stepper_lin0.moveTo(curr_steps_pair[0]);
+      stepper_lin0.runSpeedToPosition();
     }
 
   }
@@ -405,9 +400,9 @@ void stepper1_move(){
     //debugging, remember to reinclude force sensors later
 
     while(targ_steps_pair[1] > curr_steps_pair[1]/* &&  analogRead(FORCE2_PIN)<1000 && analogRead(FORCE3_PIN<1000)*/){
-      curr_steps_pair[1]=curr_steps_pair[1] + increment;
-      Mstepper_lin1.moveTo(curr_steps_pair[1]);
-      Mstepper_lin1.runSpeedToPosition();
+      curr_steps_pair[1]=stepper_lin1.currentPosition() + increment;
+      stepper_lin1.moveTo(curr_steps_pair[1]);
+      stepper_lin1.runSpeedToPosition();
     }
   }
   //we are opening the pair/moving tree up here
@@ -417,9 +412,9 @@ void stepper1_move(){
     // we haven't triggered the high end stop (maximum closure)
     
     while(targ_steps_pair[1] < curr_steps_pair[1] && digitalRead(ENDSTOP_TOP_1_PIN)==HIGH){
-      curr_steps_pair[1]=curr_steps_pair[1] - increment;
-      Mstepper_lin1.moveTo(curr_steps_pair[1]);
-      Mstepper_lin1.runSpeedToPosition();
+      curr_steps_pair[1]=stepper_lin1.currentPosition() - increment;
+      stepper_lin1.moveTo(curr_steps_pair[1]);
+      stepper_lin1.runSpeedToPosition();
     }
   }
   //if we get here, we aren't moving this pair for some reason
@@ -488,21 +483,21 @@ void steppers_move() {
     while((targ_steps_pair[0] > curr_steps_pair[0]/* && analogRead(FORCE0_PIN)<1000 && analogRead(FORCE1_PIN<1000)*/) && (targ_steps_pair[1] > curr_steps_pair[1]/* && analogRead(FORCE2_PIN)<1000 && analogRead(FORCE3_PIN)<1000*/)){
       curr_steps_pair[0] = curr_steps_pair[0] + increment;
       curr_steps_pair[1] = curr_steps_pair[1] + increment;
-      Msteppers_lin.moveTo(curr_steps_pair);
-      Msteppers_lin.runSpeedToPosition();
+      steppers_lin.moveTo(curr_steps_pair);
+      steppers_lin.runSpeedToPosition();
     }
     //at this point, one of the pairs has finished but the other might not have for some reason
     //first, lets check for pair 0
     while(targ_steps_pair[0] > curr_steps_pair[0]/* && analogRead(FORCE0_PIN)<1000 && analogRead(FORCE1_PIN<1000)*/){
-      curr_steps_pair[0] = curr_steps_pair[0] + increment;
-      Mstepper_lin0.moveTo(curr_steps_pair[0]);
-      Mstepper_lin0.runSpeedToPosition();
+      curr_steps_pair[0] = stepper_lin0.currentPosition() + increment;
+      stepper_lin0.moveTo(curr_steps_pair[0]);
+      stepper_lin0.runSpeedToPosition();
     }
     //now, lets check for pair1
     while(targ_steps_pair[1] > curr_steps_pair[1]/* && analogRead(FORCE2_PIN)<1000 && analogRead(FORCE3_PIN)<1000*/){
-      curr_steps_pair[1] = curr_steps_pair[1] + increment;
-      Mstepper_lin1.moveTo(curr_steps_pair[1]);
-      Mstepper_lin1.runSpeedToPosition();
+      curr_steps_pair[1] = stepper_lin1.currentPosition() + increment;
+      stepper_lin1.moveTo(curr_steps_pair[1]);
+      stepper_lin1.runSpeedToPosition();
     }
   }
   //the alternative is if both arms will be moving down
@@ -511,21 +506,21 @@ void steppers_move() {
     while((targ_steps_pair[0] < curr_steps_pair[0] && digitalRead(ENDSTOP_TOP_0_PIN)==HIGH) && (targ_steps_pair[1] < curr_steps_pair[1] && digitalRead(ENDSTOP_TOP_1_PIN)==HIGH)){
       curr_steps_pair[0] = curr_steps_pair[0] - increment;
       curr_steps_pair[1] = curr_steps_pair[1] - increment;
-      Msteppers_lin.moveTo(curr_steps_pair);
-      Msteppers_lin.runSpeedToPosition();
+      steppers_lin.moveTo(curr_steps_pair);
+      steppers_lin.runSpeedToPosition();
     }
     //at this point, one of the pairs has finished but the other might not have for some reason
     //first, lets check for pair 0
     while(targ_steps_pair[0] < curr_steps_pair[0] && digitalRead(ENDSTOP_TOP_0_PIN)==HIGH){
-      curr_steps_pair[0] = curr_steps_pair[0] - increment;
-      Mstepper_lin0.moveTo(curr_steps_pair[0]);
-      Mstepper_lin0.runSpeedToPosition();
+      curr_steps_pair[0] = stepper_lin0.currentPosition() - increment;
+      stepper_lin0.moveTo(curr_steps_pair[0]);
+      stepper_lin0.runSpeedToPosition();
     }
     //now, lets check for pair1
     while(targ_steps_pair[1] < curr_steps_pair[1] && digitalRead(ENDSTOP_TOP_1_PIN)==HIGH){
-      curr_steps_pair[1] = curr_steps_pair[1] - increment;
-      Mstepper_lin1.moveTo(curr_steps_pair[1]);
-      Mstepper_lin1.runSpeedToPosition();
+      curr_steps_pair[1] = stepper_lin1.currentPosition() - increment;
+      stepper_lin1.moveTo(curr_steps_pair[1]);
+      stepper_lin1.runSpeedToPosition();
     }
   }
   else { //if we get here there must be no movement

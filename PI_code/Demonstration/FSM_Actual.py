@@ -28,10 +28,6 @@ import serial
 
 #Global Variables for UART
 
-#this is a flag to signal if capture is going on
-capture_start=0
-#this is a flag to signal that the system should be reset
-initialize=0
 #this is a flag to signal if the program should stop, it won't often be set
 program_quit=0
 #this is a flag to signal that we should determine the object type
@@ -84,7 +80,7 @@ def stateA():
     global arm_configuration
     pair_select=2 #opening both pairs of arms
     moving_arm=1 #moving arm
-    move_amount=1000000 #all the way open
+    move_amount=-1000000 #all the way open
     configuring_arm=1 #configuring arm
     arm_configuration=0 #= configuration
     
@@ -94,8 +90,6 @@ def stateA():
 #UART_Wait
 def stateB():
     # we need all of the UART related global flag variables
-    global capture_start
-    global initialize
     global program_quit
     global detecting_object
     global moving_arm
@@ -108,12 +102,6 @@ def stateB():
     while (True):
         #the next state will be determined based on the set of variables in the UART module
         #generally, only one of these should be 1 when this statement comes up
-        if(capture_start==1):
-            initialize=1
-            detecting_object=1
-            return stateA #first step in capturing is resetting the arms
-        if(initialize==1):
-            return stateA #in this case, we are just resetting
         if(moving_arm==1):
             return stateC #we are entering the moving arm state
         if(rotating_arm==1):
@@ -133,13 +121,13 @@ def stateC():
     #final option is deciding via UART in which case pair select is still set
     OFFSET=pair_select
     #when we select O or C in UART we also set the move_amount
-    lin_ARD_Write(lin_ard_add, OFFSET, move_amount)
+    lin_ARD_Write(OFFSET, move_amount)
     #moving arm is set to 1 in the UART thread, or the capture start or initialize, 
     
     #we are going to want to incldicate that we are going to move the arm, and in doing so update the status
+    #potentially unnecessary debugging
     status_UART+=f"Moving arms\r\n\tpair_select={pair_select}\r\n"
     new_status=1
-    
     
     #we automatically go to the ARD_Wait state after this one
     return stateE

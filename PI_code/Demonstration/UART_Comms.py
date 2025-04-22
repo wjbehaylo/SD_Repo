@@ -40,14 +40,8 @@ from time import sleep
 
 #Global Variables
 
-#this is a flag to signal if capture is going on
-capture_start=0
-#this is a flag to signal that the system should be reset
-initialize=0
 #this is a flag to signal if the program should stop, it won't often be set
 program_quit=0
-#this is a flag to signal that we should read the time of flight sensor
-detecting_distance=0
 #this is a flag to signal that we should determine the object type
 detecting_object=0
 #this is a flag to signal that the arms will be moving
@@ -76,10 +70,7 @@ is_running = True
 
 def UART():
     #global variables
-    global capture_start
-    global initialize
     global program_quit
-    global detecting_distance
     global detecting_object
     global moving_arm
     global move_amount
@@ -91,7 +82,6 @@ def UART():
     
     #will thread status_UART and check regularly
     global status_UART
-    global new_status
     
     #if there are other usb devices connected before this, you may have to replace 0 with 1, 2, or 3 I think. Otherwise just find which port it is. 
     ser = serial.Serial('/dev/ttyAMA0')
@@ -117,18 +107,11 @@ def UART():
     ser.write(message_bytes+b"\r\n")
 
     print(message)
-    while(True):
+    while(message != 'Q'):
         match message:
             case '?':
                 ser.write(b"Usage Guidelines:\r\nThe following is a list of possible one character messages that can be sent\r\n")
                 ser.write(b"    (?): Help, prints out the Usage Guidelines\r\n\n")
-                
-                ser.write(b"    (S): Start, begins the standard capture process\r\n") #note that there isn't a state for this, since it just sets the capture_start flag to be 1 then goes to resetting
-                ser.write(b"    (I): Initialize, resets the system to default configuration\r\n")
-                ser.write(b"    (Q): Quit, terminates the serial connection\r\n\n")
-
-                ser.write(b"!!! (D): Distance, output distance to the debris. Make sure to remove This!!!\r\n")
-                ser.write(b"    (T): Type, output type of debris detected\r\n\n")
                 
                 ser.write(b"    (M): Move, followed by a value, actuate X steps (+ is closing, - is opening)\r\n")
                 ser.write(b"    (O): Open, fully open the claw\r\n")
@@ -137,46 +120,10 @@ def UART():
                 ser.write(b"    (R): Rotate, followed by a value, rotate X degrees\r\n") #degrees to steps conversion will be determined
                 ser.write(b"    (=): Equals, rotates the claw into = configuration\r\n")
                 ser.write(b"    (+): Plus, rotates the claw into the plus configuration\r\n\n")
-            case 'S':
-                #this case corresponds to the general capture process
-                ser.write(b"Starting capture process\r\n")
-                #this is a global flag that will be established, so that the other threaded process will know to start the process
-                capture_start=1
-                new_status=0 #we need to make sure that the current status isn't considered
-                #it will be set back to 0 once capture is complete, at which point this while loop will stop
-                while(capture_start==1):
-                    sleep(0.1)
-                    #this if statement is just so that each state can still communicate through, even though the UART is doing what it is actively.
-                    if(new_status==1):
-                        ser.write(status_UART.encode("utf-8")+b"\r\n")
-                        status_UART=""
-                        new_status=0
-                ser.write(b"Capture process finished\r\n")
-                #status will be updated during the process
-                #I am planning on status_UART being a string, so we need to encode it 
-                ser.write(status_UART.encode("utf-8")+b"\r\n")
-                status_UART=""
-                    
-            case 'I':
-                #this case corresponds to the system being reset to its default, theoretically after a capture or on start up
-                ser.write(b"Initializing system\r\n")
-                initialize=1
-                new_status=0 #we need to make sure that the current status isn't considered
-                #now we wait for it to be finished initializng, which does include it going through a few states
-                while(initialize==1):
-                    sleep(0.1)
-                    #we check if any of these states have new status to mention
-                    if(new_status==1):
-                        ser.write(status_UART.encode("utf-8")+b"\r\n")
-                        status_UART=""
-                        new_status=0
-                ser.write(b"Intialization process finished\r\n")
                 
-                #I don't think we need this here because we kind of gave out the status already?
-                ser.write(status_UART.encode("utf-8")+b"\r\n")
-                status_UART=""
+                ser.write(b"    (T): Type, output type of debris detected\r\n\n")
+                ser.write(b"    (Q): Quit, terminates the serial connection\r\n\n")
 
-                
             case 'Q':
                 #this state, however infrequenctly used, will be to termiante the program's functionality and end the while loops
                 ser.write(b"Quitting\r\n")
@@ -184,17 +131,7 @@ def UART():
                 #we want to exit this while loop, so that the connection gets closed
                 sleep(1)
                 break
-            case 'D':
-                #this state gets the distance reading from the time of flight sensor
-                ser.write(b"Detecting distance\r\n")
-                detecting_distance=1
-                while(detecting_distance==1):
-                    sleep(0.1)
-                ser.write(b"Distance detection finished\r\n")
-                #status will be updated during the process
-                #I am planning on status_UART being a string, so we need to encode it 
-                ser.write(status_UART.encode("utf-8")+b"\r\n")
-                status_UART=""
+            
             case 'T':
                 #this state has the CV detect the type of the object 
                 ser.write(b"Detecting object\r\n")
@@ -260,6 +197,7 @@ def UART():
                 #I am planning on status_UART being a string, so we need to encode it 
                 ser.write(status_UART.encode("utf-8")+b"\r\n")
                 status_UART=""
+                
             case 'O':
                 #this state is just to fully open the arms
                 
@@ -280,7 +218,7 @@ def UART():
                 #note that this number will be positive or negative because of how we want to send it.
                 #TBD pos or negative
                 moving_arm=1
-                move_amount=1000000 #undetermined positive or negative
+                move_amount=-1000000 #undetermined positive or negative
                 while(moving_arm==1):
                     sleep(0.1)
                 ser.write(b"Claw movement finished\r\n")
@@ -307,10 +245,9 @@ def UART():
                 #note that this number will be positive or negative because of how we want to send it.
                 #TBD pos or negative
                 moving_arm=1
-                move_amount=-1000000 #undetermined positive or negative
-                while(moving_arm==1 and test==1):
+                move_amount=1000000 #undetermined positive or negative
+                while(moving_arm==1):
                     sleep(0.1)
-                test=1
                 ser.write(b"Claw movement finished\r\n")
                 #status will be updated during the process
                 #I am planning on status_UART being a string, so we need to encode it 
