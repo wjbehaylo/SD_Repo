@@ -97,13 +97,13 @@ def stateA():
     cv_thread.start()
     #now make sure that all the threads are running properly
     sleep(30)
-    if(not UART_running):
+    if(UART_running==False):
         print("UART thread not running")
         return stateQ
-    if(not CV_running):
+    if(CV_running==False):
         print("CV thread not running")
         return stateQ
-    if(not CAM_running):
+    if(CAM_running==False):
         print("CAM thread not running")
         return stateQ
     
