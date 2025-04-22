@@ -556,7 +556,7 @@ Libraries to be included:
      executionStatus0 = 2;
    }
    //debugging, fully closed end stop, commented because it will never be triggered since meches miss-sized the area and so it isn't worth it to wire up
-   */
+   /*
    else if(digitalRead(ENDSTOP_BOT_0_PIN)==LOW){
      executionStatus0 = 3;
      return;
