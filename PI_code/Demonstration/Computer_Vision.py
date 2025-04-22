@@ -89,6 +89,7 @@ def debris_detect():
  
 	#debugging
 	print("Debris detect running")
+ 
 	while (SYS_running):
 		
 		#we only want to run through this loop if run_CV is 1, meaning that the FSM is trying to detect a new object
