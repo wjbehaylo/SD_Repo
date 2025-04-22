@@ -202,7 +202,7 @@ Libraries to be included:
   Serial.println(state); //0 is waiting for message, 1 is moving, 2 is done
   delay(3000); //wait 3 seconds between this, just for debugging
   
-  
+   
    switch(state){
      case WAIT:
        //Serial.println("Waiting for message");
