@@ -124,13 +124,13 @@ lin_ard_add=15
 
 #dictionairy of the names of each of the various states
 state_machine={
-    "Initializing": stateA,
-    "UART_Wait": stateB,
-    "Moving_Arm": stateC,
-    "Rotating_Arm": stateD,
-    "ARD_Wait": stateE,
-    "Detecting_Object": stateF,
-    "Quit": stateQ
+    stateA:"Initializing",
+    stateB:"UART_Wait",
+    stateC:"Moving_Arm",
+    stateD:"Rotating_Arm",
+    stateE:"ARD_Wait",
+    stateF:"Detecting_Object",
+    stateQ:"Quitting"
 }
 
 '''CODE'''
@@ -140,8 +140,8 @@ state_machine={
 def main():
     global SYS_running
     current_state = stateA
-    
-    print("[INFO] Starting main, FSM in state: ", state_machine[current_state])
+    current_state_name = state_machine[current_state]
+    print("[INFO] Starting main, FSM in state: ", current_state_name)
     
     while SYS_running:
         #Each state function returns a function pointer to the next function that will be called and executed
