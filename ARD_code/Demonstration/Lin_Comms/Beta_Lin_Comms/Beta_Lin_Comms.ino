@@ -482,12 +482,12 @@ Libraries to be included:
    //if both will be moving up
    //debugging, remember to reinclude force sensors later
    if(targ_steps_pair[0]>curr_steps_pair[0] || targ_steps_pair[1]>curr_steps_pair[1]){
-     while((targ_steps_pair[0] > curr_steps_pair[0] 
+     while(targ_steps_pair[0] > curr_steps_pair[0] 
      && analogRead(FORCE0_PIN)<FORCE_THRESH 
-     && analogRead(FORCE1_PIN)<FORCE_THRESH) 
-     && (targ_steps_pair[1] > curr_steps_pair[1] 
+     && analogRead(FORCE1_PIN)<FORCE_THRESH 
+     && targ_steps_pair[1] > curr_steps_pair[1] 
      && analogRead(FORCE2_PIN)<FORCE_THRESH 
-     && analogRead(FORCE3_PIN)<FORCE_THRESH)){
+     && analogRead(FORCE3_PIN)<FORCE_THRESH){
        curr_steps_pair[0] = curr_steps_pair[0] + increment;
        curr_steps_pair[1] = curr_steps_pair[1] + increment;
        steppers_lin.moveTo(curr_steps_pair);
