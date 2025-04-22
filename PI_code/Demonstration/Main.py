@@ -143,13 +143,17 @@ def main():
     current_state_name = state_machine[current_state]
     print("[INFO] Starting main, FSM in state: ", current_state_name)
     
-    while SYS_running:
+    while (SYS_running== True):
         #Each state function returns a function pointer to the next function that will be called and executed
         next_state = current_state()
         #debugging
         print(f"Transitioning from {state_machine[current_state]} to {state_machine[next_state]}")
         current_state=next_state #hopefully this just does the name and doesn't actually like call the function, but maybe it would/will
         #note that the state loops and waiting conditions and stuff happen within them, so there isn't any potential issue with it like going to the same state a ton of times
+        
+        #a bit concerning, but for some reason SYS_running getting set to false wasn't stopping the execution how it should've
+        if(current_state==stateQ):
+            break
     print("[INFO] Ending main, FSM in state: ", state_machine[current_state])
     return
     
