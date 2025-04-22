@@ -144,6 +144,9 @@ def main():
     print("[INFO] Starting main, FSM in state: ", current_state_name)
     
     while (SYS_running== True):
+        #if we are in this state we should not be I think.
+        if(current_state==stateQ):
+            break
         #Each state function returns a function pointer to the next function that will be called and executed
         next_state = current_state()
         #debugging
@@ -152,8 +155,7 @@ def main():
         #note that the state loops and waiting conditions and stuff happen within them, so there isn't any potential issue with it like going to the same state a ton of times
         
         #a bit concerning, but for some reason SYS_running getting set to false wasn't stopping the execution how it should've
-        if(current_state==stateQ):
-            break
+        
     print("[INFO] Ending main, FSM in state: ", state_machine[current_state])
     return
     
