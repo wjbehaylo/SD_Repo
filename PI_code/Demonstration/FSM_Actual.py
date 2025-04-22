@@ -21,11 +21,6 @@ from ARD_Comms import * #importing all the ard functions
 from Computer_Vision import * #importing the necessary computer vision functions
 from Generate_Status import Generate_Status #for generating our status we will output
 
-#Time of Flight, note that different I2C methods might be problematic
-import board
-import busio
-import adafruit_vl53l0x
-
 #UART
 import threading
 import serial
