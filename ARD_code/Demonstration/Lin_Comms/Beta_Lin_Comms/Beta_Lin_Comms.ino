@@ -101,6 +101,7 @@ Libraries to be included:
  const int maxAccel = 500;
  const int increment = 10; //I think its probably fine to have it move 1 step at a time, if too slow we could increase this though
  const int FORCE_THRESH = 682; //maximum force of 3N
+ const int max_steps = 14000; //maximum steps they could move to
 
  AccelStepper stepper_lin0(AccelStepper::DRIVER, PAIR0_STP_PIN, PAIR0_DIR_PIN);
  AccelStepper stepper_lin1(AccelStepper::DRIVER, PAIR1_STP_PIN, PAIR1_DIR_PIN);
@@ -303,9 +304,7 @@ Libraries to be included:
      // debugging, took out this from the while loop since it won't be wired up  && digitalRead(ENDSTOP_BOT_0_PIN)==HIGH
  
      //debugging, make sure to re-include the force sensors later
-     while(targ_steps_pair[0] > curr_steps_pair[0] 
-     && analogRead(FORCE0_PIN)<FORCE_THRESH 
-     && analogRead(FORCE1_PIN)<FORCE_THRESH){
+     while(targ_steps_pair[0] > curr_steps_pair[0]  && curr_steps_pair[0] < max_steps && analogRead(FORCE0_PIN)<FORCE_THRESH && analogRead(FORCE1_PIN)<FORCE_THRESH){
        //debugging
        //Serial.print("Moving pair0\ncurr_steps_pair0: ");
        //Serial.println(curr_steps_pair[0]);
@@ -322,8 +321,7 @@ Libraries to be included:
      // we have more steps to move
      // we haven't triggered the high end stop (maximum closure)
      
-     while(targ_steps_pair[0] < curr_steps_pair[0] 
-     && digitalRead(ENDSTOP_TOP_0_PIN)==HIGH){  
+     while(targ_steps_pair[0] < curr_steps_pair[0] && digitalRead(ENDSTOP_TOP_0_PIN)==HIGH){  
        //debugging
        //Serial.print("Moving pair0\ncurr_steps_pair0: ");
        //Serial.println(curr_steps_pair[0]);
@@ -344,24 +342,29 @@ Libraries to be included:
    ctrlBusy = false;
    ctrlDone = true;
    
-   //now we need to determine our output status based on what flags are set
-   //our priority will go: normal movement, force sensor, end stop
+    //now we need to determine our output status based on what flags are set
+    //our priority will go: normal movement, force sensor, end stop
  
-   //debugging, make sure to re-include force sensors later
-   if (targ_steps_pair[0]==curr_steps_pair[0]){
-     executionStatus0 = 1;
-     return;
-   }
-   else if(analogRead(FORCE0_PIN)>FORCE_THRESH || analogRead(FORCE1_PIN)>FORCE_THRESH) {
-     executionStatus0 = 4; // Force limit reached
-     Serial.println("Force limit reached on pair0!");
-     return;
-   }
-   //fully open end stop
-   else if(digitalRead(ENDSTOP_TOP_0_PIN)==LOW){
+    //debugging, make sure to re-include force sensors later
+    if (targ_steps_pair[0]==curr_steps_pair[0]){
+      executionStatus0 = 1;
+      return;
+    }
+    else if(analogRead(FORCE0_PIN)>FORCE_THRESH || analogRead(FORCE1_PIN)>FORCE_THRESH) {
+      executionStatus0 = 4; // Force limit reached
+      Serial.println("Force limit reached on pair0!");
+      return;
+    }
+    //fully open end stop
+    else if(digitalRead(ENDSTOP_TOP_0_PIN)==LOW){
      executionStatus0 = 2;
      return;
-   }
+    }
+    //this takes the place of our fully closed because we don't have it wired
+    else if(curr_steps_pair[0] >= max_steps){
+      executionStatus0 = 3;
+      return;
+    }
    //debugging, fully closed end stop, commented because it will never be triggered since meches miss-sized the area and so it isn't worth it to wire up
    /*else if(digitalRead(ENDSTOP_BOT_0_PIN)==LOW){
      executionStatus0 = 3;
@@ -397,9 +400,7 @@ Libraries to be included:
      //NOte that this is the previous while loop, but ENDSTOP_BOT_1_PIN will always be high 
      //debugging, remember to reinclude force sensors later
  
-     while(targ_steps_pair[1] > curr_steps_pair[1] 
-     && analogRead(FORCE2_PIN)<FORCE_THRESH 
-     && analogRead(FORCE3_PIN)<FORCE_THRESH) {
+     while(targ_steps_pair[1] > curr_steps_pair[1] && curr_steps_pair[1] < max_steps && analogRead(FORCE2_PIN)<FORCE_THRESH && analogRead(FORCE3_PIN)<FORCE_THRESH) {
        curr_steps_pair[1]=stepper_lin1.currentPosition() + increment;
        stepper_lin1.moveTo(curr_steps_pair[1]);
        stepper_lin1.runSpeedToPosition();
@@ -411,8 +412,7 @@ Libraries to be included:
      // we have more steps to move
      // we haven't triggered the high end stop (maximum closure)
      
-     while(targ_steps_pair[1] < curr_steps_pair[1] 
-     && digitalRead(ENDSTOP_TOP_1_PIN)==HIGH){
+     while(targ_steps_pair[1] < curr_steps_pair[1] && digitalRead(ENDSTOP_TOP_1_PIN)==HIGH){
        curr_steps_pair[1]=stepper_lin1.currentPosition() - increment;
        stepper_lin1.moveTo(curr_steps_pair[1]);
        stepper_lin1.runSpeedToPosition();
@@ -444,6 +444,11 @@ Libraries to be included:
      executionStatus1 = 12;
      return;
    }
+   //this takes the place of our fully closed because we don't have it wired
+  else if(curr_steps_pair[1] >= max_steps){
+    executionStatus1 = 13;
+    return;
+  }
    //debugging, fully closed end stop, commented because it will always be low since we're not wiring it
    //else if(digitalRead(ENDSTOP_BOT_1_PIN)==LOW){
      //executionStatus1 = 13;
@@ -479,9 +484,11 @@ Libraries to be included:
    //debugging, remember to reinclude force sensors later
    if(targ_steps_pair[0]>curr_steps_pair[0] || targ_steps_pair[1]>curr_steps_pair[1]){
      while(targ_steps_pair[0] > curr_steps_pair[0] 
+     && curr_steps_pair[0] < max_steps
      && analogRead(FORCE0_PIN)<FORCE_THRESH 
      && analogRead(FORCE1_PIN)<FORCE_THRESH 
      && targ_steps_pair[1] > curr_steps_pair[1] 
+     && curr_steps_pair[1] < max_steps
      && analogRead(FORCE2_PIN)<FORCE_THRESH 
      && analogRead(FORCE3_PIN)<FORCE_THRESH){
        curr_steps_pair[0] = curr_steps_pair[0] + increment;
@@ -491,16 +498,18 @@ Libraries to be included:
      }
      //at this point, one of the pairs has finished but the other might not have for some reason
      //first, lets check for pair 0
-     while(targ_steps_pair[0] > curr_steps_pair[0] && 
-     analogRead(FORCE0_PIN)<FORCE_THRESH 
+     while(targ_steps_pair[0] > curr_steps_pair[0]
+     && curr_steps_pair[0] < max_steps
+     && analogRead(FORCE0_PIN)<FORCE_THRESH 
      && analogRead(FORCE1_PIN)<FORCE_THRESH){
        curr_steps_pair[0] = stepper_lin0.currentPosition() + increment;
        stepper_lin0.moveTo(curr_steps_pair[0]);
        stepper_lin0.runSpeedToPosition();
      }
      //now, lets check for pair1
-     while(targ_steps_pair[1] > curr_steps_pair[1] && 
-     analogRead(FORCE2_PIN)<FORCE_THRESH 
+     while(targ_steps_pair[1] > curr_steps_pair[1] 
+     && curr_steps_pair[1] < max_steps
+     && analogRead(FORCE2_PIN)<FORCE_THRESH 
      && analogRead(FORCE3_PIN)<FORCE_THRESH){
        curr_steps_pair[1] = stepper_lin1.currentPosition() + increment;
        stepper_lin1.moveTo(curr_steps_pair[1]);
@@ -551,6 +560,10 @@ Libraries to be included:
    else if(digitalRead(ENDSTOP_TOP_0_PIN)==LOW){
      executionStatus0 = 2;
    }
+  //this takes the place of our fully closed because we don't have it wired
+  else if(curr_steps_pair[0] >= max_steps){
+    executionStatus0 = 3;
+  }
    //debugging, fully closed end stop, commented because it will never be triggered since meches miss-sized the area and so it isn't worth it to wire up
    /*
    else if(digitalRead(ENDSTOP_BOT_0_PIN)==LOW){
@@ -578,6 +591,10 @@ Libraries to be included:
    else if(digitalRead(ENDSTOP_TOP_1_PIN)==LOW){
      executionStatus1 = 12;
    }
+   //this takes the place of our fully closed because we don't have it wired
+  else if(curr_steps_pair[1] >= max_steps){
+    executionStatus1 = 13;
+  }
    //debugging, fully closed end stop, commented because it will always be low since we're not wiring it
    /*
    else if(digitalRead(ENDSTOP_BOT_1_PIN)==LOW){
