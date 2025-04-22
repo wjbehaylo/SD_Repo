@@ -15,6 +15,7 @@ from smbus2 import SMBus #this is to get the I2C connection functionality we wan
 from time import sleep
 from UART_Comms import UART #to get our UART Function
 from ARD_Comms import * #importing all the ard functions
+from Computer_Vision import * #importing the necessary computer vision functions
 from Generate_Status import Generate_Status #for generating our status we will output
 
 #Time of Flight, note that different I2C methods might be problematic
@@ -30,7 +31,7 @@ import serial
 
 #this is a flag to signal if the program should stop, it won't often be set
 program_quit=0
-#this is a flag to signal that we should determine the object type
+#this is a flag to signal that we should determine the object type, things that matter
 detecting_object=0
 #this is a flag to signal that the arms will be moving
 moving_arm=0
@@ -53,10 +54,25 @@ status_UART=""
 #after it is sent out over the ser_write stuff, new_status will be set back to 0
 new_status=0
 
+#Variables for CV
+#this will store the actual detected debris type
+detected_debris_type=None
+#this is a flag to signal between FSM_Actual and Computer_Vision that a new frame should be captured and object type determined
+run_CV=0
+#This is a lock so that the function capturing images and the one analyzing them don't have race issues
+frame_lock= threading.Lock()
+#This is where the image is sent when it is passed between the functions
+color_frame = None
+
+
 #Flag to control main loop
+#If this gets set to false, everything will end
 is_running = True
-
-
+UART_running = False
+#this is a flag to signal that the camera thread is running
+CAM_running=False
+#this is a flag to signal that the CV is running
+CV_running=False
 
 #Global variables for Arduino Communications
 #establishes what bus to be communicated over
@@ -74,19 +90,31 @@ lin_ard_add=15
 #Initializing the system, this will start the camera and UART threads, after the start we won't actually go to this state though
 def stateA():
     #starting UART thread. It is a daemon so that when this FSM program finishes executing it will be done to 
+    global UART_running, CV_running, CAM_running
     uart_thread = threading.Thread(target=UART, daemon = True)
-    cv_thread = threading.Thread(target= , daemon = True)
+    cam_thread = threading.Thread(target= capture_frame, daemon = True)
+    cv_thread = threading.Thread(target = debris_detect, daemon = True)
     uart_thread.start()
+    cam_thread.start()
     cv_thread.start()
+    #now make sure that all the threads are running properly
+    sleep(10)
+    if(not UART_running):
+        print("UART thread not running")
+        return stateQ
+    if(not CV_running):
+        print("CV thread not running")
+        return stateQ
+    if(not CAM_running):
+        print("CAM thread not running")
+        return stateQ
     
-    pair_select=2 #opening both pairs of arms
-    moving_arm=1 #moving arm
-    move_amount=-16000 #all the way open
-    configuring_arm=1 #configuring arm
-    arm_configuration=0 #= configuration
+    #if all the threads are running, we should be good to start trying to run it
+    print("Threads initialized")
     
     #I'm not sure what all we would want to make sure it is rotated to where it needs to be rotated to here
-    return stateD
+    #the threads should all be started
+    return stateB
 
 #UART_Wait
 def stateB():
@@ -256,32 +284,40 @@ def stateE():
 def stateF(): 
 
     global detecting_object
+    global detected_debris_type
     global status_UART
     global new_status
     global pair_select
+    global run_CV
 
-    #run CV classifier (implement in cameraCalibAndShapeDetector)
-    obj_type = colorDetector()
-
+    #we set this to 1 so that the CV will capture a frame and analyze it
+    run_CV = 1 
+    while(run_CV==1):
+        sleep(0.1)
+        
+    #when we exit this while loop, detected_debris_type should be set
+    
+    #at this point, detecting object should be true, so we want to resume/start the computer vision stuff
+    #I will have a flag called CV_RUN that 
     # report back over UART
-    if obj_type in ("CubeSat", "Starlink", "Minotaur"):
-        status_UART += f"Detected object: {obj_type}\r\n"
+    if detected_debris_type in ("CubeSat", "Starlink", "Minotaur"):
+        status_UART += f"Detected object: {detected_debris_type}\r\n"
     else:
         status_UART += "Detected object: UNKNOWN\r\n"
     
     new_status = 1 #queue that message
 
     # set grip parameters based on the type
-    #debugging, these aren't decided yet
-    if obj_type == "CubeSat":
-        pair_select = 0    # one claw only
-        move_amount  = 600000 #guessing here, idk
-    elif obj_type == "Starlink":
-        pair_select = 2    # both claws
-        move_amount  = 300000
-    elif obj_type == "Minotaur":
-        pair_select = 2 #both claws
-        move_amount = 500000
+    #debugging, these aren't decided yet, might remove these
+    if detected_debris_type == "CubeSat":
+        pair_select = 0    # one claw only, unsure of amount
+        move_amount  = 13000
+    elif detected_debris_type == "Starlink":
+        pair_select = 2    # both claws, unsure of amount
+        move_amount  = 10000
+    elif detected_debris_type == "Minotaur":
+        pair_select = 2 #both claws, unsure of amount, 
+        move_amount = 10000
     
     #we are finished detecting the object
     detecting_object = 0

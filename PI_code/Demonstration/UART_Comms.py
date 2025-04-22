@@ -66,7 +66,16 @@ status_UART=""
 new_status=0
 
 #Flag to control main loop
+#if this gets set to False, everything will exit
 is_running = True
+#this is a flag to signal that the UART thread is running
+UART_running=False
+#this is a flag to signal that the camera thread is running
+CAM_running=False
+#this is a flag to signal that the CV is running
+CV_running=False
+
+
 
 def UART():
     #global variables
@@ -83,6 +92,9 @@ def UART():
     #will thread status_UART and check regularly
     global status_UART
     global new_status
+    global is_running
+    global UART_running
+
     
     #if there are other usb devices connected before this, you may have to replace 0 with 1, 2, or 3 I think. Otherwise just find which port it is. 
     ser = serial.Serial('/dev/ttyAMA0')
@@ -100,6 +112,7 @@ def UART():
     else:
         print("Failure to open UART, exiting\r\n")
         return
+    UART_running = True
     ser.write(b"Connection Established\r\n")
     #we only want messages of one bit at a time. We will have switch statement and output the confirmed message based on the input
     #We need the message in bytes, the message reinterpretted, and to send the message back
@@ -337,4 +350,5 @@ def UART():
         message=message_bytes.decode('utf-8')
         print(message)
         ser.write(message_bytes+b"\r\n")
+    UART_running = False
     ser.close()
