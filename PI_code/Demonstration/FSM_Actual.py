@@ -354,9 +354,3 @@ state_machine={
     "Detecting_Object": stateF,
     "Quit": stateQ
 }
-
-#note that how I am implementing it, the state's actions will happen within the state,
-#and in the general system's while loop it will just call for one state to become the next
-
-while(state!=stateQ):
-    state=next_state()
