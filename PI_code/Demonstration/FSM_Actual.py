@@ -96,7 +96,7 @@ def stateA():
     cam_thread.start()
     cv_thread.start()
     #now make sure that all the threads are running properly
-    sleep(10)
+    sleep(30)
     if(not UART_running):
         print("UART thread not running")
         return stateQ
