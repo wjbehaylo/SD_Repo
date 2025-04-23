@@ -40,22 +40,6 @@ from time import sleep
 import globals #this declared the global variables that we will be using
 
 def UART():
-    #global variables
-    global detecting_object
-    global moving_arm
-    global move_amount
-    global pair_select
-    global rotating_arm
-    global rotate_amount
-    global configuring_arm
-    global arm_configuration
-    
-    #will thread status_UART and check regularly
-    global status_UART
-    global new_status
-    global UART_running
-
-    
     #if there are other usb devices connected before this, you may have to replace 0 with 1, 2, or 3 I think. Otherwise just find which port it is. 
     ser = serial.Serial('/dev/ttyAMA0')
 
@@ -72,7 +56,7 @@ def UART():
     else:
         print("Failure to open UART, exiting\r\n")
         return
-    UART_running = True
+    globals.UART_running = True
     ser.write(b"Connection Established\r\n")
     #we only want messages of one bit at a time. We will have switch statement and output the confirmed message based on the input
     #We need the message in bytes, the message reinterpretted, and to send the message back
@@ -105,13 +89,7 @@ def UART():
                 
                 #I'm pretty sure that this is just like a mutex: when uart_lock is available, we can execute the code, and it would update our variable
                 with globals.uart_lock:
-                    #debugging
-                    print("UART has uart_lock")
                     globals.program_quit=1
-                    sleep(1)
-                    #debugging
-                    print(globals.program_quit)
-                    print("UART losing uart_lock")
                 #we want to exit this while loop, so that the connection gets closed
                 sleep(1)
                 break
@@ -119,15 +97,15 @@ def UART():
             case 'T':
                 #this state has the CV detect the type of the object 
                 ser.write(b"Detecting object\r\n")
-                detecting_object=1
-                while(detecting_object==1):
+                globals.detecting_object=1
+                while(globals.detecting_object==1):
                     sleep(0.1)
                 ser.write(b"Object detection finished\r\n")
                 #status will be updated during the process
                 #I am planning on status_UART being a string, so we need to encode it 
-                ser.write(status_UART.encode("utf-8")+b"\r\n")
-                status_UART=""
-                new_status=0
+                ser.write(globals.status_UART.encode("utf-8")+b"\r\n")
+                globals.status_UART=""
+                globals.new_status=0
                 
             case 'M':
                 #this state has the motor move by a certain amount
@@ -142,7 +120,7 @@ def UART():
                         ser.write(b"Invalid input\r\n")
                         continue
                     #if we are here, we know we have a valid selection and we can convert it to integer and move on
-                    pair_select=int(arm_sel)
+                    globals.pair_select=int(arm_sel)
                     break
             
                 #here, we get how much to move them by.
@@ -169,21 +147,21 @@ def UART():
                         x_int = int(move_message)  # Convert input to integer   
                         #that line was where the error would be, so at this point we know it was a proper thing
                         ser.write(b"Moving " + move_message.encode('utf-8') + b" steps\r\n")
-                        moving_arm = 1
-                        move_amount = x_int
+                        globals.moving_arm = 1
+                        globals.move_amount = x_int
                         break
                     except ValueError:
                         #if we couldn't convert to int, we gotta do it again
                         ser.write(b"Invalid input. Please enter an integer.\r\n")
                     
-                while(moving_arm==1):
+                while(globals.moving_arm==1):
                     sleep(0.1)
                 ser.write(b"Claw movement finished\r\n")
                 #status will be updated during the process
                 #I am planning on status_UART being a string, so we need to encode it 
-                ser.write(status_UART.encode("utf-8")+b"\r\n")
-                status_UART=""
-                new_status = 0
+                ser.write(globals.status_UART.encode("utf-8")+b"\r\n")
+                globals.status_UART=""
+                globals.new_status = 0
                 
             case 'O':
                 #this state is just to fully open the arms
@@ -198,22 +176,22 @@ def UART():
                         ser.write(b"Invalid input\r\n")
                         continue
                     #if we are here, we know we have a valid selection and we can convert it to integer and move on
-                    pair_select=int(arm_sel)
+                    globals.pair_select=int(arm_sel)
                     break
                 
                 ser.write(b"Opening claw\r\n")
                 #note that this number will be positive or negative because of how we want to send it.
                 #TBD pos or negative
-                moving_arm=1
-                move_amount=-16000 #undetermined positive or negative
-                while(moving_arm==1):
+                globals.moving_arm=1
+                globals.move_amount=-16000 #undetermined positive or negative
+                while(globals.moving_arm==1):
                     sleep(0.1)
                 ser.write(b"Claw movement finished\r\n")
                 #status will be updated during the process
                 #I am planning on status_UART being a string, so we need to encode it 
-                ser.write(status_UART.encode("utf-8")+b"\r\n")
-                status_UART=""
-                new_status = 0
+                ser.write(globals.status_UART.encode("utf-8")+b"\r\n")
+                globals.status_UART=""
+                globals.new_status = 0
                 
             case 'C':
                 #this state is just to fully open the arms
@@ -227,22 +205,22 @@ def UART():
                         ser.write(b"Invalid input\r\n")
                         continue
                     #if we are here, we know we have a valid selection and we can convert it to integer and move on
-                    pair_select=int(arm_sel)
+                    globals.pair_select=int(arm_sel)
                     break
                 
                 ser.write(b"Closing claw\r\n")
                 #note that this number will be positive or negative because of how we want to send it.
                 #TBD pos or negative
-                moving_arm=1
-                move_amount=16000 #undetermined positive or negative
-                while(moving_arm==1):
+                globals.moving_arm=1
+                globals.move_amount=16000 #undetermined positive or negative
+                while(globals.moving_arm==1):
                     sleep(0.1)
                 ser.write(b"Claw movement finished\r\n")
                 #status will be updated during the process
                 #I am planning on status_UART being a string, so we need to encode it 
-                ser.write(status_UART.encode("utf-8")+b"\r\n")
-                status_UART=""
-                new_status=0
+                ser.write(globals.status_UART.encode("utf-8")+b"\r\n")
+                globals.status_UART=""
+                globals.new_status=0
                 
             case 'R':
                 #this state has the motor rotate by a certain amount
@@ -269,8 +247,8 @@ def UART():
                         r_int = int(degree_message)  # Convert input to integer   
                         #that line was where the error would be, so at this point we know it was a proper thing
                         ser.write(b"Rotating " + degree_message.encode('utf-8') + b" degrees\r\n")
-                        rotating_arm = 1
-                        rotate_amount = r_int
+                        globals.rotating_arm = 1
+                        globals.rotate_amount = r_int
                         # Exit loop since we got a valid integer
                         break
                     except ValueError:
@@ -278,41 +256,41 @@ def UART():
                         ser.write(b"Invalid input. Please enter an integer.\r\n")
                 
                 #now we wait for it to no longer be rotating
-                while(rotating_arm==1):
+                while(globals.rotating_arm==1):
                     sleep(0.1)
                 ser.write(b"Claw rotation finished\r\n")
                 #status will be updated during the process
                 #I am planning on status_UART being a string, so we need to encode it 
-                ser.write(status_UART.encode("utf-8")+b"\r\n")
-                status_UART=""
-                new_status=0
+                ser.write(globals.status_UART.encode("utf-8")+b"\r\n")
+                globals.status_UART=""
+                globals.new_status=0
             case '=':
                 ser.write(b"Rotating claw into = configuration\r\n")
-                rotating_arm=1
-                configuring_arm=1
-                arm_configuration=0 #this is the configuration for the =
-                while(rotating_arm==1):
+                globals.rotating_arm=1
+                globals.configuring_arm=1
+                globals.arm_configuration=0 #this is the configuration for the =
+                while(globals.rotating_arm==1):
                     sleep(0.1)
                 ser.write(b"Claw configuration finished\r\n")
                 #status will be updated during the process
                 #I am planning on status_UART being a string, so we need to encode it 
-                ser.write(status_UART.encode("utf-8")+b"\r\n")
-                status_UART=""
-                new_status = 0
+                ser.write(globals.status_UART.encode("utf-8")+b"\r\n")
+                globals.status_UART=""
+                globals.new_status = 0
                 
             case '+':
                 ser.write(b"Rotating claw into + configuration\r\n")
-                rotating_arm=1
-                configuring_arm=1
-                arm_configuration=1 #this is the configuration for the +
-                while(rotating_arm==1):
+                globals.rotating_arm=1
+                globals.configuring_arm=1
+                globals.arm_configuration=1 #this is the configuration for the +
+                while(globals.rotating_arm==1):
                     sleep(0.1)
                 ser.write(b"Claw configuration finished\r\n")
                 #status will be updated during the process
                 #I am planning on status_UART being a string, so we need to encode it 
-                ser.write(status_UART.encode("utf-8")+b"\r\n")
-                status_UART=""
-                new_status = 0
+                ser.write(globals.status_UART.encode("utf-8")+b"\r\n")
+                globals.status_UART=""
+                globals.new_status = 0
             case _:
                 ser.write(b"Command "+message_bytes+b" not supported.\r\nPlease make a valid selection ('?' for help)\r\n")
         
@@ -322,5 +300,5 @@ def UART():
         ser.write(message_bytes+b"\r\n")
     
     print("Exiting UART")
-    UART_running = False
+    globals.UART_running = False
     ser.close()

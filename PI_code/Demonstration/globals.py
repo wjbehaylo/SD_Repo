@@ -63,8 +63,8 @@ uart_lock= threading.Lock()
 #If this gets set to false, everything will end
 SYS_running = True
 #This is a flag to signal that the UART is running
-UART_running = True
+UART_running = False
 #this is a flag to signal that the camera thread is running
-CAM_running=True
+CAM_running=False
 #this is a flag to signal that the CV is running
-CV_running=True
+CV_running=False
