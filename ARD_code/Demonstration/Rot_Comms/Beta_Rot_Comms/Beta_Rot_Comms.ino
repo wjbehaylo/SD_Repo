@@ -1,7 +1,7 @@
 /* Purpose: This is a functional file to set up the Rotational Arduino as an I2C Slave 
          for receiving rotational commands from the Raspberry Pi and 
          controlling stepper motors for linear and rotational motion.
-Contributors: Walter, Noah Kelly
+Contributors: Walter, Noah Kelly, Angie
 Sources: SEED_LAB repository for previous examples
          IEEE 754 float conversion reference
          Arduino Wire Library Documentation (https://www.arduino.cc/reference/en/libraries/wire/)

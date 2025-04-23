@@ -43,7 +43,7 @@ Libraries to be included:
  #include <MultiStepper.h>
  #include <Wire.h>
  
- #define FORCE0_PIN A0
+ //#define FORCE0_PIN A0
  #define FORCE1_PIN A1
  #define FORCE2_PIN A2
  #define FORCE3_PIN A3
