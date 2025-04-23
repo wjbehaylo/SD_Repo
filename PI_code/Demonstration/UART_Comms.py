@@ -247,8 +247,10 @@ def UART():
                         r_int = int(degree_message)  # Convert input to integer   
                         #that line was where the error would be, so at this point we know it was a proper thing
                         ser.write(b"Rotating " + degree_message.encode('utf-8') + b" degrees\r\n")
-                        globals.rotating_arm = 1
-                        globals.rotate_amount = r_int
+                        #need to make sure that the mutex is applied
+                        with globals.uart_lock:
+                            globals.rotating_arm = 1
+                            globals.rotate_amount = r_int
                         # Exit loop since we got a valid integer
                         break
                     except ValueError:
@@ -256,27 +258,44 @@ def UART():
                         ser.write(b"Invalid input. Please enter an integer.\r\n")
                 
                 #now we wait for it to no longer be rotating
-                while(globals.rotating_arm==1):
+                while(True):
                     sleep(0.1)
+                    with globals.i2c_lock:
+                        #if we are no longer rotating the arm, we can move on
+                        if(globals.rotating_arm != 1): 
+                            break
+                    
                 ser.write(b"Claw rotation finished\r\n")
                 #status will be updated during the process
                 #I am planning on status_UART being a string, so we need to encode it 
-                ser.write(globals.status_UART.encode("utf-8")+b"\r\n")
-                globals.status_UART=""
-                globals.new_status=0
+                with globals.status_lock:
+                    ser.write(globals.status_UART.encode("utf-8")+b"\r\n")
+                    globals.status_UART=""
+                    globals.new_status=0
+                
             case '=':
                 ser.write(b"Rotating claw into = configuration\r\n")
-                globals.rotating_arm=1
-                globals.configuring_arm=1
-                globals.arm_configuration=0 #this is the configuration for the =
-                while(globals.rotating_arm==1):
+                #First, we have to signal that we want to rotate
+                with globals.uart_lock:
+                    globals.rotating_arm=1
+                    globals.configuring_arm=1
+                    globals.arm_configuration=0 #this is the configuration for the =
+                    
+                #now, we need to wait for that rotation to be done
+                while(True):
                     sleep(0.1)
+                    with globals.i2c_lock:
+                        if(globals.rotating_arm != 1):
+                            break
+                
                 ser.write(b"Claw configuration finished\r\n")
                 #status will be updated during the process
                 #I am planning on status_UART being a string, so we need to encode it 
-                ser.write(globals.status_UART.encode("utf-8")+b"\r\n")
-                globals.status_UART=""
-                globals.new_status = 0
+                
+                with globals.status_lock:
+                    ser.write(globals.status_UART.encode("utf-8")+b"\r\n")
+                    globals.status_UART=""
+                    globals.new_status = 0
                 
             case '+':
                 ser.write(b"Rotating claw into + configuration\r\n")

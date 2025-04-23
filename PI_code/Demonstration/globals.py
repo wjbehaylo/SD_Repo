@@ -57,7 +57,10 @@ lin_ard_add = 15
 frame_lock= threading.Lock()
 #This lock manages the communication between UART and the FSM
 uart_lock= threading.Lock()
-
+#this lock is used for waiting on the I2C communications in the ARD_Wait state
+i2c_lock= threading.Lock()
+#This lock is used when adding to vs writing the status
+status_lock= threading.Lock()
 
 #Flag to control main loop
 #If this gets set to false, everything will end
