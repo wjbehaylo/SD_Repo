@@ -8,6 +8,9 @@
 #   VL53L0X-sensor-code.py contains the code that indicates how the VL53L0X time of flight sensor works
 #   FSM_Outline contains the relevant states that are being used
 # Circuitry: 
+#   This just has files in it
+
+
 #   for the Pi, follow the circuitry outline in UART_Comms, VL53L0X-sensor-code, CameraCalibAndShapeDetection, and I2C_Arduino (exploration file)
 
 #Arduino
@@ -15,61 +18,13 @@ from smbus2 import SMBus #this is to get the I2C connection functionality we wan
 from time import sleep
 from UART_Comms import UART #to get our UART Function
 from ARD_Comms import * #importing all the ard functions
+from Computer_Vision import * #importing the necessary computer vision functions
 from Generate_Status import Generate_Status #for generating our status we will output
-
-#Time of Flight, note that different I2C methods might be problematic
-import board
-import busio
-import adafruit_vl53l0x
+import globals
 
 #UART
 import threading
 import serial
-
-#Global Variables for UART
-
-#this is a flag to signal if capture is going on
-capture_start=0
-#this is a flag to signal that the system should be reset
-initialize=0
-#this is a flag to signal if the program should stop, it won't often be set
-program_quit=0
-#this is a flag to signal that we should read the time of flight sensor
-detecting_distance=0
-#this is a flag to signal that we should determine the object type
-detecting_object=0
-#this is a flag to signal that the arms will be moving
-moving_arm=0
-#this is a flag, that is technically an integer, which will symbolize pair0(0) pair1(1) or both(2) pairs of arms being moved
-pair_select=0
-#this is a value to write how many steps the arms will be moving
-move_amount=0
-#this is a flag to signal if arms are rotating
-rotating_arm=0
-#this is a flag to signal whether we want to configure arm or not
-configuring_arm=0
-#this is a flag to signal what configuration we want = configuration is 0, + configuration is 1
-arm_configuration=0
-#this is a value to signal how many degrees the arms will be rotating
-rotate_amount=0
-#this is going to be a string of the status of whatever thing just happened
-status_UART="" 
-#this will be a flag to be set if there is new status during the capture process.
-#so when going through the states, if capture_start==1, then they will set 'new_status'=1 to signal that something needs to be sent out.
-#after it is sent out over the ser_write stuff, new_status will be set back to 0
-new_status=0
-
-#Flag to control main loop
-is_running = True
-
-
-
-#Global variables for Arduino Communications
-#establishes what bus to be communicated over
-i2c_arduino=SMBus(1)
-#establishes the address of each arduino
-rot_ard_add=8
-lin_ard_add=15
 
 #These functions represent each of the states, with their transition logic present
 #Note that in the state functions, all that matters is the transition logic, not the actual work.
@@ -77,75 +32,74 @@ lin_ard_add=15
 
 #Generally, when resetting you open first, then un rotate. When capturing, you rotate first, then close
 
-#Initializing the system, this will go into moving arm then rotating arm
+#Initializing the system, this will start the camera and UART threads, after the start we won't actually go to this state though
 def stateA():
-    global moving_arm
-    global pair_select
-    global move_amount
-    global configuring_arm
-    global arm_configuration
-    pair_select=2 #opening both pairs of arms
-    moving_arm=1 #moving arm
-    move_amount=1000000 #all the way open
-    configuring_arm=1 #configuring arm
-    arm_configuration=0 #= configuration
+    #starting UART thread. It is a daemon so that when this FSM program finishes executing it will be done to 
     
-    #I'm not sure what all we would want to make sure is open here
-    return stateC
+    #now make sure that all the threads are running properly
+    sleep(30)
+    
+    #this is just to make sure that everything properly initialized
+    with globals.running_lock:
+        if(globals.UART_running==False):
+            print("UART thread not running")
+            return stateQ
+        if(globals.CV_running==False):
+            print("CV thread not running")
+            return stateQ
+        if(globals.CAM_running==False):
+            print("CAM thread not running")
+            return stateQ
+    
+    #if all the threads are running, we should be good to start trying to run it
+    print("Threads initialized")
+    
+    #I'm not sure what all we would want to make sure it is rotated to where it needs to be rotated to here
+    #the threads should all be started
+    return stateB
 
 #UART_Wait
 def stateB():
-    # we need all of the UART related global flag variables
-    global capture_start
-    global initialize
-    global program_quit
-    global detecting_distance
-    global detecting_object
-    global moving_arm
-    global rotating_arm
     
     #we want an infinite loop, as it waits on UART stuff to come through
     #theoretically only one of these should go to 1 in a single command
     # they should all properly be set to 0 after execution as well
     #does it matter if I have an infinite loop here instead of recursively calling this function again if none of the things are 0?
     while (True):
+        #adding in sleep to avoid consuming all of CPU
+        sleep(0.1)
         #the next state will be determined based on the set of variables in the UART module
         #generally, only one of these should be 1 when this statement comes up
-        if(capture_start==1):
-            initialize=1
-            detecting_distance=1
-            detecting_object=1
-            return stateA #first step in capturing is resetting the arms
-        if(initialize==1):
-            return stateA #in this case, we are just resetting
-        if(moving_arm==1):
-            return stateC #we are entering the moving arm state
-        if(rotating_arm==1):
-            return stateD #we are rotating the arm by some amount
-        if(detecting_distance==1):
-            return stateF #we are going to be detecting the distance
-        if(detecting_object==1):
-            return stateG #we will be using CV to detect the object
-        if(program_quit==1):
-            return stateQ #the program is exiting
-    
+        
+        #we only want to try to access these when we can take uart_lock ourselves
+        with globals.comms_lock:
+            if(globals.moving_arm==1):
+                return stateC #we are entering the moving arm state
+            if(globals.rotating_arm==1):
+                return stateD #we are rotating the arm by some amount
+            if(globals.detecting_object==1):
+                return stateF #we will be using CV to detect the object
+            if(globals.program_quit==1):
+                return stateQ #the program is exiting here
+                
 #Moving_Arm
 #we either come here when initializing, capturing, moving an amount, opening, or closing
 def stateC():
-    global new_status
-    global status_UART
-    #when initializing, we need to move both arms, pair_select is set to 2 previously
-    #otherwise, if capturing, pair select will be updated in the data analysis
-    #final option is deciding via UART in which case pair select is still set
-    OFFSET=pair_select
+    
+    #to start, I will create local copies of the important global variables
+    with globals.comms_lock:
+        my_pair_select=globals.pair_select
+        my_move_amount=globals.move_amount
+        
+    OFFSET=my_pair_select
     #when we select O or C in UART we also set the move_amount
-    lin_ARD_Write(lin_ard_add, OFFSET, move_amount)
+    lin_ARD_Write(OFFSET, my_move_amount)
     #moving arm is set to 1 in the UART thread, or the capture start or initialize, 
     
     #we are going to want to incldicate that we are going to move the arm, and in doing so update the status
-    status_UART+=f"Moving arms\r\n\tpair_select={pair_select}\r\n"
-    new_status=1
-    
+    with globals.status_lock:
+        globals.status_UART+=f"Moving arms\r\n\tpair_select={my_pair_select}\r\n"
+        globals.new_status=1
     
     #we automatically go to the ARD_Wait state after this one
     return stateE
@@ -153,47 +107,53 @@ def stateC():
 #Rotating_Arm
 #we wither come here when initializing, capturing, rotating an amount, =, or + configuration
 def stateD():
-    global new_status
-    global status_UART
     #OFFSET is 0 when we are rotating a specific amount
     #OFFSET is 1 when we are going to = configuration
     #OFFSET is 2 when we are going to + configuration
     
+    #these are temporary variables that will help so that I don't have to keep locking stuff
+    #also note that at this point, these global things would've already been set in the UART_Comms thread
+    with globals.comms_lock:
+        my_configuring_arm = globals.configuring_arm
+        my_arm_configuration=globals.arm_configuration
+        my_rotate_amount=globals.rotate_amount
     #funny enough, configuring_arm + arm_configuration = OFFSET here.
-    OFFSET=0 + configuring_arm + arm_configuration
+    #these flags are all managed by the uart_lock
+    OFFSET=0 + my_configuring_arm + my_arm_configuration
     
     #if we get here, we at least know that we are in the rotating_arm section
-    rot_ARD_Write(rot_ard_add, OFFSET, rotate_amount)
+    rot_ARD_Write(OFFSET, my_rotate_amount)
     
     #we are going to indiciate that we are going to rotate the arm, and in doing so update the status
-    status_UART+=f"Rotating arms"
-    #add to it if we are actually configuring the arms
-    if(configuring_arm==1):
-        if(arm_configuration==0):
-            status_UART+=" to = configuration"
-        elif(arm_configuration==1):
-            status_UART+=" to + configuration"
-    status_UART+="\r\n"
-    new_status=1
+    with globals.status_lock:
+        globals.status_UART+=f"Rotating arms"
+        #add to it if we are actually configuring the arms
+        if(my_configuring_arm==1):
+            if(my_arm_configuration==0):
+                globals.status_UART+=" to = configuration"
+            elif(my_arm_configuration==1):
+                globals.status_UART+=" to + configuration"
+        globals.status_UART+="\r\n"
+        globals.new_status=1
 
     #we will automatically go to ARD_Wait here.
     return stateE
 
 #ARD_Wait
-#this state is gone to after stateC (move) or stateD (rotate)
+#this state is gone to after stateC (move) or stateD (rotate) or state_F (debris detect)
 #we could go from here to UART_Wait, move, rotate, or detectDistance
 def stateE():
-    #global variables that will be modified:
-    global moving_arm
-    global rotating_arm
-    global configuring_arm
-    global new_status
-    global status_UART
-    global initialize
-    global capture_start
+   
+    #we start off with getting local copies of the necessary variables
+    with globals.comms_lock:
+        my_moving_arm = globals.moving_arm
+        my_rotating_arm = globals.rotating_arm
+        my_pair_select = globals.pair_select
+        
+   
     #set the offsets that will be read from in either scenario
-    MOVE_OFFSET=pair_select
-    ROTATE_OFFSET=0+configuring_arm+arm_configuration
+    MOVE_OFFSET=my_pair_select+3 #note that there is a +3 because when moving, our offset starts at 3, 4, 5 for pair0, pair1, pairboth, in terms of reading
+    ROTATE_OFFSET=3 #we only read from the one location on the rotational one, so this is kinda unnecessary
     #I think we need to consider initializing, then capturing, then pure movement
     '''
     Initializing:
@@ -227,97 +187,24 @@ def stateE():
             Based on the return status, it effects our output
     '''
     
-    if(initialize==1):
-        if(moving_arm==1):
-            #remember that lin_ARD_Read returns an array of two integers
-            move_status=lin_ARD_Read(MOVE_OFFSET)
-            
-            #In UART_Comms, we print out the status to UART, so we just need to update it based on what's returned
-            #if pair0 and pair1 did stuff, we add that to the status_UART
-            if(move_status[0]!=0):
-                status_UART+=Generate_Status(move_status[0])+"\r\n"
-            if(move_status[1]!=0):
-                status_UART+=Generate_Status(move_status[1])+"\r\n"
-            new_status=1            
-            moving_arm=0 #need to set this back to 0 so we don't come here again
-            
-            #if either status is -1 it is a fatal error so we will exit this program
-            if(move_status[0]==-1 or move_status[1]==-1):
-                return stateQ
-            
-            #if it didn't fail, we move into the rotating state
-            return stateD
-        #if we get here, we must be rotating the arm
-        elif(rotating_arm==1):
-            rotate_status=rot_ARD_Read(ROTATE_OFFSET)
-            #If we get here, we know status isn't gonna just be 0. Add it to the status buffer
-            status_UART+=Generate_Status(rotate_status)+"\r\n"
-            new_status=1 #we have new status
-            rotating_arm=0 #we are done rotating
-            configuring_arm=0 #we are done configuring
-            initialize=0 #we are done intiializing
-            #if it errors, we need to exit to stateQ
-            if(rotate_status==-1):
-                return stateQ
-            #if we are capturing, it's time to start analyzing the debris
-            if(capture_start==1):
-                #so we go to the distance detection
-                return stateF
-            #if we aren't capturing, we must be plain initializing 
-            else:
-                #so we are good to move on to UART_Wait
-                return stateB
-        else:
-            print("Initialization failure in stateE: ARD_Wait")
-            return stateQ
-    elif(capture_start==1):
-        #in the capture sequence, we first rotate, then close. So that is the priority
-        if(rotating_arm==1):
-            rotate_status=rot_ARD_Read(ROTATE_OFFSET)
-            #If we get here, we know status isn't gonna just be 0. Add it to the status buffer
-            status_UART+=Generate_Status(rotate_status)+"\r\n"
-            new_status=1 #we have new status
-            rotating_arm=0 #we are done rotating
-            configuring_arm=0 #we are done configuring
-            #if it errors, we need to exit to stateQ
-            if(rotate_status==-1):
-                return stateQ
-            #if we are capturing, we now need to close the claw
-            return stateC
-        elif(moving_arm==1):
-            #remember that lin_ARD_Read returns an array of two integers
-            move_status=lin_ARD_Read(MOVE_OFFSET)
-            
-            #In UART_Comms, we print out the status to UART, so we just need to update it based on what's returned
-            #if pair0 and pair1 did stuff, we add that to the status_UART
-            if(move_status[0]!=0):
-                status_UART+=Generate_Status(move_status[0])+"\r\n"
-            if(move_status[1]!=0):
-                status_UART+=Generate_Status(move_status[1])+"\r\n"
-            new_status=1            
-            moving_arm=0 #need to set this back to 0 so we don't come here again
-            capture_start=0 #we are done capturing!
-            #if either status is -1 it is a fatal error so we will exit this program
-            if(move_status[0]==-1 or move_status[1]==-1):
-                return stateQ
-            
-            #if it didn't fail, we should've successfully captured the thing and we should be done, moving into UART_Wait
-            return stateB
-        else:
-            print("Failure during capture in stateE: ARD_Wait")
-            return stateQ
-    elif(moving_arm==1):
+    
+    if(my_moving_arm==1):
         #remember that lin_ARD_Read returns an array of two integers
         move_status=lin_ARD_Read(MOVE_OFFSET)
         
         #In UART_Comms, we print out the status to UART, so we just need to update it based on what's returned
         #if pair0 and pair1 did stuff, we add that to the status_UART
-        if(move_status[0]!=0):
-            status_UART+=Generate_Status(move_status[0])+"\r\n"
-        if(move_status[1]!=0):
-            status_UART+=Generate_Status(move_status[1])+"\r\n"
-        new_status=1            
-        moving_arm=0 #need to set this back to 0 so we don't come here again
+        
+        with globals.status_lock:
+            if(move_status[0]!=0):
+                globals.status_UART+=Generate_Status(move_status[0])+"\r\n"
+            if(move_status[1]!=10):
+                globals.status_UART+=Generate_Status(move_status[1])+"\r\n"
+            globals.new_status=1
+        
+        #to make it so the other loop will exit
+        with globals.comms_lock:            
+            globals.moving_arm=0 #need to set this back to 0 so we don't come here again
         
         #if either status is -1 it is a fatal error so we will exit this program
         if(move_status[0]==-1 or move_status[1]==-1):
@@ -325,14 +212,18 @@ def stateE():
         
         #if it didn't fail, we move back to UART_Wait
         return stateB
-    elif(rotating_arm==1):
+    
+    elif(my_rotating_arm==1):
         #lets get this rotate status
         rotate_status=rot_ARD_Read(ROTATE_OFFSET)
         #If we get here, we know status isn't gonna just be 0. Add it to the status buffer
-        status_UART+=Generate_Status(rotate_status)+"\r\n"
-        new_status=1 #we have new status
-        rotating_arm=0 #we are done rotating
-        configuring_arm=0 #we are done configuring
+        with globals.status_lock:
+            globals.status_UART+=Generate_Status(rotate_status)+"\r\n"
+            globals.new_status=1 #we have new status
+        #and get out of here
+        with globals.comms_lock:
+            globals.rotating_arm=0 #we are done rotating
+            globals.configuring_arm=0 #we are done configuring
         #if it errors, we need to exit to stateQ
         if(rotate_status==-1):
             return stateQ
@@ -340,43 +231,82 @@ def stateE():
         return stateB
     else:
         #if we get here, we must've messed up somewhere with our flags being set.
-        print("ERROR: Ard_Wait failed if elif statements")
-        status_UART+=Generate_Status(-1)+"\r\n"
-        new_status=1
+        print("ERROR: Ard_Wait improperly called, not moving or rotating arms")
+        with globals.status_lock:
+            globals.status_UART+=Generate_Status(-1)+"\r\n"
+            globals.new_status=1
     return stateQ
             
 
-#Detecting_Distance
-#I believe we just either go here from UART_Wait or from ARD_Wait, ARD_Wait if we are in capture_start==1
-def stateF():        
-    global detecting_distance
-    
-    if(capture_start==1):
-        return stateG
-    else:
-        return stateB    
-
 #Detecting_Object
+#I believe we just either go here from UART_Wait or from ARD_Wait, ARD_Wait if we are in capture_start==1
+#from cameraCalibAndShapeDetection import colorDetector #will have to move this over
+def stateF(): 
+
+    #we set this to 1 so that the CV will capture a frame and analyze it
+    with globals.camera_lock:
+        globals.run_CV = 1 
+      
+    #this loop just has us waiting here until the CV has been fully run  
+    while(True):
+        sleep(0.1)
+        with globals.camera_lock:
+            if(globals.run_CV!=1):
+                break
         
+    #when we exit this while loop, detected_debris_type should be set
     
+    #at this point, detecting object should be true, so we want to resume/start the computer vision stuff
+    #and the computer vision stuff should be running, leaving detected_debris_type populated with our detected type
+    # so I need to monopolize the camera comms and generate status accordingly
+    
+    with globals.camera_lock:
+        my_detected_debris_type = globals.detected_debris_type
+        
+    with globals.status_lock:
+        if my_detected_debris_type in ("CubeSat", "Starlink", "Minotaur"):
+            globals.status_UART += f"Detected object: {my_detected_debris_type}\r\n"
+        else:
+            globals.status_UART += "Detected object: UNKNOWN\r\n"
+        globals.new_status = 1 #queue that message
+
+    
+    # set grip parameters based on the type
+    #debugging, I think that I don't need these actually because we aren't going from this CV state to anywhere besides UART
+    #note that I could determine the number of steps to move, and maybe output that as part of the status
+    
+    '''
+    if globals.detected_debris_type == "CubeSat":
+        globals.pair_select = 0    # one claw only, unsure of amount
+        globals.move_amount  = 13000
+    elif globals.detected_debris_type == "Starlink":
+        globals.pair_select = 2    # both claws, unsure of amount
+        globals.move_amount  = 10000
+    elif globals.detected_debris_type == "Minotaur":
+        globals.pair_select = 2 #both claws, unsure of amount, 
+        globals.move_amount = 10000
+    '''
+    
+    #we are finished detecting the object, let the UART know so we can move onto the next thing in UART_Wait
+    with globals.comms_lock:
+        globals.detecting_object = 0
+    return stateB
+    
+    
+    
+def stateQ():
+    print("Program terminated. Shutting down the system...")
+    
+    with globals.comms_lock:
+        globals.program_quit = 0
+        globals.SYS_running = False
+
+        #close any open connections
+        try:
+            globals.i2c_arduino.close()
+        except: 
+            pass
+
+    #function for stopping the camera?
+    return stateQ
 #At this point, we are actually in the program that will be running to execute it all.
-
-#state transition dictionary
-#note that the flags corresponding to the states are lowercase with underscores, while the states are uppercase with underscores
-state_machine={
-    "Initializing": stateA,
-    "UART_Wait": stateB,
-    "Moving_Arm": stateC,
-    "Rotating_Arm": stateD,
-    "ARD_Wait": stateE,
-    "Detecting_Distance": stateF,
-    "Detecting_Object": stateG,
-    "Data_Analysis": stateH,
-    "Quit": stateQ
-}
-
-#note that how I am implementing it, the state's actions will happen within the state,
-#and in the general system's while loop it will just call for one state to become the next
-
-while(state!=stateQ):
-    state=next_state()

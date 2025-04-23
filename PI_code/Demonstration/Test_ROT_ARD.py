@@ -75,6 +75,9 @@ status_UART=""
 #after it is sent out over the ser_write stuff, new_status will be set back to 0
 new_status=0
 
+#variable offset to be set based on user input
+offset = 0
+
 
 '''ACTUAL TEST'''
 #at this point, we should theoretically have the necessary global variables and flags for functionality
@@ -87,10 +90,12 @@ new_status=0
 
 #
 
-while(True):
-    command = input("Enter Y to start, or Q to quit: ")
-    while(command != "Y" and command != "Q"):
-        command = input("Enter Y to start, or Q to quit: ")
+valid_commands = ("Y", "+", "=", "Q")
+
+while True:
+    command= input("Enter 'Y' to rotate an arbitrary amount, '+' (45°), '=' (0°), or 'Q' to quit: ")
+    while command not in valid_commands:
+        command = input("Invalid. Please enter 'Y', '+', '=', or 'Q': ")
     if(command == "Q"):
         print("Entered Q, exiting test")
         break
@@ -98,22 +103,50 @@ while(True):
         while(True):
             try:
                 rotate_amount= float(input("Enter a number of degrees to rotate: "))
+                offset = 0
             except:
-                print("Enter an actual number")
+                print("Enter a correct number")
                 continue
             break
+    #in the plus configuration we have both pairs at 45 
+    elif(command == "+"):
+        while(True):
+            try:
+                print("Rotating into the '+' configuration (45).")
+                offset= 2
+            except:
+                print("Enter a correct number")
+                continue
+            break
+    #in the equals configuration we have both pairs at 0
+    elif(command == "="):
+        while(True):
+            try:
+                print("Rotating into the '=' configuration (0).")
+                offset=1
+            except:
+                print("Enter a correct number")
+                continue
+            break
+    else: 
+        #invalid entry; loop back
+        continue
             
-        #now we need to tell the Arduino to move that far, and wait for it to move that far
-        rot_ARD_Write(0, rotate_amount)
+    #now we need to tell the Arduino to move that far, and wait for it to move that far
+    rot_ARD_Write(offset, rotate_amount)
         
-        #debugging
-        print("Wrote "+ str(rotate_amount) + " to Arduino")
+    #debugging
+    print("Wrote offset: "+ str(offset) + " and rotate_amount: " + str(rotate_amount) + " to Arduino")
         
-        result = rot_ARD_Read(0)
+    result = rot_ARD_Read(3)
+    status_msg = Generate_Status(result)
+    print(status_msg)
         #now that we've written to it and read from it, result should store the non '20' output
         #so we can use generate status function and continue with the loop
-        message= Generate_Status(result)
-        print(message)
+        
+        #debugging, since this is done in the rot_ARD_Read() function
+        #message= Generate_Status(result)
+        #print(message)
 
 #I think this should do all it is supposed to, it's pretty simple in general to be honest
         

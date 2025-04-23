@@ -11,6 +11,7 @@ from smbus2 import SMBus #this is to get the I2C connection functionality we wan
 from time import sleep
 import numpy as np
 from Generate_Status import Generate_Status #For the generation of status strings
+import globals #this declared the global variables that we will be using
 
 #the I2C connection will be established in the main function, and accessed globally here
 #This function just writes a message to the Arduinos
@@ -52,7 +53,7 @@ OFFSET:
 REQUESTING: this will be the status communicated from the ARDUINO to the PI regarding linear movement.
 Note that this function, lin_ARD_Read, returns a two element array.
 OFFSET:
-    0:
+    3:
         This is just about pair0 movement
         Status:
             0:
@@ -68,7 +69,7 @@ OFFSET:
             5:
                 pair0 Unrecognized movement command, could be due to incomplete or corrupt data
                 
-    1:
+    4:
         This is just about pair1 movement
         Status:
             10:
@@ -84,11 +85,13 @@ OFFSET:
             15:
                 pair1 Unrecognized movement command, could be due to incomplete or corrupt data
 
-    2:
+    5:
         This is for both arm movement. 
         Note that for this, each of the output bytes will be set to non-10 divisible values, meaning they will both contribute to UART status when checked
         
-        The bytes will be interpretted as separate integers. The byte0 is pair0, byte1 is pair1. Thus they use the same encoding as above
+        the two different numbers representing the status of the pairs will be sent individually, and interpretted individually
+        so there are technically 36 options (6 * 6 cause each has 6), but I'm not going to write them all here.
+        On the Pi's side of the communication, there will have to be some thinking based on global flags to properly interpret the status
         Status:
             0:
                 pair0 Still moving/completing task
@@ -133,8 +136,8 @@ OFFSET:
     
 REQUESTING: every second or so, the Pi will try to read the arduino's register 0 to get the status. This is the arduino's 'Request' routine
 OFFSET:
-0:
-    we decided offset 0 is for general status, and there is enough flexibility to get many messages
+3:
+    we decided offset 3 is for general status, and there is enough flexibility to get many messages. I think there is a problem with having this be 0 and the other too.
 Status: 
     20:
         Rotating
@@ -152,10 +155,6 @@ Status:
 '''
 
 
-i2c_arduino=SMBus(1) #Maybe I don't need to initialize this here? only in the top level?
-pair_select=0
-rot_ard_add = 8
-lin_ard_add = 15
 
 def Generate_IEEE_vector(value):   
     #np.float32(value) turns the value into a 32 bit numpy floating point 
@@ -183,67 +182,66 @@ def Generate_IEEE_vector(value):
 #if this function returns a '-1', it means the data wasn't written
 #if it returns a 0, it was successfully written
 def lin_ARD_Write(OFFSET, MESSAGE):
-    global i2c_arduino
     #here message will be an integer, and we need to convert it into an array of 4 binary bytes the arduino will then interpret
     linear_array=Generate_IEEE_vector(MESSAGE)
     #OFFSET=0 means we are writing to pair0, OFFSET=1 means we are writing to pair1, OFFSET=2 means we are writing to both pairs.
     #This will be passed as input to this function though
     try:
-        i2c_arduino.write_i2c_block_data(lin_ard_add, OFFSET, linear_array)
-        sleep(0.1)
+        with globals.i2c_lock:
+            globals.i2c_arduino.write_i2c_block_data(globals.lin_ard_add, OFFSET, linear_array)
+            #debugging. might be necessary though also
+            sleep(0.1)
     except IOError:
         print("Could not write data to the Arduino")
         return -1
     return 0
 
 #This function reads from the target offset of the Arduino
-#It will return the status of the movement
+#It will return the status of the movement.
 def lin_ARD_Read(OFFSET):
-    global i2c_arduino
-    status={0,0}
+    
+    status=[0,10] #first is status of pair0, second is status of pair1
     try:
         while True:
-            sleep(1)
-            #read block of data from arduino reg based on arduino's offset
-            if OFFSET == 0 or OFFSET == 1:
-                status[OFFSET] = i2c_arduino.read_byte_data(lin_ard_add, OFFSET)
-                print(f"Pair {OFFSET} Status: {status[OFFSET]}")
-
-                #interpret the status 
-                #note that this is just for debugging, the function will return the actual value
-                #the #10 works since the arms have the same things here.
-                if status[OFFSET]%10 == 0:
-                    print(f"Pair {OFFSET} Still moving/completing task")
-                    continue
-                else:
-                    #Use our trusty Generate_Status function
-                    print(Generate_Status(status[OFFSET]))
-                
+            #debugging
+            #print("Trying to lin_ARD_Read again")
+            #print(f"Offset is: {OFFSET}")
             
-            elif OFFSET ==2:
+            #debugging, setting it to 10 for now so that there is a lesser chance of the timing issue
+            sleep(1)
+            
+            #read block of data from arduino reg based on arduino's offset. Note that we will always read two bytes of data
+            if (OFFSET == 5 or OFFSET == 4 or OFFSET == 3):
                 #read 2 bytes,1 for each pair.
                 #The return of the function here will be
-                status = i2c_arduino.read_block_data(lin_ard_add, OFFSET, 2)
-            
-                #This should just go twice, once for each motor's status
-                for i in status:
-                    if(status[i]%10) == 0:
-                        print(f"Pair {i} Status: Still moving/completing task")
-                    else:
-                        print(Generate_Status(status[OFFSET]))
-            
+                with globals.i2c_lock:
+                    status = globals.i2c_arduino.read_i2c_block_data(globals.lin_ard_add, OFFSET, 2)
+                
+                
+                
                 # Break if the status of each pair is nonzero. Otherwise, one is still executing
-                    if status[0] != 0 and status[1] != 0:
-                        return status
+                
+                #based on the offset, different ones need to be nonzero to indicate completion
+                if(OFFSET==5 and status[0] != 0 and status[1] != 10):
+                    return status
+                if(OFFSET==4 and status[1] != 10):
+                    return status
+                if(OFFSET==3 and status[0] != 0):
+                    return status
+                
                     
                 
             else:
                 print(f"Invalid OFFSET {OFFSET}")
-                return -1
+                status[0] = -1
+                status[1] = -1
+                return status
             
     except IOError:
         print("Could not read from Arduino")
-        return -1
+        status[0] = -1
+        status[1] = -1
+        return status
 
 
 #The offset varies depending on a few global variables: rotating_arm, configuring_arm, arm_configuration
@@ -255,10 +253,10 @@ def lin_ARD_Read(OFFSET):
 #if it returns a 0, data was written successfully
 def rot_ARD_Write(OFFSET, MESSAGE):
     #first we need to convert the integer message
-    global i2c_arduino #maybe because we're editing it?
     rotational_array=Generate_IEEE_vector(MESSAGE)
     try:
-        i2c_arduino.write_i2c_block_data(rot_ard_add, OFFSET, rotational_array)
+        with globals.i2c_lock:
+            globals.i2c_arduino.write_i2c_block_data(globals.rot_ard_add, OFFSET, rotational_array)
         sleep(0.1)
     except IOError:
         print("Could not write data to the Arduino")
@@ -268,19 +266,26 @@ def rot_ARD_Write(OFFSET, MESSAGE):
     
 #OFFSET will always be 0 here, if this works correctly
 def rot_ARD_Read(OFFSET):
-    #maybe because we're editing it we need to describe i2c_arduino
-    global i2c_arduino
     try:
         while True:
             sleep(1)
-            if(OFFSET==0):
-                status=i2c_arduino.read_byte_data(rot_ard_add, OFFSET)
-                print(f"Status: {status}")
+            
+            if(OFFSET==3):
+                #debugging
+                #print("Trying to read byte data")
+                with globals.i2c_lock:
+                    status=globals.i2c_arduino.read_byte(globals.rot_ard_add) #I don't think I needed the offset thing.
+                
+                #debugging
+                #print("Successfully read byte data")
+                #print(f"Status: {status}")
                 if(status==20):
-                    print("Still rotating")
+                    #debugging
+                    #print("Still rotating")
                     continue
-                else:
-                    print(Generate_Status(status[OFFSET]))
+                #else:
+                    #lowkey debugging? not super necessary
+                    #print(Generate_Status(status))
                 #if we get here, the movement has finished
                 break
             else:

@@ -107,8 +107,6 @@ Libraries to be included:
     uint8_t bytes[4];
     float floatValue;
   } byteFloat;
-  
-
 
   /* This is how to use this FloatUnion to convert from the IEEE to integer ish form
       byteFloat.bytes[0] = instruction[7];
@@ -125,6 +123,7 @@ Libraries to be included:
   AccelStepper stepper_gear1(1,STEPPER3_STEP_PIN,STEPPER3_DIR_PIN);
   
   void setup() {
+    /*
     // Declare pins as output for the motor
     stepper_gear1.setMaxSpeed(1000);
     stepper_gear1.setAcceleration(500);
@@ -136,15 +135,15 @@ Libraries to be included:
     pinMode(ENDSTOP_90_SIGNAL_PIN, INPUT_PULLUP);
     
     //I am declaring those pins as interrupts so that they can set global flags that will stop movement
-    /*
-    note a slight concern I am having is that if the movement is started when one is triggered it might be immediately stopped, functionally trapping us there. 
-    this could be fixed maybe by calculating if the desired angle after math will extend beyond 90/0 degrees
-    */
+    
+    //note a slight concern I am having is that if the movement is started when one is triggered it might be immediately stopped, functionally trapping us there. 
+    //this could be fixed maybe by calculating if the desired angle after math will extend beyond 90/0 degrees
+    
     //RISING because the end stops are active high
     attachInterrupt(digitalPinToInterrupt(ENDSTOP_0_SIGNAL_PIN), triggered0Interrupt, CHANGE);
     attachInterrupt(digitalPinToInterrupt(ENDSTOP_90_SIGNAL_PIN), triggered90Interrupt, CHANGE);
 
-
+    */
     //initialize the I2C slave
     Wire.begin(ROT_ARD_ADD); 
     Wire.onReceive(PiDataReceive); //this is triggered when Raspberry Pi sends data
@@ -166,15 +165,17 @@ Libraries to be included:
 
     //debugging
     Serial.println(state);
-    delay(1000); //wait 1 second between this, just for debugging
+    delay(3000); //wait 3 second between this, just for debugging
 
     
     switch(state){
       case WAIT:
-        Serial.println("Waiting for message");
+        //debugging
+        //Serial.println("Waiting for message");
         if(newMessage==1){
           //here we will go into the moving state, and begin to move
           //the targetAngle is set in the receiveData ISR, 
+          newMessage=0; //I was forgetting to set this back down
           state=MOVING;
           break;
         }
@@ -201,17 +202,33 @@ Libraries to be included:
 
           ctrlBusy=1;
           //============MOVE FUNCTION=================
-          stepper_rotate(stepper_gear1); //this has all the movement in it
+          Serial.println("STARTING MOVING");
           state=MOVING;
           break;
         }
         
         //if we are here we haven't just started or just finished moving
-        Serial.println("Still Moving");
+        //Serial.println("Still Moving");
+        if(Serial.available()>0){
+            String input = Serial.readStringUntil('\n');
+
+            if (input.length() > 0) {
+              Serial.print("You typed: ");
+              Serial.println(input);
+              ctrlDone = 0; //so it moves until there is used input
+              ctrlBusy = 0;
+              executionStatus = 21;
+              state=DONE; //needed to do this here for whatever reason
+            }
+        }
         break;
+
       case DONE:
         //if the Pi has received our updated message, we can move back to waiting
         if(messageReceived==1){
+          //debugging
+          Serial.println("Pi has sampled the non-20 messsage");
+
           messageReceived=0;
           state=WAIT;
           break;
@@ -301,7 +318,7 @@ Libraries to be included:
 
 
     //debugging
-    Serial.print("We got offset: "):
+    Serial.print("We got offset: ");
     Serial.println(offset);
 
     //now we want the rest of the message
@@ -318,6 +335,7 @@ Libraries to be included:
       byteFloat.bytes[2] = instruction[1];
       byteFloat.bytes[3] = instruction[0];
       targetAngle=byteFloat.floatValue + currentAngle;
+
       configuring = false;
     }
     //if offset ==1, target Angle just becomes the angle of = configuration

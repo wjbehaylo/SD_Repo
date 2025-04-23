@@ -37,9 +37,62 @@ import serial
 import threading #for threaded UART connection
 import time
 from time import sleep
-import globals #this declared the global variables that we will be using
+
+#Global Variables
+
+#this is a flag to signal if capture is going on
+capture_start=0
+#this is a flag to signal that the system should be reset
+initialize=0
+#this is a flag to signal if the program should stop, it won't often be set
+program_quit=0
+#this is a flag to signal that we should read the time of flight sensor
+detecting_distance=0
+#this is a flag to signal that we should determine the object type
+detecting_object=0
+#this is a flag to signal that the arms will be moving
+moving_arm=0
+#this is a flag, that is technically an integer, which will symbolize pair0(0) pair1(1) or both(2) pairs of arms being moved
+pair_select=0
+#this is a value to write how many steps the arms will be moving
+move_amount=0
+#this is a flag to signal if arms are rotating
+rotating_arm=0
+#this is a flag to signal whether we want to configure arm or not
+configuring_arm=0
+#this is a flag to signal what configuration we want = configuration is 0, + configuration is 1
+arm_configuration=0
+#this is a value to signal how many degrees the arms will be rotating
+rotate_amount=0
+#this is going to be a string of the status of whatever thing just happened
+status_UART="" 
+#this will be a flag to be set if there is new status during the capture process.
+#so when going through the states, if capture_start==1, then they will set 'new_status'=1 to signal that something needs to be sent out.
+#after it is sent out over the ser_write stuff, new_status will be set back to 0
+new_status=0
+
+#Flag to control main loop
+is_running = True
 
 def UART():
+    #global variables
+    global capture_start
+    global initialize
+    global program_quit
+    global detecting_distance
+    global detecting_object
+    global moving_arm
+    global move_amount
+    global pair_select
+    global rotating_arm
+    global rotate_amount
+    global configuring_arm
+    global arm_configuration
+    
+    #will thread status_UART and check regularly
+    global status_UART
+    global new_status
+    
     #if there are other usb devices connected before this, you may have to replace 0 with 1, 2, or 3 I think. Otherwise just find which port it is. 
     ser = serial.Serial('/dev/ttyAMA0')
 
@@ -56,12 +109,6 @@ def UART():
     else:
         print("Failure to open UART, exiting\r\n")
         return
-    
-    #this is for our stateA
-    with globals.running_lock:
-        globals.UART_running = True
-        
-        
     ser.write(b"Connection Established\r\n")
     #we only want messages of one bit at a time. We will have switch statement and output the confirmed message based on the input
     #We need the message in bytes, the message reinterpretted, and to send the message back
@@ -70,12 +117,18 @@ def UART():
     ser.write(message_bytes+b"\r\n")
 
     print(message)
-    #I had to change this from 'while message !=Q' to True, because when message = Q it will break out anyways, and otherwise we weren't getting what we needed
     while(True):
         match message:
             case '?':
                 ser.write(b"Usage Guidelines:\r\nThe following is a list of possible one character messages that can be sent\r\n")
                 ser.write(b"    (?): Help, prints out the Usage Guidelines\r\n\n")
+                
+                ser.write(b"    (S): Start, begins the standard capture process\r\n") #note that there isn't a state for this, since it just sets the capture_start flag to be 1 then goes to resetting
+                ser.write(b"    (I): Initialize, resets the system to default configuration\r\n")
+                ser.write(b"    (Q): Quit, terminates the serial connection\r\n\n")
+
+                ser.write(b"!!! (D): Distance, output distance to the debris. Make sure to remove This!!!\r\n")
+                ser.write(b"    (T): Type, output type of debris detected\r\n\n")
                 
                 ser.write(b"    (M): Move, followed by a value, actuate X steps (+ is closing, - is opening)\r\n")
                 ser.write(b"    (O): Open, fully open the claw\r\n")
@@ -84,46 +137,75 @@ def UART():
                 ser.write(b"    (R): Rotate, followed by a value, rotate X degrees\r\n") #degrees to steps conversion will be determined
                 ser.write(b"    (=): Equals, rotates the claw into = configuration\r\n")
                 ser.write(b"    (+): Plus, rotates the claw into the plus configuration\r\n\n")
+            case 'S':
+                #this case corresponds to the general capture process
+                ser.write(b"Starting capture process\r\n")
+                #this is a global flag that will be established, so that the other threaded process will know to start the process
+                capture_start=1
+                new_status=0 #we need to make sure that the current status isn't considered
+                #it will be set back to 0 once capture is complete, at which point this while loop will stop
+                while(capture_start==1):
+                    sleep(0.1)
+                    #this if statement is just so that each state can still communicate through, even though the UART is doing what it is actively.
+                    if(new_status==1):
+                        ser.write(status_UART.encode("utf-8")+b"\r\n")
+                        status_UART=""
+                        new_status=0
+                ser.write(b"Capture process finished\r\n")
+                #status will be updated during the process
+                #I am planning on status_UART being a string, so we need to encode it 
+                ser.write(status_UART.encode("utf-8")+b"\r\n")
+                status_UART=""
+                    
+            case 'I':
+                #this case corresponds to the system being reset to its default, theoretically after a capture or on start up
+                ser.write(b"Initializing system\r\n")
+                initialize=1
+                new_status=0 #we need to make sure that the current status isn't considered
+                #now we wait for it to be finished initializng, which does include it going through a few states
+                while(initialize==1):
+                    sleep(0.1)
+                    #we check if any of these states have new status to mention
+                    if(new_status==1):
+                        ser.write(status_UART.encode("utf-8")+b"\r\n")
+                        status_UART=""
+                        new_status=0
+                ser.write(b"Intialization process finished\r\n")
                 
-                ser.write(b"    (T): Type, output type of debris detected\r\n\n")
-                ser.write(b"    (Q): Quit, terminates the serial connection\r\n\n")
+                #I don't think we need this here because we kind of gave out the status already?
+                ser.write(status_UART.encode("utf-8")+b"\r\n")
+                status_UART=""
 
+                
             case 'Q':
                 #this state, however infrequenctly used, will be to termiante the program's functionality and end the while loops
                 ser.write(b"Quitting\r\n")
-                
-                #I'm pretty sure that this is just like a mutex: when uart_lock is available, we can execute the code, and it would update our variable
-                with globals.comms_lock:
-                    globals.program_quit=1
+                program_quit=1
                 #we want to exit this while loop, so that the connection gets closed
                 sleep(1)
                 break
-            
+            case 'D':
+                #this state gets the distance reading from the time of flight sensor
+                ser.write(b"Detecting distance\r\n")
+                detecting_distance=1
+                while(detecting_distance==1):
+                    sleep(0.1)
+                ser.write(b"Distance detection finished\r\n")
+                #status will be updated during the process
+                #I am planning on status_UART being a string, so we need to encode it 
+                ser.write(status_UART.encode("utf-8")+b"\r\n")
+                status_UART=""
             case 'T':
                 #this state has the CV detect the type of the object 
                 ser.write(b"Detecting object\r\n")
-                #letting FSM know that we will be detecting object
-                with globals.comms_lock:
-                    globals.detecting_object=1
-                    
-                #waiting for detecting object to be completed
-                while(True):
+                detecting_object=1
+                while(detecting_object==1):
                     sleep(0.1)
-                    with globals.comms_lock:
-                        #if we are no longer rotating the arm, we can move on
-                        if(globals.detecting_object != 1): 
-                            break
-                
                 ser.write(b"Object detection finished\r\n")
                 #status will be updated during the process
                 #I am planning on status_UART being a string, so we need to encode it 
-                
-                #status outputting
-                with globals.status_lock:
-                    ser.write(globals.status_UART.encode("utf-8")+b"\r\n")
-                    globals.status_UART=""
-                    globals.new_status=0
-                
+                ser.write(status_UART.encode("utf-8")+b"\r\n")
+                status_UART=""
             case 'M':
                 #this state has the motor move by a certain amount
                 
@@ -137,8 +219,7 @@ def UART():
                         ser.write(b"Invalid input\r\n")
                         continue
                     #if we are here, we know we have a valid selection and we can convert it to integer and move on
-                    with globals.comms_lock:
-                        globals.pair_select=int(arm_sel)
+                    pair_select=int(arm_sel)
                     break
             
                 #here, we get how much to move them by.
@@ -165,31 +246,20 @@ def UART():
                         x_int = int(move_message)  # Convert input to integer   
                         #that line was where the error would be, so at this point we know it was a proper thing
                         ser.write(b"Moving " + move_message.encode('utf-8') + b" steps\r\n")
-                        with globals.comms_lock:
-                            globals.moving_arm = 1
-                            globals.move_amount = x_int
+                        moving_arm = 1
+                        move_amount = x_int
                         break
                     except ValueError:
                         #if we couldn't convert to int, we gotta do it again
                         ser.write(b"Invalid input. Please enter an integer.\r\n")
-                #now we need to wait
-                while(True):
+                    
+                while(moving_arm==1):
                     sleep(0.1)
-                    with globals.comms_lock:
-                        #if we are no longer rotating the arm, we can move on
-                        if(globals.moving_arm != 1): 
-                            break
-                
                 ser.write(b"Claw movement finished\r\n")
                 #status will be updated during the process
                 #I am planning on status_UART being a string, so we need to encode it 
-                
-                #now for the status part
-                with globals.status_lock:
-                    ser.write(globals.status_UART.encode("utf-8")+b"\r\n")
-                    globals.status_UART=""
-                    globals.new_status = 0
-                
+                ser.write(status_UART.encode("utf-8")+b"\r\n")
+                status_UART=""
             case 'O':
                 #this state is just to fully open the arms
                 
@@ -203,33 +273,21 @@ def UART():
                         ser.write(b"Invalid input\r\n")
                         continue
                     #if we are here, we know we have a valid selection and we can convert it to integer and move on
-                    with globals.comms_lock:
-                        globals.pair_select=int(arm_sel)
+                    pair_select=int(arm_sel)
                     break
                 
                 ser.write(b"Opening claw\r\n")
                 #note that this number will be positive or negative because of how we want to send it.
                 #TBD pos or negative
-                with globals.comms_lock:
-                    globals.moving_arm=1
-                    globals.move_amount=-16000 #undetermined positive or negative
-                
-                #now we wait for the movement to be done
-                while(True):
+                moving_arm=1
+                move_amount=1000000 #undetermined positive or negative
+                while(moving_arm==1):
                     sleep(0.1)
-                    with globals.comms_lock:
-                        #if we are no longer rotating the arm, we can move on
-                        if(globals.moving_arm != 1): 
-                            break
-                
                 ser.write(b"Claw movement finished\r\n")
                 #status will be updated during the process
                 #I am planning on status_UART being a string, so we need to encode it 
-                with globals.status_lock:
-                    ser.write(globals.status_UART.encode("utf-8")+b"\r\n")
-                    globals.status_UART=""
-                    globals.new_status = 0
-                
+                ser.write(status_UART.encode("utf-8")+b"\r\n")
+                status_UART=""
             case 'C':
                 #this state is just to fully open the arms
                 #here, we get which motors to move
@@ -242,33 +300,22 @@ def UART():
                         ser.write(b"Invalid input\r\n")
                         continue
                     #if we are here, we know we have a valid selection and we can convert it to integer and move on
-                    with globals.comms_lock:
-                        globals.pair_select=int(arm_sel)
+                    pair_select=int(arm_sel)
                     break
                 
                 ser.write(b"Closing claw\r\n")
-                #set the global flag
-                with globals.comms_lock:
-                    globals.moving_arm=1
-                    globals.move_amount=16000 #undetermined positive or negative
-                    
-                #now we wait for that to be done
-                while(True):
+                #note that this number will be positive or negative because of how we want to send it.
+                #TBD pos or negative
+                moving_arm=1
+                move_amount=-1000000 #undetermined positive or negative
+                while(moving_arm==1 and test==1):
                     sleep(0.1)
-                    with globals.comms_lock:
-                        #if we are no longer rotating the arm, we can move on
-                        if(globals.moving_arm != 1): 
-                            break
-
+                test=1
                 ser.write(b"Claw movement finished\r\n")
                 #status will be updated during the process
                 #I am planning on status_UART being a string, so we need to encode it 
-                
-                with globals.status_lock:
-                    ser.write(globals.status_UART.encode("utf-8")+b"\r\n")
-                    globals.status_UART=""
-                    globals.new_status=0
-                
+                ser.write(status_UART.encode("utf-8")+b"\r\n")
+                status_UART=""
             case 'R':
                 #this state has the motor rotate by a certain amount
                 #this while loop is for while we don't have a complete messsage
@@ -294,10 +341,8 @@ def UART():
                         r_int = int(degree_message)  # Convert input to integer   
                         #that line was where the error would be, so at this point we know it was a proper thing
                         ser.write(b"Rotating " + degree_message.encode('utf-8') + b" degrees\r\n")
-                        #need to make sure that the mutex is applied
-                        with globals.comms_lock:
-                            globals.rotating_arm = 1
-                            globals.rotate_amount = r_int
+                        rotating_arm = 1
+                        rotate_amount = r_int
                         # Exit loop since we got a valid integer
                         break
                     except ValueError:
@@ -305,69 +350,37 @@ def UART():
                         ser.write(b"Invalid input. Please enter an integer.\r\n")
                 
                 #now we wait for it to no longer be rotating
-                while(True):
+                while(rotating_arm==1):
                     sleep(0.1)
-                    with globals.comms_lock:
-                        #if we are no longer rotating the arm, we can move on
-                        if(globals.rotating_arm != 1): 
-                            break
-                    
                 ser.write(b"Claw rotation finished\r\n")
                 #status will be updated during the process
                 #I am planning on status_UART being a string, so we need to encode it 
-                with globals.status_lock:
-                    ser.write(globals.status_UART.encode("utf-8")+b"\r\n")
-                    globals.status_UART=""
-                    globals.new_status=0
-                
+                ser.write(status_UART.encode("utf-8")+b"\r\n")
+                status_UART=""
             case '=':
                 ser.write(b"Rotating claw into = configuration\r\n")
-                #First, we have to signal that we want to rotate
-                with globals.comms_lock:
-                    globals.rotating_arm=1
-                    globals.configuring_arm=1
-                    globals.arm_configuration=0 #this is the configuration for the =
-                    
-                #now, we need to wait for that rotation to be done
-                while(True):
+                rotating_arm=1
+                configuring_arm=1
+                arm_configuration=0 #this is the configuration for the =
+                while(rotating_arm==1):
                     sleep(0.1)
-                    with globals.comms_lock:
-                        if(globals.rotating_arm != 1):
-                            break
-                
                 ser.write(b"Claw configuration finished\r\n")
                 #status will be updated during the process
                 #I am planning on status_UART being a string, so we need to encode it 
-                
-                with globals.status_lock:
-                    ser.write(globals.status_UART.encode("utf-8")+b"\r\n")
-                    globals.status_UART=""
-                    globals.new_status = 0
-                
+                ser.write(status_UART.encode("utf-8")+b"\r\n")
+                status_UART=""
             case '+':
                 ser.write(b"Rotating claw into + configuration\r\n")
-                #first, we need to get the mutex for uart communication setting these flags
-                with globals.comms_lock:
-                    globals.rotating_arm=1
-                    globals.configuring_arm=1
-                    globals.arm_configuration=1 #this is the configuration for the +
-                    
-                #then, we need to get the i2c mutex so that we can properly access the information
-                while(True):
+                rotating_arm=1
+                configuring_arm=1
+                arm_configuration=1 #this is the configuration for the +
+                while(rotating_arm==1):
                     sleep(0.1)
-                    with globals.comms_lock:
-                        if(globals.rotating_arm != 1):
-                            break    
-                
                 ser.write(b"Claw configuration finished\r\n")
                 #status will be updated during the process
-                #I am planning on status_UART being a string, so we need to encode it
-                
-                #now we need to get the mutex for the status so we can run it
-                with globals.status_lock:
-                    ser.write(globals.status_UART.encode("utf-8")+b"\r\n")
-                    globals.status_UART=""
-                    globals.new_status = 0
+                #I am planning on status_UART being a string, so we need to encode it 
+                ser.write(status_UART.encode("utf-8")+b"\r\n")
+                status_UART=""
             case _:
                 ser.write(b"Command "+message_bytes+b" not supported.\r\nPlease make a valid selection ('?' for help)\r\n")
         
@@ -375,7 +388,4 @@ def UART():
         message=message_bytes.decode('utf-8')
         print(message)
         ser.write(message_bytes+b"\r\n")
-    
-    print("Exiting UART")
-    globals.UART_running = False
     ser.close()
