@@ -101,6 +101,13 @@ Libraries to be included:
  const int maxAccel = 500;
  const int increment = 10; //I think its probably fine to have it move 1 step at a time, if too slow we could increase this though
  const int FORCE_THRESH = 3.0; //maximum force of 3N
+//force sensor calibration constants
+ const float m = -0.022, b =  4.883;
+// helper: converts raw ADC [0–1023] → force (N)
+ inline float rawToForce(int raw, float m, float b) {
+     float f = m * raw + b;
+     return (f > 0.0f ? f : 0.0f);
+     }
  const int max_steps = 14000; //maximum steps they could move to
 
  AccelStepper stepper_lin0(AccelStepper::DRIVER, PAIR0_STP_PIN, PAIR0_DIR_PIN);
@@ -140,14 +147,6 @@ Libraries to be included:
      pinMode(FORCE1_PIN, INPUT);
      pinMode(FORCE2_PIN, INPUT);
      pinMode(FORCE3_PIN, INPUT);
-
-     //force sensor calibration constants
-     const float m = -0.022, b =  4.883;
-     // helper: converts raw ADC [0–1023] → force (N)
-     inline float rawToForce(int raw, float m, float b) {
-     float f = m * raw + b;
-     return (f > 0.0 ? f : 0.0);
-    }
  
 
      //Start serial for debugging
