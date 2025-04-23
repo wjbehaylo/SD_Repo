@@ -255,17 +255,25 @@ def stateF():
     #when we exit this while loop, detected_debris_type should be set
     
     #at this point, detecting object should be true, so we want to resume/start the computer vision stuff
-    #I will have a flag called CV_RUN that 
-    # report back over UART
-    if globals.detected_debris_type in ("CubeSat", "Starlink", "Minotaur"):
-        globals.status_UART += f"Detected object: {globals.detected_debris_type}\r\n"
-    else:
-        globals.status_UART += "Detected object: UNKNOWN\r\n"
+    #and the computer vision stuff should be running, leaving detected_debris_type populated with our detected type
+    # so I need to monopolize the camera comms and generate status accordingly
     
-    globals.new_status = 1 #queue that message
+    with globals.camera_lock:
+        my_detected_debris_type = globals.detected_debris_type
+        
+    with globals.status_lock:
+        if my_detected_debris_type in ("CubeSat", "Starlink", "Minotaur"):
+            globals.status_UART += f"Detected object: {my_detected_debris_type}\r\n"
+        else:
+            globals.status_UART += "Detected object: UNKNOWN\r\n"
+        globals.new_status = 1 #queue that message
 
+    
     # set grip parameters based on the type
-    #debugging, these aren't decided yet, might remove these
+    #debugging, I think that I don't need these actually because we aren't going from this CV state to anywhere besides UART
+    #note that I could determine the number of steps to move, and maybe output that as part of the status
+    
+    '''
     if globals.detected_debris_type == "CubeSat":
         globals.pair_select = 0    # one claw only, unsure of amount
         globals.move_amount  = 13000
@@ -275,9 +283,11 @@ def stateF():
     elif globals.detected_debris_type == "Minotaur":
         globals.pair_select = 2 #both claws, unsure of amount, 
         globals.move_amount = 10000
+    '''
     
-    #we are finished detecting the object
-    globals.detecting_object = 0
+    #we are finished detecting the object, let the UART know so we can move onto the next thing in UART_Wait
+    with globals.comms_lock:
+        globals.detecting_object = 0
     return stateB
     
     
