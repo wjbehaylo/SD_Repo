@@ -329,10 +329,10 @@ Libraries to be included:
        //Serial.print("targ_steps_pair0: ");
        //Serial.println(targ_steps_pair[0]);
        //debugging
-       Serial.print("FORCE0_PIN: ")
-       Serial.println(analogRead(FORCE0_PIN))
-       Serial.print("FORCE1_PIN: ")
-       Serial.println(analogRead(FORCE1_PIN))
+       Serial.print("FORCE0_PIN: ");
+       Serial.println(analogRead(FORCE0_PIN));
+       Serial.print("FORCE1_PIN: ");
+       Serial.println(analogRead(FORCE1_PIN));
        curr_steps_pair[0] = stepper_lin0.currentPosition() + increment;
        stepper_lin0.moveTo(curr_steps_pair[0]);
        stepper_lin0.runSpeedToPosition();
@@ -519,14 +519,14 @@ Libraries to be included:
      && curr_steps_pair[1] < max_steps
      && analogRead(FORCE2_PIN)<FORCE_THRESH 
      && analogRead(FORCE3_PIN)<FORCE_THRESH){
-       Serial.print("FORCE0_PIN: ")
-       Serial.println(analogRead(FORCE0_PIN))
-       Serial.print("FORCE1_PIN: ")
-       Serial.println(analogRead(FORCE1_PIN))
-       Serial.print("FORCE2_PIN: ")
-       Serial.println(analogRead(FORCE2_PIN))
-       Serial.print("FORCE3_PIN: ")
-       Serial.println(analogRead(FORCE3_PIN))
+       Serial.print("FORCE0_PIN: ");
+       Serial.println(analogRead(FORCE0_PIN));
+       Serial.print("FORCE1_PIN: ");
+       Serial.println(analogRead(FORCE1_PIN));
+       Serial.print("FORCE2_PIN: ");
+       Serial.println(analogRead(FORCE2_PIN));
+       Serial.print("FORCE3_PIN: ");
+       Serial.println(analogRead(FORCE3_PIN));
        curr_steps_pair[0] = curr_steps_pair[0] + increment;
        curr_steps_pair[1] = curr_steps_pair[1] + increment;
        steppers_lin.moveTo(curr_steps_pair);
@@ -538,10 +538,10 @@ Libraries to be included:
      && curr_steps_pair[0] < max_steps
      && analogRead(FORCE0_PIN)<FORCE_THRESH 
      && analogRead(FORCE1_PIN)<FORCE_THRESH){
-       Serial.print("FORCE0_PIN: ")
-       Serial.println(analogRead(FORCE0_PIN))
-       Serial.print("FORCE1_PIN: ")
-       Serial.println(analogRead(FORCE1_PIN))
+       Serial.print("FORCE0_PIN: ");
+       Serial.println(analogRead(FORCE0_PIN));
+       Serial.print("FORCE1_PIN: ");
+       Serial.println(analogRead(FORCE1_PIN));
        curr_steps_pair[0] = stepper_lin0.currentPosition() + increment;
        stepper_lin0.moveTo(curr_steps_pair[0]);
        stepper_lin0.runSpeedToPosition();
@@ -551,10 +551,10 @@ Libraries to be included:
      && curr_steps_pair[1] < max_steps
      && analogRead(FORCE2_PIN)<FORCE_THRESH 
      && analogRead(FORCE3_PIN)<FORCE_THRESH){
-       Serial.print("FORCE2_PIN: ")
-       Serial.println(analogRead(FORCE2_PIN))
-       Serial.print("FORCE3_PIN: ")
-       Serial.println(analogRead(FORCE3_PIN))
+       Serial.print("FORCE2_PIN: ");
+       Serial.println(analogRead(FORCE2_PIN));
+       Serial.print("FORCE3_PIN: ");
+       Serial.println(analogRead(FORCE3_PIN));
        curr_steps_pair[1] = stepper_lin1.currentPosition() + increment;
        stepper_lin1.moveTo(curr_steps_pair[1]);
        stepper_lin1.runSpeedToPosition();
@@ -598,10 +598,10 @@ Libraries to be included:
      executionStatus0 = 1;
    }
    else if (analogRead(FORCE0_PIN)>FORCE_THRESH || analogRead(FORCE1_PIN)>FORCE_THRESH){
-     Serial.print("FORCE0_PIN: ")
-     Serial.println(analogRead(FORCE0_PIN))
-     Serial.print("FORCE1_PIN: ")
-     Serial.println(analogRead(FORCE1_PIN))
+     Serial.print("FORCE0_PIN: ");
+     Serial.println(analogRead(FORCE0_PIN));
+     Serial.print("FORCE1_PIN: ");
+     Serial.println(analogRead(FORCE1_PIN));
      executionStatus0 = 4;
    }
    //fully open end stop
