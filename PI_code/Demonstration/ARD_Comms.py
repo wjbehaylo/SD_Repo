@@ -182,13 +182,13 @@ def Generate_IEEE_vector(value):
 #if this function returns a '-1', it means the data wasn't written
 #if it returns a 0, it was successfully written
 def lin_ARD_Write(OFFSET, MESSAGE):
-    global i2c_arduino
+    globals.i2c_arduino
     #here message will be an integer, and we need to convert it into an array of 4 binary bytes the arduino will then interpret
     linear_array=Generate_IEEE_vector(MESSAGE)
     #OFFSET=0 means we are writing to pair0, OFFSET=1 means we are writing to pair1, OFFSET=2 means we are writing to both pairs.
     #This will be passed as input to this function though
     try:
-        i2c_arduino.write_i2c_block_data(lin_ard_add, OFFSET, linear_array)
+        globals.i2c_arduino.write_i2c_block_data(globals.lin_ard_add, OFFSET, linear_array)
         #debugging. might be necessary though also
         sleep(1)
     except IOError:
@@ -200,7 +200,6 @@ def lin_ARD_Write(OFFSET, MESSAGE):
 #It will return the status of the movement.
 def lin_ARD_Read(OFFSET):
     
-    global i2c_arduino
     status=[0,10] #first is status of pair0, second is status of pair1
     try:
         while True:
@@ -215,7 +214,7 @@ def lin_ARD_Read(OFFSET):
             if (OFFSET == 5 or OFFSET == 4 or OFFSET == 3):
                 #read 2 bytes,1 for each pair.
                 #The return of the function here will be
-                status = i2c_arduino.read_i2c_block_data(lin_ard_add, OFFSET, 2)
+                status = globals.i2c_arduino.read_i2c_block_data(globals.lin_ard_add, OFFSET, 2)
             
                 #This should just go twice, once for each motor's status
                 
@@ -262,10 +261,9 @@ def lin_ARD_Read(OFFSET):
 #if it returns a 0, data was written successfully
 def rot_ARD_Write(OFFSET, MESSAGE):
     #first we need to convert the integer message
-    global i2c_arduino #maybe because we're editing it?
     rotational_array=Generate_IEEE_vector(MESSAGE)
     try:
-        i2c_arduino.write_i2c_block_data(rot_ard_add, OFFSET, rotational_array)
+        globals.i2c_arduino.write_i2c_block_data(globals.rot_ard_add, OFFSET, rotational_array)
         sleep(0.1)
     except IOError:
         print("Could not write data to the Arduino")
@@ -275,8 +273,6 @@ def rot_ARD_Write(OFFSET, MESSAGE):
     
 #OFFSET will always be 0 here, if this works correctly
 def rot_ARD_Read(OFFSET):
-    #maybe because we're editing it we need to describe i2c_arduino
-    global i2c_arduino
     try:
         while True:
             sleep(1)
@@ -284,7 +280,7 @@ def rot_ARD_Read(OFFSET):
             if(OFFSET==3):
                 #debugging
                 print("Trying to read byte data")
-                status=i2c_arduino.read_byte(rot_ard_add) #I don't think I needed the offset thing.
+                status=globals.i2c_arduino.read_byte(globals.rot_ard_add) #I don't think I needed the offset thing.
                 
                 #debugging
                 print("Successfully read byte data")
