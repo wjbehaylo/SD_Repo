@@ -352,5 +352,6 @@ def UART():
         print(message)
         ser.write(message_bytes+b"\r\n")
     
+    print("Exiting UART")
     UART_running = False
     ser.close()
