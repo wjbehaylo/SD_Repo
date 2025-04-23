@@ -100,7 +100,7 @@ Libraries to be included:
  const int maxSpeed = 500; //the max speed being too high (1000) when we run both together results in a loud buzzing noise and no movement
  const int maxAccel = 500;
  const int increment = 10; //I think its probably fine to have it move 1 step at a time, if too slow we could increase this though
- const int FORCE_THRESH = 682; //maximum force of 3N
+ const int FORCE_THRESH = 3.0; //maximum force of 3N
  const int max_steps = 14000; //maximum steps they could move to
 
  AccelStepper stepper_lin0(AccelStepper::DRIVER, PAIR0_STP_PIN, PAIR0_DIR_PIN);
@@ -140,6 +140,14 @@ Libraries to be included:
      pinMode(FORCE1_PIN, INPUT);
      pinMode(FORCE2_PIN, INPUT);
      pinMode(FORCE3_PIN, INPUT);
+
+     //force sensor calibration constants
+     const float m = -0.022, b =  4.883;
+     // helper: converts raw ADC [0–1023] → force (N)
+     inline float rawToForce(int raw, float m, float b) {
+     float f = m * raw + b;
+     return (f > 0.0 ? f : 0.0);
+    }
  
 
      //Start serial for debugging
@@ -193,15 +201,22 @@ Libraries to be included:
     //debugging, make sure to press down endstop top 1 pin
      while(digitalRead(ENDSTOP_TOP_1_PIN)==LOW){
       delay(10000);
-      Serial.print("\n\nPrinting FORCE0_PIN: ");
-      Serial.println(analogRead(FORCE0_PIN));
-      Serial.print("Printing FORCE1_PIN: ");
-      Serial.println(analogRead(FORCE1_PIN));
-      Serial.print("Printing FORCE2_PIN: ");
-      Serial.println(analogRead(FORCE2_PIN));
-      Serial.print("Printing FORCE3_PIN: ");
-      Serial.println(analogRead(FORCE3_PIN));
-     }
+      // read & convert all four
+      int r0 = analogRead(FORCE0_PIN);
+      int r1 = analogRead(FORCE1_PIN);
+      int r2 = analogRead(FORCE2_PIN);
+      int r3 = analogRead(FORCE3_PIN);
+
+      float f0 = rawToForce(r0, m, b);
+      float f1 = rawToForce(r1, m, b);
+      float f2 = rawToForce(r2, m, b);
+      float f3 = rawToForce(r3, m, b);
+
+      Serial.print("F0: "); Serial.print(f0,2); Serial.print(" N  ");
+      Serial.print("F1: "); Serial.print(f1,2); Serial.print(" N  ");
+      Serial.print("F2: "); Serial.print(f2,2); Serial.print(" N  ");
+      Serial.print("F3: "); Serial.print(f3,2); Serial.println(" N");
+          }
  }
  
  void loop() {
@@ -215,15 +230,6 @@ Libraries to be included:
   Serial.println(state); //0 is waiting for message, 1 is moving, 2 is done
   delay(3000); //wait 3 seconds between this, just for debugging
   
-  //debugging
-  Serial.print("\n\nPrinting FORCE0_PIN: ");
-  Serial.println(analogRead(FORCE0_PIN));
-  Serial.print("Printing FORCE1_PIN: ");
-  Serial.println(analogRead(FORCE1_PIN));
-  Serial.print("Printing FORCE2_PIN: ");
-  Serial.println(analogRead(FORCE2_PIN));
-  Serial.print("Printing FORCE3_PIN: ");
-  Serial.println(analogRead(FORCE3_PIN));
    
    switch(state){
      case WAIT:
@@ -326,7 +332,7 @@ Libraries to be included:
      // debugging, took out this from the while loop since it won't be wired up  && digitalRead(ENDSTOP_BOT_0_PIN)==HIGH
  
      //debugging, make sure to re-include the force sensors later
-     while(targ_steps_pair[0] > curr_steps_pair[0]  && curr_steps_pair[0] < max_steps && analogRead(FORCE0_PIN)<FORCE_THRESH && analogRead(FORCE1_PIN)<FORCE_THRESH){
+     while(targ_steps_pair[0] > curr_steps_pair[0]  && curr_steps_pair[0] < max_steps && rawToForce(analogRead(FORCE0_PIN), m, b) < FORCE_THRESH && rawToForce(analogRead(FORCE1_PIN), m, b)<FORCE_THRESH){
        //debugging
        //Serial.print("Moving pair0\ncurr_steps_pair0: ");
        //Serial.println(curr_steps_pair[0]);
@@ -372,7 +378,7 @@ Libraries to be included:
       executionStatus0 = 1;
       return;
     }
-    else if(analogRead(FORCE0_PIN)>FORCE_THRESH || analogRead(FORCE1_PIN)>FORCE_THRESH) {
+    else if(rawToForce(analogRead(FORCE0_PIN), m, b)>FORCE_THRESH || rawToForce(analogRead(FORCE1_PIN), m, b)>FORCE_THRESH) {
       executionStatus0 = 4; // Force limit reached
       Serial.println("Force limit reached on pair0!");
       return;
@@ -422,7 +428,7 @@ Libraries to be included:
      //NOte that this is the previous while loop, but ENDSTOP_BOT_1_PIN will always be high 
      //debugging, remember to reinclude force sensors later
  
-     while(targ_steps_pair[1] > curr_steps_pair[1] && curr_steps_pair[1] < max_steps && analogRead(FORCE2_PIN)<FORCE_THRESH && analogRead(FORCE3_PIN)<FORCE_THRESH) {
+     while(targ_steps_pair[1] > curr_steps_pair[1] && curr_steps_pair[1] < max_steps && rawToForce(analogRead(FORCE2_PIN), m, b)<FORCE_THRESH && rawToForce(analogRead(FORCE3_PIN), m, b)<FORCE_THRESH) {
        curr_steps_pair[1]=stepper_lin1.currentPosition() + increment;
        stepper_lin1.moveTo(curr_steps_pair[1]);
        stepper_lin1.runSpeedToPosition();
@@ -457,7 +463,7 @@ Libraries to be included:
      executionStatus1 = 11;
      return;
    }
-   else if(analogRead(FORCE2_PIN)>FORCE_THRESH || analogRead(FORCE3_PIN)>FORCE_THRESH){
+   else if(rawToForce(analogRead(FORCE2_PIN), m, b)>FORCE_THRESH || rawToForce(analogRead(FORCE3_PIN), m, b)>FORCE_THRESH){
      executionStatus1 = 14;
      return;
    }
@@ -507,12 +513,12 @@ Libraries to be included:
    if(targ_steps_pair[0]>curr_steps_pair[0] || targ_steps_pair[1]>curr_steps_pair[1]){
      while(targ_steps_pair[0] > curr_steps_pair[0] 
      && curr_steps_pair[0] < max_steps
-     && analogRead(FORCE0_PIN)<FORCE_THRESH 
-     && analogRead(FORCE1_PIN)<FORCE_THRESH 
+     && rawToForce(analogRead(FORCE0_PIN), m, b)<FORCE_THRESH 
+     && rawToForce(analogRead(FORCE1_PIN), m, b)<FORCE_THRESH 
      && targ_steps_pair[1] > curr_steps_pair[1] 
      && curr_steps_pair[1] < max_steps
-     && analogRead(FORCE2_PIN)<FORCE_THRESH 
-     && analogRead(FORCE3_PIN)<FORCE_THRESH){
+     && rawToForce(analogRead(FORCE2_PIN), m, b)<FORCE_THRESH 
+     && rawToForce(analogRead(FORCE3_PIN), m, b)<FORCE_THRESH){
        curr_steps_pair[0] = curr_steps_pair[0] + increment;
        curr_steps_pair[1] = curr_steps_pair[1] + increment;
        steppers_lin.moveTo(curr_steps_pair);
@@ -522,8 +528,8 @@ Libraries to be included:
      //first, lets check for pair 0
      while(targ_steps_pair[0] > curr_steps_pair[0]
      && curr_steps_pair[0] < max_steps
-     && analogRead(FORCE0_PIN)<FORCE_THRESH 
-     && analogRead(FORCE1_PIN)<FORCE_THRESH){
+     && rawToForce(analogRead(FORCE0_PIN), m, b)<FORCE_THRESH 
+     && rawToForce(analogRead(FORCE1_PIN), m, b)<FORCE_THRESH){
        curr_steps_pair[0] = stepper_lin0.currentPosition() + increment;
        stepper_lin0.moveTo(curr_steps_pair[0]);
        stepper_lin0.runSpeedToPosition();
@@ -531,8 +537,8 @@ Libraries to be included:
      //now, lets check for pair1
      while(targ_steps_pair[1] > curr_steps_pair[1] 
      && curr_steps_pair[1] < max_steps
-     && analogRead(FORCE2_PIN)<FORCE_THRESH 
-     && analogRead(FORCE3_PIN)<FORCE_THRESH){
+     && rawToForce(analogRead(FORCE2_PIN), m, b)<FORCE_THRESH 
+     && rawToForce(analogRead(FORCE3_PIN), m, b)<FORCE_THRESH){
        curr_steps_pair[1] = stepper_lin1.currentPosition() + increment;
        stepper_lin1.moveTo(curr_steps_pair[1]);
        stepper_lin1.runSpeedToPosition();
@@ -575,7 +581,7 @@ Libraries to be included:
    if (targ_steps_pair[0]==curr_steps_pair[0]){
      executionStatus0 = 1;
    }
-   else if (analogRead(FORCE0_PIN)>FORCE_THRESH || analogRead(FORCE1_PIN)>FORCE_THRESH){
+   else if (rawToForce(analogRead(FORCE0_PIN), m, b)>FORCE_THRESH || rawToForce(analogRead(FORCE1_PIN), m, b)>FORCE_THRESH){
      executionStatus0 = 4;
    }
    //fully open end stop
@@ -606,7 +612,7 @@ Libraries to be included:
    if (targ_steps_pair[1]==curr_steps_pair[1]){
      executionStatus1 = 11;
    }
-   else if(analogRead(FORCE2_PIN)>FORCE_THRESH || analogRead(FORCE3_PIN)>FORCE_THRESH){
+   else if(rawToForce(analogRead(FORCE2_PIN), m, b)>FORCE_THRESH || rawToForce(analogRead(FORCE3_PIN), m, b)>FORCE_THRESH){
      executionStatus1 = 14;
    }
    //fully open end stop

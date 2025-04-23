@@ -67,6 +67,29 @@ void setup() {
   Serial.println("=== Calibration Complete ===\n");
 }
 
+const int   SOFTPOT_PIN     = A0;
+const float ipad_mass_kg    = 0.458;      // your iPad’s mass
+const float g               = 9.81;       // gravity
+const float F1              = ipad_mass_kg * g;  // known force ≈ 4.49 N
+
+float raw0 = 220.79;
+float raw1 = 424.01;
+float m = F1 / (raw1- raw0);
+float b = -m*raw0;
+
+Serial.println(m)
+Serial.println(b)
+
+// call this after you’ve read raw0 & raw1 via your calibration routine:
+void computeCalibration() {
+  // ensure raw0 = no-load, raw1 = loaded
+  if (raw1 < raw0) {
+    float tmp = raw0; raw0 = raw1; raw1 = tmp;
+  }
+  m = F1 / (raw1 - raw0);
+  b = -m * raw0;
+}
+
 void loop() {
   // read & convert all sensors
   for (int i = 0; i < NUM_SENSORS; i++) {
@@ -80,4 +103,6 @@ void loop() {
   }
   Serial.println();
   delay(200);
+
+
 }
