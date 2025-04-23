@@ -39,15 +39,17 @@ def stateA():
     #now make sure that all the threads are running properly
     sleep(30)
     
-    if(globals.UART_running==False):
-        print("UART thread not running")
-        return stateQ
-    if(globals.CV_running==False):
-        print("CV thread not running")
-        return stateQ
-    if(globals.CAM_running==False):
-        print("CAM thread not running")
-        return stateQ
+    #this is just to make sure that everything properly initialized
+    with globals.running_lock:
+        if(globals.UART_running==False):
+            print("UART thread not running")
+            return stateQ
+        if(globals.CV_running==False):
+            print("CV thread not running")
+            return stateQ
+        if(globals.CAM_running==False):
+            print("CAM thread not running")
+            return stateQ
     
     #if all the threads are running, we should be good to start trying to run it
     print("Threads initialized")

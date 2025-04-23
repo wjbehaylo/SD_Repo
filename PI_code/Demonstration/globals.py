@@ -63,6 +63,8 @@ i2c_lock= threading.Lock()
 status_lock= threading.Lock()
 #this lock manages communication between the FSM and the Computer vision threads
 camera_lock= threading.Lock()
+#this lock simply oversees the global xxx_running flags
+running_lock= threading.Lock()
 
 #Flag to control main loop
 #If this gets set to false, everything will end

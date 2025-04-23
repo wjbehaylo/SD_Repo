@@ -29,11 +29,16 @@ def capture_frame():
 	webcam.set(cv2.CAP_PROP_FRAME_HEIGHT, HEIGHT)
 	
 	#set global flag
-	globals.CAM_running=True
+	with globals.running_lock:
+		globals.CAM_running=True
 	#debugging
 	print("Capture frame running")
- 
-	while globals.SYS_running:
+	
+	#create a local copy of SYS_running
+	with globals.running_lock:
+		my_SYS_running=globals.SYS_running
+	#this might break stuff tbh, from like race conditions, maybe I need to status lock it
+	while my_SYS_running:
 		#debugging, maybe this should be always running? Maybe only when run_cv is true
 		#if(run_CV==0):
 		#	time.sleep(1) #wait 1 second before checking the thread again
@@ -42,7 +47,8 @@ def capture_frame():
 		# Check if frame capture was successful
 		if not ret:
 			print("Failed to capture frame")
-			globals.SYS_running = False
+			with globals.running_lock:
+				globals.SYS_running = False
 			return
 		#undistort the image
 		und = cv2.undistort(frame, camera_matrix, distortion_coeffs)
@@ -51,7 +57,11 @@ def capture_frame():
 		# only if the threads are not currently locked, save the new frame to be analyzed
 		with globals.frame_lock: 
 			color_frame    = und.copy()
-		
+		#this might lowkey monopolize the running_lock. 
+  		#I don't want to get gridlock from overlapping mutexes, which I gotta watch out for with debris_detect and capture_frame
+		with globals.running_lock:
+			my_SYS_running=globals.SYS_running
+
 	webcam.release()
 	globals.CAM_running=False
 	return
@@ -59,30 +69,32 @@ def capture_frame():
 
 def debris_detect():
  
-	#we won't initially need_color, because this is just it like getting initialized
-	need_color=False
 	#inform that CV is going
-	globals.CV_running = True
+	with globals.running_lock:
+		globals.CV_running = True
 	# Continue processing frames while SYS_running is True
  
 	#debugging
 	print("Debris detect running")
- 
-	while (globals.SYS_running):
-		
+	#start the loop off strong
+	my_SYS_running=True
+	while (my_SYS_running):
+		with globals.running_lock:
+			my_SYS_running=globals.SYS_running
 		#we only want to run through this loop if run_CV is 1, meaning that the FSM is trying to detect a new object
-		#if CV is 1, we need to set need_color to be true so that it runs and detects the color and whatnot
 		#we will set run_CV to be 0 after we have finished finding the color
 
-		if (globals.run_CV==0):
-			time.sleep(1)
-			continue
-		elif(globals.run_CV==1):
+		#we want to only do this loop when we need to detect the debris, not constantly
+		with globals.camera_lock:
+			if(globals.run_CV == 0):
+				continue
 			need_color=True
-  
+		
+		#try to get the most recently captured frame from capture_frame() thread
 		with globals.frame_lock:
 			snap = globals.color_frame.copy() if globals.color_frame is not None else None
 			
+		#if snap is None (because capture_frame hasn't read for some reason), we restart the loop
 		if snap is None:
 			time.sleep(1)
 			continue
@@ -136,7 +148,7 @@ def debris_detect():
 				if len(contoursR1) >= 6:
 					cv2.putText(snap, "RocketBody Detected!", (x, y - 10),
 							cv2.FONT_HERSHEY_SIMPLEX, 1.0, (0, 0, 255), 2)
-					detected_debris_type = "Minotaur"
+					my_detected_debris_type = "Minotaur"
 					need_color   = False
 					redDetected  = True
 		
@@ -149,7 +161,7 @@ def debris_detect():
 				if len(contoursR2) >= 6:
 					cv2.putText(snap, "RocketBody Detected!", (x, y - 10),
 							cv2.FONT_HERSHEY_SIMPLEX, 1.0, (0, 0, 255), 2)
-					detected_debris_type = "Minotaur"
+					my_detected_debris_type = "Minotaur"
 					need_color   = False
 					redDetected  = True
 
@@ -162,7 +174,7 @@ def debris_detect():
 				if len(contoursG) >= 6:
 					cv2.putText(snap, "Starlink Detected!", (x, y - 10),
 							cv2.FONT_HERSHEY_SIMPLEX, 1.0, (0, 255, 0), 2)
-					detected_debris_type = "Starlink"
+					my_detected_debris_type = "Starlink"
 					need_color = False
 					greenDetected = True
 
@@ -175,18 +187,21 @@ def debris_detect():
 				if len(contoursB) >= 2:
 					cv2.putText(snap, "CubeSat Detected!", (x, y - 10),
 							cv2.FONT_HERSHEY_SIMPLEX, 1.0, (255, 0, 0), 2)
-					detected_debris_type = "CubeSat"
+					my_detected_debris_type = "CubeSat"
 					need_color   = False
 					blueDetected = True
 
 		#if we are no longer looking for a color, we can set run_CV to be low to indicate that we have found our debris
-		if(globals.need_color == False):
-			globals.run_CV = 0 
+		if(need_color == False):
+			with globals.camera_lock:
+				globals.detected_debris_type=my_detected_debris_type
+				globals.run_CV = 0
 		# show and check for quit
 		cv2.imshow("Debris Detection", snap)
     #cv2.destroyAllWindows()
     #here we are exiting because SYS_running has been made false
-	globals.CV_running = False
+	with globals.running_lock:
+		globals.CV_running = False
 	return
     
     

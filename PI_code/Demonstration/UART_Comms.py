@@ -56,7 +56,12 @@ def UART():
     else:
         print("Failure to open UART, exiting\r\n")
         return
-    globals.UART_running = True
+    
+    #this is for our stateA
+    with globals.running_lock:
+        globals.UART_running = True
+        
+        
     ser.write(b"Connection Established\r\n")
     #we only want messages of one bit at a time. We will have switch statement and output the confirmed message based on the input
     #We need the message in bytes, the message reinterpretted, and to send the message back
@@ -88,7 +93,7 @@ def UART():
                 ser.write(b"Quitting\r\n")
                 
                 #I'm pretty sure that this is just like a mutex: when uart_lock is available, we can execute the code, and it would update our variable
-                with globals.uart_lock:
+                with globals.comms_lock:
                     globals.program_quit=1
                 #we want to exit this while loop, so that the connection gets closed
                 sleep(1)
