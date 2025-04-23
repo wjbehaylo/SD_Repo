@@ -321,7 +321,7 @@ Libraries to be included:
  
      //debugging, make sure to re-include the force sensors later
      while(targ_steps_pair[0] > curr_steps_pair[0]  && curr_steps_pair[0] < max_steps 
-      && /*analogRead(FORCE0_PIN) < FORCE_THRESH*/
+      /*&& analogRead(FORCE0_PIN) < FORCE_THRESH*/
       && analogRead(FORCE1_PIN) < FORCE_THRESH){
        //debugging
        //Serial.print("Moving pair0\ncurr_steps_pair0: ");
@@ -513,7 +513,7 @@ Libraries to be included:
    if(targ_steps_pair[0]>curr_steps_pair[0] || targ_steps_pair[1]>curr_steps_pair[1]){
      while(targ_steps_pair[0] > curr_steps_pair[0] 
      && curr_steps_pair[0] < max_steps
-     && /*analogRead(FORCE0_PIN)<FORCE_THRESH */
+     /*&& analogRead(FORCE0_PIN)<FORCE_THRESH */
      && analogRead(FORCE1_PIN)<FORCE_THRESH 
      && targ_steps_pair[1] > curr_steps_pair[1] 
      && curr_steps_pair[1] < max_steps
@@ -536,7 +536,7 @@ Libraries to be included:
      //first, lets check for pair 0
      while(targ_steps_pair[0] > curr_steps_pair[0]
      && curr_steps_pair[0] < max_steps
-     && /*analogRead(FORCE0_PIN)<FORCE_THRESH */
+     /*&& analogRead(FORCE0_PIN)<FORCE_THRESH */
      && analogRead(FORCE1_PIN)<FORCE_THRESH){
        //Serial.print("FORCE0_PIN: ");
        //Serial.println(analogRead(FORCE0_PIN));
