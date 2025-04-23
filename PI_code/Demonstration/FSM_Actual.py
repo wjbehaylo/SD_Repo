@@ -134,6 +134,8 @@ def stateB():
         
         #we only want to try to access these when we can take uart_lock ourselves
         with uart_lock:
+            #debugging
+            print("stateB has uart_lock")
             if(moving_arm==1):
                 return stateC #we are entering the moving arm state
             if(rotating_arm==1):

@@ -151,6 +151,8 @@ def UART():
                 
                 #I'm pretty sure that this is just like a mutex: when uart_lock is available, we can execute the code, and it would update our variable
                 with uart_lock:
+                    #debugging
+                    print("UART has uart_lock")
                     program_quit=1
                 #we want to exit this while loop, so that the connection gets closed
                 sleep(1)
