@@ -148,9 +148,6 @@ def main():
     uart_thread.start()
     cam_thread.start()
     cv_thread.start()
-
-    cam_thread.join()
-    cv_thread.join()
     
     current_state_name = state_machine[current_state]
     print("[INFO] Starting main, FSM in state: ", current_state_name)
