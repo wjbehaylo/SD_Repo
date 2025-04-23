@@ -83,18 +83,21 @@ def stateB():
 #Moving_Arm
 #we either come here when initializing, capturing, moving an amount, opening, or closing
 def stateC():
-    #when initializing, we need to move both arms, pair_select is set to 2 previously
-    #otherwise, if capturing, pair select will be updated in the data analysis
-    #final option is deciding via UART in which case pair select is still set
-    OFFSET=globals.pair_select
+    
+    #to start, I will create local copies of the important global variables
+    with globals.comms_lock:
+        my_pair_select=globals.pair_select
+        my_move_amount=globals.move_amount
+        
+    OFFSET=my_pair_select
     #when we select O or C in UART we also set the move_amount
-    lin_ARD_Write(OFFSET, globals.move_amount)
+    lin_ARD_Write(OFFSET, my_move_amount)
     #moving arm is set to 1 in the UART thread, or the capture start or initialize, 
     
     #we are going to want to incldicate that we are going to move the arm, and in doing so update the status
-    #potentially unnecessary debugging
-    globals.status_UART+=f"Moving arms\r\n\tpair_select={globals.pair_select}\r\n"
-    globals.new_status=1
+    with globals.status_lock:
+        globals.status_UART+=f"Moving arms\r\n\tpair_select={my_pair_select}\r\n"
+        globals.new_status=1
     
     #we automatically go to the ARD_Wait state after this one
     return stateE
