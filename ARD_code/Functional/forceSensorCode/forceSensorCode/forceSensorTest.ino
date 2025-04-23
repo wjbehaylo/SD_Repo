@@ -1,3 +1,18 @@
+#define FORCE0_PIN A0
+#define FORCE1_PIN A1
+#define FORCE2_PIN A2
+#define FORCE3_PIN A3
+
+const int FORCE_THRESH = 610;  // 0–1023 range, value from calibration
+
+void setup() {
+  //initialize the force sensors
+  pinMode(FORCE0_PIN, INPUT);
+  pinMode(FORCE1_PIN, INPUT);
+  pinMode(FORCE2_PIN, INPUT);
+  pinMode(FORCE3_PIN, INPUT);
+}
+
 void testForceSensors() {
   Serial.println(F("\n--- Force Sensor Raw Readings ---"));
   Serial.print(F("  [0]: ")); Serial.println(analogRead(FORCE0_PIN));
