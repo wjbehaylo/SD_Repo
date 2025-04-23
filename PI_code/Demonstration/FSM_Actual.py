@@ -251,7 +251,7 @@ def stateF():
     
 def stateQ():
     print("Program terminated. Shutting down the system...")
-
+    
     globals.program_quit = 0
     globals.SYS_running = False
 

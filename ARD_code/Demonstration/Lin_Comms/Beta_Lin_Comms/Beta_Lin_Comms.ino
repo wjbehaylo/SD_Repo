@@ -189,6 +189,19 @@ Libraries to be included:
      stepper_lin0.setCurrentPosition(0);
      stepper_lin1.setCurrentPosition(0);
      Serial.println("Linear Arduino Initialized.");
+
+    //debugging, make sure to press down endstop top 1 pin
+     while(digitalRead(ENDSTOP_TOP_1_PIN)==LOW){
+      delay(10000);
+      Serial.print("\n\nPrinting FORCE0_PIN: ");
+      Serial.println(analogRead(FORCE0_PIN));
+      Serial.print("Printing FORCE1_PIN: ");
+      Serial.println(analogRead(FORCE1_PIN));
+      Serial.print("Printing FORCE2_PIN: ");
+      Serial.println(analogRead(FORCE2_PIN));
+      Serial.print("Printing FORCE3_PIN: ");
+      Serial.println(analogRead(FORCE3_PIN));
+     }
  }
  
  void loop() {
@@ -202,6 +215,15 @@ Libraries to be included:
   Serial.println(state); //0 is waiting for message, 1 is moving, 2 is done
   delay(3000); //wait 3 seconds between this, just for debugging
   
+  //debugging
+  Serial.print("\n\nPrinting FORCE0_PIN: ");
+  Serial.println(analogRead(FORCE0_PIN));
+  Serial.print("Printing FORCE1_PIN: ");
+  Serial.println(analogRead(FORCE1_PIN));
+  Serial.print("Printing FORCE2_PIN: ");
+  Serial.println(analogRead(FORCE2_PIN));
+  Serial.print("Printing FORCE3_PIN: ");
+  Serial.println(analogRead(FORCE3_PIN));
    
    switch(state){
      case WAIT:
