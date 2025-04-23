@@ -99,10 +99,14 @@ new_status=0
 detected_debris_type=None
 #this is a flag to signal between FSM_Actual and Computer_Vision that a new frame should be captured and object type determined
 run_CV=0
-#This is a lock so that the function capturing images and the one analyzing them don't have race issues
-frame_lock= threading.Lock()
 #This is where the image is sent when it is passed between the functions
 color_frame = None
+
+#Locks: these are locks to manage communication between the threads
+#This is a lock so that the function capturing images and the one analyzing them don't have race issues
+frame_lock= threading.Lock()
+#This lock manages the communication between UART and the FSM
+uart_lock= threading.Lock()
 
 
 #Flag to control main loop

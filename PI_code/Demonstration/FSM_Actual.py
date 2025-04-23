@@ -57,11 +57,15 @@ new_status=0
 detected_debris_type=None
 #this is a flag to signal between FSM_Actual and Computer_Vision that a new frame should be captured and object type determined
 run_CV=0
-#This is a lock so that the function capturing images and the one analyzing them don't have race issues
-frame_lock= threading.Lock()
+
 #This is where the image is sent when it is passed between the functions
 color_frame = None
 
+#Locks: these locks help to deal with data race conditions that would be experienced by the different threads
+#This is a lock so that the function capturing images and the one analyzing them don't have race issues
+frame_lock= threading.Lock()
+#lock so that when something is trying to change one
+uart_lock= threading.Lock() 
 
 #Flag to control main loop
 #If this gets set to false, everything will end
@@ -127,14 +131,17 @@ def stateB():
         sleep(0.1)
         #the next state will be determined based on the set of variables in the UART module
         #generally, only one of these should be 1 when this statement comes up
-        if(moving_arm==1):
-            return stateC #we are entering the moving arm state
-        if(rotating_arm==1):
-            return stateD #we are rotating the arm by some amount
-        if(detecting_object==1):
-            return stateF #we will be using CV to detect the object
-        if(program_quit==1):
-            return stateQ #the program is exiting here
+        
+        #we only want to try to access these when we can take uart_lock ourselves
+        with uart_lock:
+            if(moving_arm==1):
+                return stateC #we are entering the moving arm state
+            if(rotating_arm==1):
+                return stateD #we are rotating the arm by some amount
+            if(detecting_object==1):
+                return stateF #we will be using CV to detect the object
+            if(program_quit==1):
+                return stateQ #the program is exiting here
     
 #Moving_Arm
 #we either come here when initializing, capturing, moving an amount, opening, or closing

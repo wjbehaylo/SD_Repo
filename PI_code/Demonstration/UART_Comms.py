@@ -65,6 +65,10 @@ status_UART=""
 #after it is sent out over the ser_write stuff, new_status will be set back to 0
 new_status=0
 
+#Locks: these are to mitigate race conditions in data stuff
+#lock so that when something is trying to change one
+uart_lock= threading.Lock()
+
 #Flag to control main loop
 #if this gets set to False, everything will exit
 SYS_running = True
@@ -75,7 +79,9 @@ CAM_running=True
 #this is a flag to signal that the CV is running
 CV_running=True
 
-
+#Locks: these are to mitigate race conditions in data stuff
+#lock so that when something is trying to change one
+uart_lock= threading.Lock()
 
 def UART():
     #global variables
@@ -142,7 +148,10 @@ def UART():
             case 'Q':
                 #this state, however infrequenctly used, will be to termiante the program's functionality and end the while loops
                 ser.write(b"Quitting\r\n")
-                program_quit=1
+                
+                #I'm pretty sure that this is just like a mutex: when uart_lock is available, we can execute the code, and it would update our variable
+                with uart_lock:
+                    program_quit=1
                 #we want to exit this while loop, so that the connection gets closed
                 sleep(1)
                 break
