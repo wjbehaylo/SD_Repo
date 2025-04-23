@@ -79,6 +79,7 @@ def stateB():
         with uart_lock:
             #debugging
             print("stateB has uart_lock")
+            print(program_quit)
             if(moving_arm==1):
                 return stateC #we are entering the moving arm state
             if(rotating_arm==1):

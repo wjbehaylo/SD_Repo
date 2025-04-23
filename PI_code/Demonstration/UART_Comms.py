@@ -111,6 +111,8 @@ def UART():
                     print("UART has uart_lock")
                     program_quit=1
                     sleep(1)
+                    #debugging
+                    print(program_quit)
                     print("UART losing uart_lock")
                 #we want to exit this while loop, so that the connection gets closed
                 sleep(1)
