@@ -97,15 +97,27 @@ def UART():
             case 'T':
                 #this state has the CV detect the type of the object 
                 ser.write(b"Detecting object\r\n")
-                globals.detecting_object=1
-                while(globals.detecting_object==1):
+                #letting FSM know that we will be detecting object
+                with globals.comms_lock:
+                    globals.detecting_object=1
+                    
+                #waiting for detecting object to be completed
+                while(True):
                     sleep(0.1)
+                    with globals.comms_lock:
+                        #if we are no longer rotating the arm, we can move on
+                        if(globals.detecting_object != 1): 
+                            break
+                
                 ser.write(b"Object detection finished\r\n")
                 #status will be updated during the process
                 #I am planning on status_UART being a string, so we need to encode it 
-                ser.write(globals.status_UART.encode("utf-8")+b"\r\n")
-                globals.status_UART=""
-                globals.new_status=0
+                
+                #status outputting
+                with globals.status_lock:
+                    ser.write(globals.status_UART.encode("utf-8")+b"\r\n")
+                    globals.status_UART=""
+                    globals.new_status=0
                 
             case 'M':
                 #this state has the motor move by a certain amount

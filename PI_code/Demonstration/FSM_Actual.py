@@ -242,9 +242,15 @@ def stateE():
 def stateF(): 
 
     #we set this to 1 so that the CV will capture a frame and analyze it
-    globals.run_CV = 1 
-    while(globals.run_CV==1):
+    with globals.camera_lock:
+        globals.run_CV = 1 
+      
+    #this loop just has us waiting here until the CV has been fully run  
+    while(True):
         sleep(0.1)
+        with globals.camera_lock:
+            if(globals.run_CV!=1):
+                break
         
     #when we exit this while loop, detected_debris_type should be set
     
