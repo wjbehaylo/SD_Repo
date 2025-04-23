@@ -70,7 +70,7 @@ def stateB():
         #generally, only one of these should be 1 when this statement comes up
         
         #we only want to try to access these when we can take uart_lock ourselves
-        with globals.uart_lock:
+        with globals.comms_lock:
             if(globals.moving_arm==1):
                 return stateC #we are entering the moving arm state
             if(globals.rotating_arm==1):
@@ -106,22 +106,30 @@ def stateD():
     #OFFSET is 1 when we are going to = configuration
     #OFFSET is 2 when we are going to + configuration
     
+    #these are temporary variables that will help so that I don't have to keep locking stuff
+    #also note that at this point, these global things would've already been set in the UART_Comms thread
+    with globals.comms_lock:
+        my_configuring_arm = globals.configuring_arm
+        my_arm_configuration=globals.arm_configuration
+        my_rotate_amount=globals.rotate_amount
     #funny enough, configuring_arm + arm_configuration = OFFSET here.
-    OFFSET=0 + globals.configuring_arm + globals.arm_configuration
+    #these flags are all managed by the uart_lock
+    OFFSET=0 + my_configuring_arm + my_arm_configuration
     
     #if we get here, we at least know that we are in the rotating_arm section
-    rot_ARD_Write(OFFSET, globals.rotate_amount)
+    rot_ARD_Write(OFFSET, my_rotate_amount)
     
     #we are going to indiciate that we are going to rotate the arm, and in doing so update the status
-    globals.status_UART+=f"Rotating arms"
-    #add to it if we are actually configuring the arms
-    if(globals.configuring_arm==1):
-        if(globals.arm_configuration==0):
-            globals.status_UART+=" to = configuration"
-        elif(globals.arm_configuration==1):
-            globals.status_UART+=" to + configuration"
-    globals.status_UART+="\r\n"
-    globals.new_status=1
+    with globals.status_lock:
+        globals.status_UART+=f"Rotating arms"
+        #add to it if we are actually configuring the arms
+        if(my_configuring_arm==1):
+            if(my_arm_configuration==0):
+                globals.status_UART+=" to = configuration"
+            elif(my_arm_configuration==1):
+                globals.status_UART+=" to + configuration"
+        globals.status_UART+="\r\n"
+        globals.new_status=1
 
     #we will automatically go to ARD_Wait here.
     return stateE
@@ -131,8 +139,15 @@ def stateD():
 #we could go from here to UART_Wait, move, rotate, or detectDistance
 def stateE():
    
+    #we start off with getting local copies of the necessary variables
+    with globals.comms_lock:
+        my_moving_arm = globals.moving_arm
+        my_rotating_arm = globals.rotating_arm
+        my_pair_select = globals.pair_select
+        
+   
     #set the offsets that will be read from in either scenario
-    MOVE_OFFSET=globals.pair_select+3 #note that there is a +3 because when moving, our offset starts at 3, 4, 5 for pair0, pair1, pairboth, in terms of reading
+    MOVE_OFFSET=my_pair_select+3 #note that there is a +3 because when moving, our offset starts at 3, 4, 5 for pair0, pair1, pairboth, in terms of reading
     ROTATE_OFFSET=3 #we only read from the one location on the rotational one, so this is kinda unnecessary
     #I think we need to consider initializing, then capturing, then pure movement
     '''
@@ -168,18 +183,23 @@ def stateE():
     '''
     
     
-    if(globals.moving_arm==1):
+    if(my_moving_arm==1):
         #remember that lin_ARD_Read returns an array of two integers
         move_status=lin_ARD_Read(MOVE_OFFSET)
         
         #In UART_Comms, we print out the status to UART, so we just need to update it based on what's returned
         #if pair0 and pair1 did stuff, we add that to the status_UART
-        if(move_status[0]!=0):
-            globals.status_UART+=Generate_Status(move_status[0])+"\r\n"
-        if(move_status[1]!=10):
-            globals.status_UART+=Generate_Status(move_status[1])+"\r\n"
-        globals.new_status=1            
-        globals.moving_arm=0 #need to set this back to 0 so we don't come here again
+        
+        with globals.status_lock:
+            if(move_status[0]!=0):
+                globals.status_UART+=Generate_Status(move_status[0])+"\r\n"
+            if(move_status[1]!=10):
+                globals.status_UART+=Generate_Status(move_status[1])+"\r\n"
+            globals.new_status=1
+        
+        #to make it so the other loop will exit
+        with globals.comms_lock:            
+            globals.moving_arm=0 #need to set this back to 0 so we don't come here again
         
         #if either status is -1 it is a fatal error so we will exit this program
         if(move_status[0]==-1 or move_status[1]==-1):
@@ -188,14 +208,17 @@ def stateE():
         #if it didn't fail, we move back to UART_Wait
         return stateB
     
-    elif(globals.rotating_arm==1):
+    elif(my_rotating_arm==1):
         #lets get this rotate status
         rotate_status=rot_ARD_Read(ROTATE_OFFSET)
         #If we get here, we know status isn't gonna just be 0. Add it to the status buffer
-        globals.status_UART+=Generate_Status(rotate_status)+"\r\n"
-        globals.new_status=1 #we have new status
-        globals.rotating_arm=0 #we are done rotating
-        globals.configuring_arm=0 #we are done configuring
+        with globals.status_lock:
+            globals.status_UART+=Generate_Status(rotate_status)+"\r\n"
+            globals.new_status=1 #we have new status
+        #and get out of here
+        with globals.comms_lock:
+            globals.rotating_arm=0 #we are done rotating
+            globals.configuring_arm=0 #we are done configuring
         #if it errors, we need to exit to stateQ
         if(rotate_status==-1):
             return stateQ
@@ -204,8 +227,9 @@ def stateE():
     else:
         #if we get here, we must've messed up somewhere with our flags being set.
         print("ERROR: Ard_Wait improperly called, not moving or rotating arms")
-        globals.status_UART+=Generate_Status(-1)+"\r\n"
-        globals.new_status=1
+        with globals.status_lock:
+            globals.status_UART+=Generate_Status(-1)+"\r\n"
+            globals.new_status=1
     return stateQ
             
 
@@ -252,14 +276,15 @@ def stateF():
 def stateQ():
     print("Program terminated. Shutting down the system...")
     
-    globals.program_quit = 0
-    globals.SYS_running = False
+    with globals.comms_lock:
+        globals.program_quit = 0
+        globals.SYS_running = False
 
-    #close any open connections
-    try:
-        globals.i2c_arduino.close()
-    except: 
-        pass
+        #close any open connections
+        try:
+            globals.i2c_arduino.close()
+        except: 
+            pass
 
     #function for stopping the camera?
     return stateQ

@@ -55,9 +55,9 @@ lin_ard_add = 15
 #Locks: these are locks to manage communication between the threads
 #This is a lock so that the function capturing images and the one analyzing them don't have race issues
 frame_lock= threading.Lock()
-#This lock manages the communication between UART and the FSM
-uart_lock= threading.Lock()
-#this lock is used for waiting on the I2C communications in the ARD_Wait state
+#This lock manages the communication between UART and the FSM, including i2c type messages
+comms_lock= threading.Lock()
+#this lock manages actually writing and using the i2c bus
 i2c_lock= threading.Lock()
 #This lock is used when adding to vs writing the status
 status_lock= threading.Lock()

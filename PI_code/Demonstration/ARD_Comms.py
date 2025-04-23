@@ -182,15 +182,15 @@ def Generate_IEEE_vector(value):
 #if this function returns a '-1', it means the data wasn't written
 #if it returns a 0, it was successfully written
 def lin_ARD_Write(OFFSET, MESSAGE):
-    globals.i2c_arduino
     #here message will be an integer, and we need to convert it into an array of 4 binary bytes the arduino will then interpret
     linear_array=Generate_IEEE_vector(MESSAGE)
     #OFFSET=0 means we are writing to pair0, OFFSET=1 means we are writing to pair1, OFFSET=2 means we are writing to both pairs.
     #This will be passed as input to this function though
     try:
-        globals.i2c_arduino.write_i2c_block_data(globals.lin_ard_add, OFFSET, linear_array)
-        #debugging. might be necessary though also
-        sleep(1)
+        with globals.i2c_lock:
+            globals.i2c_arduino.write_i2c_block_data(globals.lin_ard_add, OFFSET, linear_array)
+            #debugging. might be necessary though also
+            sleep(0.1)
     except IOError:
         print("Could not write data to the Arduino")
         return -1
@@ -214,18 +214,10 @@ def lin_ARD_Read(OFFSET):
             if (OFFSET == 5 or OFFSET == 4 or OFFSET == 3):
                 #read 2 bytes,1 for each pair.
                 #The return of the function here will be
-                status = globals.i2c_arduino.read_i2c_block_data(globals.lin_ard_add, OFFSET, 2)
-            
-                #This should just go twice, once for each motor's status
+                with globals.i2c_lock:
+                    status = globals.i2c_arduino.read_i2c_block_data(globals.lin_ard_add, OFFSET, 2)
                 
-                #debugging
-                '''
-                for i in range(2):
-                    if(status[i]%10) == 0:
-                        print(f"Pair {i} Status: Still moving/completing task")
-                    else:
-                        print(Generate_Status(status[i]))
-                '''
+                
                 
                 # Break if the status of each pair is nonzero. Otherwise, one is still executing
                 
@@ -263,7 +255,8 @@ def rot_ARD_Write(OFFSET, MESSAGE):
     #first we need to convert the integer message
     rotational_array=Generate_IEEE_vector(MESSAGE)
     try:
-        globals.i2c_arduino.write_i2c_block_data(globals.rot_ard_add, OFFSET, rotational_array)
+        with globals.i2c_lock:
+            globals.i2c_arduino.write_i2c_block_data(globals.rot_ard_add, OFFSET, rotational_array)
         sleep(0.1)
     except IOError:
         print("Could not write data to the Arduino")
@@ -279,18 +272,20 @@ def rot_ARD_Read(OFFSET):
             
             if(OFFSET==3):
                 #debugging
-                print("Trying to read byte data")
-                status=globals.i2c_arduino.read_byte(globals.rot_ard_add) #I don't think I needed the offset thing.
+                #print("Trying to read byte data")
+                with globals.i2c_lock:
+                    status=globals.i2c_arduino.read_byte(globals.rot_ard_add) #I don't think I needed the offset thing.
                 
                 #debugging
-                print("Successfully read byte data")
-                print(f"Status: {status}")
+                #print("Successfully read byte data")
+                #print(f"Status: {status}")
                 if(status==20):
-                    print("Still rotating")
+                    #debugging
+                    #print("Still rotating")
                     continue
-                else:
+                #else:
                     #lowkey debugging? not super necessary
-                    print(Generate_Status(status))
+                    #print(Generate_Status(status))
                 #if we get here, the movement has finished
                 break
             else:
