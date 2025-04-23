@@ -37,11 +37,10 @@ import serial
 import threading #for threaded UART connection
 import time
 from time import sleep
-from globals import * #this declared the global variables that we will be using
+import globals #this declared the global variables that we will be using
 
 def UART():
     #global variables
-    global program_quit
     global detecting_object
     global moving_arm
     global move_amount
@@ -54,7 +53,6 @@ def UART():
     #will thread status_UART and check regularly
     global status_UART
     global new_status
-    global SYS_running
     global UART_running
 
     
@@ -106,13 +104,13 @@ def UART():
                 ser.write(b"Quitting\r\n")
                 
                 #I'm pretty sure that this is just like a mutex: when uart_lock is available, we can execute the code, and it would update our variable
-                with uart_lock:
+                with globals.uart_lock:
                     #debugging
                     print("UART has uart_lock")
-                    program_quit=1
+                    globals.program_quit=1
                     sleep(1)
                     #debugging
-                    print(program_quit)
+                    print(globals.program_quit)
                     print("UART losing uart_lock")
                 #we want to exit this while loop, so that the connection gets closed
                 sleep(1)

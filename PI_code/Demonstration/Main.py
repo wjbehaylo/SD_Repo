@@ -55,7 +55,7 @@ from ARD_Comms import * #importing all the ard functions
 from Computer_Vision import * #importing the necessary computer vision functions
 from Generate_Status import Generate_Status #for generating our status we will output
 from FSM_Actual import * #for the functions used to change between the states
-from globals import * #this declared the global variables that we will be using
+import globals #this declared the global variables that we will be using
 #UART
 import threading
 import serial
@@ -84,7 +84,6 @@ state_machine={
 #It is abstracted from a variety of sources
 
 def main():
-    global SYS_running
     current_state = stateA
     
     #I think I might've been having an issue because the threads were initialized in stateA, rather than here, so they would've rapidly gone out of scope
@@ -98,7 +97,7 @@ def main():
     current_state_name = state_machine[current_state]
     print("[INFO] Starting main, FSM in state: ", current_state_name)
     
-    while (SYS_running== True):
+    while (globals.SYS_running== True):
         #if we are in this state we should not be I think.
         if(current_state==stateQ):
             break

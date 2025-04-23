@@ -20,7 +20,7 @@ from UART_Comms import UART #to get our UART Function
 from ARD_Comms import * #importing all the ard functions
 from Computer_Vision import * #importing the necessary computer vision functions
 from Generate_Status import Generate_Status #for generating our status we will output
-from globals import *
+import globals
 
 #UART
 import threading
@@ -35,18 +35,17 @@ import serial
 #Initializing the system, this will start the camera and UART threads, after the start we won't actually go to this state though
 def stateA():
     #starting UART thread. It is a daemon so that when this FSM program finishes executing it will be done to 
-    global UART_running, CV_running, CAM_running
     
     #now make sure that all the threads are running properly
-    sleep(30)
+    sleep(10)
     
-    if(UART_running==False):
+    if(globals.UART_running==False):
         print("UART thread not running")
         return stateQ
-    if(CV_running==False):
+    if(globals.CV_running==False):
         print("CV thread not running")
         return stateQ
-    if(CAM_running==False):
+    if(globals.CAM_running==False):
         print("CAM thread not running")
         return stateQ
     
@@ -59,11 +58,6 @@ def stateA():
 
 #UART_Wait
 def stateB():
-    # we need all of the UART related global flag variables
-    global program_quit
-    global detecting_object
-    global moving_arm
-    global rotating_arm
     
     #we want an infinite loop, as it waits on UART stuff to come through
     #theoretically only one of these should go to 1 in a single command
@@ -76,17 +70,17 @@ def stateB():
         #generally, only one of these should be 1 when this statement comes up
         
         #we only want to try to access these when we can take uart_lock ourselves
-        with uart_lock:
+        with globals.uart_lock:
             #debugging
             print("stateB has uart_lock")
-            print(program_quit)
-            if(moving_arm==1):
+            print(globals.program_quit)
+            if(globals.moving_arm==1):
                 return stateC #we are entering the moving arm state
-            if(rotating_arm==1):
+            if(globals.rotating_arm==1):
                 return stateD #we are rotating the arm by some amount
-            if(detecting_object==1):
+            if(globals.detecting_object==1):
                 return stateF #we will be using CV to detect the object
-            if(program_quit==1):
+            if(globals.program_quit==1):
                 return stateQ #the program is exiting here
             #debugging, it will hold it for 5 seconds guaranteed
             sleep(5)
@@ -278,31 +272,17 @@ def stateF():
     
     
 def stateQ():
-    global SYS_running, program_quit
-
     print("Program terminated. Shutting down the system...")
 
-    program_quit = 0
-    SYS_running = False
+    globals.program_quit = 0
+    globals.SYS_running = False
 
     #close any open connections
     try:
-        i2c_arduino.close()
+        globals.i2c_arduino.close()
     except: 
         pass
 
     #function for stopping the camera?
     return stateQ
 #At this point, we are actually in the program that will be running to execute it all.
-
-#state transition dictionary
-#note that the flags corresponding to the states are lowercase with underscores, while the states are uppercase with underscores
-state_machine={
-    "Initializing": stateA,
-    "UART_Wait": stateB,
-    "Moving_Arm": stateC,
-    "Rotating_Arm": stateD,
-    "ARD_Wait": stateE,
-    "Detecting_Object": stateF,
-    "Quit": stateQ
-}
