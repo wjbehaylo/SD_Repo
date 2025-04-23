@@ -37,6 +37,8 @@ import serial
 import threading #for threaded UART connection
 import time
 from time import sleep
+from globals import * #this declared the global variables that we will be using
+
 
 #Global Variables
 
@@ -154,6 +156,8 @@ def UART():
                     #debugging
                     print("UART has uart_lock")
                     program_quit=1
+                    sleep(1)
+                    print("UART losing uart_lock")
                 #we want to exit this while loop, so that the connection gets closed
                 sleep(1)
                 break

@@ -4,6 +4,8 @@ import time
 from time import sleep
 import threading
 import math
+from globals import * #this declared the global variables that we will be using
+
 #from imutils import paths
 #import imutils
 

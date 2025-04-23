@@ -11,6 +11,7 @@ from smbus2 import SMBus #this is to get the I2C connection functionality we wan
 from time import sleep
 import numpy as np
 from Generate_Status import Generate_Status #For the generation of status strings
+from globals import * #this declared the global variables that we will be using
 
 #the I2C connection will be established in the main function, and accessed globally here
 #This function just writes a message to the Arduinos
@@ -153,7 +154,7 @@ Status:
 
 '''
 
-
+#I think these are global things that only really need to bein this file though? Maybe not in the case of like pair_select
 i2c_arduino=SMBus(1) #Maybe I don't need to initialize this here? only in the top level?
 pair_select=0
 rot_ard_add = 8

@@ -55,7 +55,7 @@ from ARD_Comms import * #importing all the ard functions
 from Computer_Vision import * #importing the necessary computer vision functions
 from Generate_Status import Generate_Status #for generating our status we will output
 from FSM_Actual import * #for the functions used to change between the states
-
+from globals import * #this declared the global variables that we will be using
 #UART
 import threading
 import serial
