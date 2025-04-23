@@ -87,8 +87,8 @@ def stateB():
                 return stateF #we will be using CV to detect the object
             if(program_quit==1):
                 return stateQ #the program is exiting here
-            #debugging
-            sleep(1)
+            #debugging, it will hold it for 5 seconds guaranteed
+            sleep(5)
             print("stateB losing uart_lock")
     
 #Moving_Arm
