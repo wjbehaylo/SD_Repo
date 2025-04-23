@@ -185,9 +185,6 @@ void setup() {
     curr_steps_pair[1]=0;
     stepper_lin0.setCurrentPosition(0);
     stepper_lin1.setCurrentPosition(0);
-
-    
-
     Serial.println("Linear Arduino Initialized.");
 }
 
