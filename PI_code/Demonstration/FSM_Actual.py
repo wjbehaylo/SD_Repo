@@ -89,12 +89,7 @@ lin_ard_add=15
 def stateA():
     #starting UART thread. It is a daemon so that when this FSM program finishes executing it will be done to 
     global UART_running, CV_running, CAM_running
-    uart_thread = threading.Thread(target=UART, daemon = True)
-    cam_thread = threading.Thread(target= capture_frame, daemon = True)
-    cv_thread = threading.Thread(target = debris_detect, daemon = True)
-    uart_thread.start()
-    cam_thread.start()
-    cv_thread.start()
+    
     #now make sure that all the threads are running properly
     sleep(30)
     

@@ -140,6 +140,15 @@ state_machine={
 def main():
     global SYS_running
     current_state = stateA
+    
+    #I think I might've been having an issue because the threads were initialized in stateA, rather than here, so they would've rapidly gone out of scope
+    uart_thread = threading.Thread(target=UART, daemon = True)
+    cam_thread = threading.Thread(target= capture_frame, daemon = True)
+    cv_thread = threading.Thread(target = debris_detect, daemon = True)
+    uart_thread.start()
+    cam_thread.start()
+    cv_thread.start()
+    
     current_state_name = state_machine[current_state]
     print("[INFO] Starting main, FSM in state: ", current_state_name)
     
