@@ -84,7 +84,7 @@ state_machine={
 #It is abstracted from a variety of sources
 
 def main():
-    global global.SYS_running
+    global SYS_running
     current_state = stateA
     
     #I think I might've been having an issue because the threads were initialized in stateA, rather than here, so they would've rapidly gone out of scope
