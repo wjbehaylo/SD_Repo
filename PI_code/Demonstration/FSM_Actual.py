@@ -20,68 +20,11 @@ from UART_Comms import UART #to get our UART Function
 from ARD_Comms import * #importing all the ard functions
 from Computer_Vision import * #importing the necessary computer vision functions
 from Generate_Status import Generate_Status #for generating our status we will output
+from globals import *
 
 #UART
 import threading
 import serial
-
-#Global Variables for UART
-
-#this is a flag to signal if the program should stop, it won't often be set
-program_quit=0
-#this is a flag to signal that we should determine the object type, things that matter
-detecting_object=0
-#this is a flag to signal that the arms will be moving
-moving_arm=0
-#this is a flag, that is technically an integer, which will symbolize pair0(0) pair1(1) or both(2) pairs of arms being moved
-pair_select=0
-#this is a value to write how many steps the arms will be moving
-move_amount=0
-#this is a flag to signal if arms are rotating
-rotating_arm=0
-#this is a flag to signal whether we want to configure arm or not
-configuring_arm=0
-#this is a flag to signal what configuration we want = configuration is 0, + configuration is 1
-arm_configuration=0
-#this is a value to signal how many degrees the arms will be rotating
-rotate_amount=0
-#this is going to be a string of the status of whatever thing just happened
-status_UART="" 
-#this will be a flag to be set if there is new status during the capture process.
-#so when going through the states, if capture_start==1, then they will set 'new_status'=1 to signal that something needs to be sent out.
-#after it is sent out over the ser_write stuff, new_status will be set back to 0
-new_status=0
-
-#Variables for CV
-#this will store the actual detected debris type
-detected_debris_type=None
-#this is a flag to signal between FSM_Actual and Computer_Vision that a new frame should be captured and object type determined
-run_CV=0
-
-#This is where the image is sent when it is passed between the functions
-color_frame = None
-
-#Locks: these locks help to deal with data race conditions that would be experienced by the different threads
-#This is a lock so that the function capturing images and the one analyzing them don't have race issues
-frame_lock= threading.Lock()
-#lock so that when something is trying to change one
-uart_lock= threading.Lock() 
-
-#Flag to control main loop
-#If this gets set to false, everything will end
-SYS_running = True
-UART_running = True
-#this is a flag to signal that the camera thread is running
-CAM_running=True
-#this is a flag to signal that the CV is running
-CV_running=True
-
-#Global variables for Arduino Communications
-#establishes what bus to be communicated over
-i2c_arduino=SMBus(1)
-#establishes the address of each arduino
-rot_ard_add=8
-lin_ard_add=15
 
 #These functions represent each of the states, with their transition logic present
 #Note that in the state functions, all that matters is the transition logic, not the actual work.

@@ -9,25 +9,6 @@ from globals import * #this declared the global variables that we will be using
 #from imutils import paths
 #import imutils
 
-
-#i2c_bus = SMbus(1)
-#Flags 
-#global variables shared with FSM_Actual
-
-SYS_running = True
-#this is a flag to signal that the camera thread is running
-CAM_running=False
-#this is a flag to signal that the CV is running
-CV_running=False
-
-detected_debris_type=None
-run_CV=0 #technically it functions like a boolean
-#the main difference between need_color and run_CV is that need_color means that we are trying to detect debris, run_CV is for external communication
-
-# Shared frames + lock
-frame_lock      = threading.Lock()
-color_frame     = None
-
 def capture_frame(): 
 	# Capture frames from current camera in separate thread
 	global run_CV, color_frame, SYS_running, CAM_running

@@ -68,64 +68,6 @@ from time import sleep
 import threading
 import math
 
-
-#Global Variables for UART
-
-#this is a flag to signal if the program should stop, it won't often be set
-program_quit=0
-#this is a flag to signal that we should determine the object type, things that matter
-detecting_object=0
-#this is a flag to signal that the arms will be moving
-moving_arm=0
-#this is a flag, that is technically an integer, which will symbolize pair0(0) pair1(1) or both(2) pairs of arms being moved
-pair_select=0
-#this is a value to write how many steps the arms will be moving
-move_amount=0
-#this is a flag to signal if arms are rotating
-rotating_arm=0
-#this is a flag to signal whether we want to configure arm or not
-configuring_arm=0
-#this is a flag to signal what configuration we want = configuration is 0, + configuration is 1
-arm_configuration=0
-#this is a value to signal how many degrees the arms will be rotating
-rotate_amount=0
-#this is going to be a string of the status of whatever thing just happened
-status_UART="" 
-#this will be a flag to be set if there is new status during the process
-new_status=0
-
-#Variables for CV
-#this will store the actual detected debris type
-detected_debris_type=None
-#this is a flag to signal between FSM_Actual and Computer_Vision that a new frame should be captured and object type determined
-run_CV=0
-#This is where the image is sent when it is passed between the functions
-color_frame = None
-
-#Locks: these are locks to manage communication between the threads
-#This is a lock so that the function capturing images and the one analyzing them don't have race issues
-frame_lock= threading.Lock()
-#This lock manages the communication between UART and the FSM
-uart_lock= threading.Lock()
-
-
-#Flag to control main loop
-#If this gets set to false, everything will end
-SYS_running = True
-#This is a flag to signal that the UART is running
-UART_running = True
-#this is a flag to signal that the camera thread is running
-CAM_running=True
-#this is a flag to signal that the CV is running
-CV_running=True
-
-#Global variables for Arduino Communications
-#establishes what bus to be communicated over
-i2c_arduino=SMBus(1)
-#establishes the address of each arduino
-rot_ard_add=8
-lin_ard_add=15
-
 #dictionairy of the names of each of the various states
 state_machine={
     stateA:"Initializing",
@@ -142,7 +84,7 @@ state_machine={
 #It is abstracted from a variety of sources
 
 def main():
-    global SYS_running
+    global global.SYS_running
     current_state = stateA
     
     #I think I might've been having an issue because the threads were initialized in stateA, rather than here, so they would've rapidly gone out of scope

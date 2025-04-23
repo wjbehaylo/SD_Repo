@@ -154,11 +154,7 @@ Status:
 
 '''
 
-#I think these are global things that only really need to bein this file though? Maybe not in the case of like pair_select
-i2c_arduino=SMBus(1) #Maybe I don't need to initialize this here? only in the top level?
-pair_select=0
-rot_ard_add = 8
-lin_ard_add = 15
+
 
 def Generate_IEEE_vector(value):   
     #np.float32(value) turns the value into a 32 bit numpy floating point 
