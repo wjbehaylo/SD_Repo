@@ -25,7 +25,7 @@
     3. Set THRESHOLD ≈ midpoint (e.g. 500–700)
 
 */
-const int sensorPins[4] = { A0, A1, A2, A3 };
+const int sensorPins[4] = { A1, A2, A3 };
 const unsigned long PHASE_MS = 5000;
 
 void setup() {
@@ -33,8 +33,8 @@ void setup() {
   while (!Serial) {}  
   Serial.println("\n=== Auto-Calibration ===");
 
-  int minVal[4], maxVal[4];
-  for (int i = 0; i < 4; i++) {
+  int minVal[3], maxVal[3];
+  for (int i = 0; i < 3; i++) {
     minVal[i] = 1023;
     maxVal[i] = 0;
   }
@@ -43,7 +43,7 @@ void setup() {
   Serial.println("Phase 1: leave UNPRESSED");
   unsigned long start = millis();
   while (millis() - start < PHASE_MS) {
-    for (int i = 0; i < 4; i++) {
+    for (int i = 0; i < 3; i++) {
       int v = analogRead(sensorPins[i]);
       minVal[i] = min(minVal[i], v);
     }
@@ -54,7 +54,7 @@ void setup() {
   Serial.println("Phase 2: press FULLY");
   start = millis();
   while (millis() - start < PHASE_MS) {
-    for (int i = 0; i < 4; i++) {
+    for (int i = 0; i < 3; i++) {
       int v = analogRead(sensorPins[i]);
       maxVal[i] = max(maxVal[i], v);
     }
@@ -62,7 +62,7 @@ void setup() {
   }
 
   Serial.println("\nResults:");
-  for (int i = 0; i < 4; i++) {
+  for (int i = 0; i < 3; i++) {
     int thresh = (minVal[i] + maxVal[i]) / 2;
     Serial.print("Sensor ");
     Serial.print(i);
