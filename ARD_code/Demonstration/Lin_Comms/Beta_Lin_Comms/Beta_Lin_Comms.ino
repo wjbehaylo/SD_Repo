@@ -103,7 +103,7 @@ Libraries to be included:
  const int maxAccel = 500;
  const int increment = 10; //I think its probably fine to have it move 1 step at a time, if too slow we could increase this though
  // ADC threshold for a “hit.” Tweak this in testing.
- const int FORCE_THRESH = 710;  // 0–1023 range, value from calibration
+ const int FORCE_THRESH = 610;  // 0–1023 range, value from calibration
  const int max_steps = 14000; //maximum steps they could move to
 
  AccelStepper stepper_lin0(AccelStepper::DRIVER, PAIR0_STP_PIN, PAIR0_DIR_PIN);
