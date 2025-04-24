@@ -297,6 +297,8 @@ def UART():
                         #need to make sure that the mutex is applied
                         with globals.comms_lock:
                             globals.rotating_arm = 1
+                            globals.configuring_arm=0
+                            globals.arm_configuration=0
                             globals.rotate_amount = r_int
                         # Exit loop since we got a valid integer
                         break

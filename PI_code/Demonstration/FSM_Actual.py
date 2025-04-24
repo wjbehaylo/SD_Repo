@@ -226,6 +226,7 @@ def stateE():
         with globals.comms_lock:
             globals.rotating_arm=0 #we are done rotating
             globals.configuring_arm=0 #we are done configuring
+            globals.arm_configuration=0 #have to set this back to 0, I think that was the problem somewhat
         #if it errors, we need to exit to stateQ
         if(rotate_status==-1):
             return stateQ
