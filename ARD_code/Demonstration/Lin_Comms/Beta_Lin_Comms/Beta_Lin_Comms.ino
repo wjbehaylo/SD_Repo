@@ -100,10 +100,10 @@ Libraries to be included:
  //const int threshold = 60; not used?
  const int maxSpeed = 500; //the max speed being too high (1000) when we run both together results in a loud buzzing noise and no movement
  const int maxAccel = 500;
- const int increment = 10; //I think its probably fine to have it move 1 step at a time, if too slow we could increase this though
+ const int increment = 100; //I think its probably fine to have it move 1 step at a time, if too slow we could increase this though
  // ADC threshold for a “hit.” Tweak this in testing.
  const int FORCE_THRESH = 200;  // 0–1023 range, value from calibration
- const int max_steps = 14000; //maximum steps they could move to
+ const int max_steps = 13500; //maximum steps they could move to
 
  AccelStepper stepper_lin0(AccelStepper::DRIVER, PAIR0_STP_PIN, PAIR0_DIR_PIN);
  AccelStepper stepper_lin1(AccelStepper::DRIVER, PAIR1_STP_PIN, PAIR1_DIR_PIN);

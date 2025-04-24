@@ -236,7 +236,7 @@ def stateE():
             globals.status_UART+=Generate_Status(-1)+"\r\n"
             globals.new_status=1
     return stateQ
-            
+
 
 #Detecting_Object
 #I believe we just either go here from UART_Wait or from ARD_Wait, ARD_Wait if we are in capture_start==1
@@ -246,6 +246,8 @@ def stateF():
     #we set this to 1 so that the CV will capture a frame and analyze it
     with globals.camera_lock:
         globals.run_CV = 1 
+        #debugging
+        print(globals.run_CV)
       
     #this loop just has us waiting here until the CV has been fully run  
     while(True):

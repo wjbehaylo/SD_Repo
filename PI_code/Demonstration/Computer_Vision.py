@@ -73,19 +73,24 @@ def debris_detect():
 	with globals.running_lock:
 		globals.CV_running = True
 	# Continue processing frames while SYS_running is True
- 
+	
 	#debugging
 	print("Debris detect running")
 	#start the loop off strong
 	my_SYS_running=True
 	while (my_SYS_running):
+     
+		print("Looping")
 		with globals.running_lock:
 			my_SYS_running=globals.SYS_running
 		#we only want to run through this loop if run_CV is 1, meaning that the FSM is trying to detect a new object
 		#we will set run_CV to be 0 after we have finished finding the color
 
 		#we want to only do this loop when we need to detect the debris, not constantly
+  
 		with globals.camera_lock:
+			#I added this sleep in because I think it was going too fast
+			sleep(0.1)
 			if(globals.run_CV == 0):
 				continue
 			need_color=True
