@@ -381,6 +381,7 @@ Libraries to be included:
     //fully open end stop
     else if(digitalRead(ENDSTOP_TOP_0_PIN)==LOW){
      executionStatus0 = 2;
+     curr_steps_pair[0]=0; //I think I need to add this in otherwise its weird
      return;
     }
     //this takes the place of our fully closed because we don't have it wired
@@ -468,6 +469,7 @@ Libraries to be included:
    //fully open end stop
    else if(digitalRead(ENDSTOP_TOP_1_PIN)==LOW){
      executionStatus1 = 12;
+     curr_steps_pair[1]=0; //I think I need to add this in otherwise its weird
      return;
    }
    //this takes the place of our fully closed because we don't have it wired
@@ -615,6 +617,8 @@ Libraries to be included:
    //fully open end stop
    else if(digitalRead(ENDSTOP_TOP_0_PIN)==LOW){
      executionStatus0 = 2;
+     curr_steps_pair[0]=0; //I think I need to add this in otherwise its weird
+
    }
   //this takes the place of our fully closed because we don't have it wired
   else if(curr_steps_pair[0] >= max_steps){
@@ -646,6 +650,7 @@ Libraries to be included:
    //fully open end stop
    else if(digitalRead(ENDSTOP_TOP_1_PIN)==LOW){
      executionStatus1 = 12;
+     curr_steps_pair[1]=0; //I think I need to add this in otherwise its weird. Maybe.
    }
    //this takes the place of our fully closed because we don't have it wired
   else if(curr_steps_pair[1] >= max_steps){
