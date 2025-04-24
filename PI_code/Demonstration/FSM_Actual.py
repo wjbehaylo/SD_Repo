@@ -126,6 +126,7 @@ def stateD():
     rot_ARD_Write(OFFSET, my_rotate_amount)
     
     #we are going to indiciate that we are going to rotate the arm, and in doing so update the status
+    '''I think we can remove this, because we get status elsewhere
     with globals.status_lock:
         globals.status_UART+=f"Rotating arms"
         #add to it if we are actually configuring the arms
@@ -136,7 +137,7 @@ def stateD():
                 globals.status_UART+=" to + configuration"
         globals.status_UART+="\r\n"
         globals.new_status=1
-
+    '''
     #we will automatically go to ARD_Wait here.
     return stateE
 

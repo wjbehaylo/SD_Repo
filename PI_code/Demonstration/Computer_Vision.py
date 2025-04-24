@@ -54,8 +54,8 @@ def capture_frame():
 		und = cv2.undistort(frame, camera_matrix, distortion_coeffs)
 
 		#debugging
-		cv2.imshow("Undisorted",und)
-  
+		#cv2.imshow("Undisorted",und)
+
 		# safely hand off to the detector
 		# only if the threads are not currently locked, save the new frame to be analyzed
 		with globals.frame_lock: 
