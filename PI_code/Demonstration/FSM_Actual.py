@@ -97,10 +97,11 @@ def stateC():
     #moving arm is set to 1 in the UART thread, or the capture start or initialize, 
     
     #we are going to want to incldicate that we are going to move the arm, and in doing so update the status
+    '''
     with globals.status_lock:
         globals.status_UART+=f"Moving arms\r\n\tpair_select={my_pair_select}\r\n"
         globals.new_status=1
-    
+    '''
     #we automatically go to the ARD_Wait state after this one
     return stateE
 
