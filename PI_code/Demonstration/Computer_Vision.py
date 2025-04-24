@@ -79,8 +79,6 @@ def debris_detect():
 	#start the loop off strong
 	my_SYS_running=True
 	while (my_SYS_running):
-     
-		print("Looping")
 		with globals.running_lock:
 			my_SYS_running=globals.SYS_running
 		#we only want to run through this loop if run_CV is 1, meaning that the FSM is trying to detect a new object
@@ -95,6 +93,8 @@ def debris_detect():
 				continue
 			need_color=True
 		
+		#debugging
+		print("starting CV search")
 		#try to get the most recently captured frame from capture_frame() thread
 		with globals.frame_lock:
 			snap = globals.color_frame.copy() if globals.color_frame is not None else None
