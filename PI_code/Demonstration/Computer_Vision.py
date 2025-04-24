@@ -205,7 +205,7 @@ def debris_detect():
 				globals.detected_debris_type=my_detected_debris_type
 				globals.run_CV = 0
 		# show and check for quit
-		cv2.imshow("Debris Detection", snap)
+		#cv2.imshow("Debris Detection", snap)
     #cv2.destroyAllWindows()
     #here we are exiting because SYS_running has been made false
 	with globals.running_lock:
