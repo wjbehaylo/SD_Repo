@@ -53,10 +53,13 @@ def capture_frame():
 		#undistort the image
 		und = cv2.undistort(frame, camera_matrix, distortion_coeffs)
 
+		#debugging
+		cv2.imshow(und)
+  
 		# safely hand off to the detector
 		# only if the threads are not currently locked, save the new frame to be analyzed
 		with globals.frame_lock: 
-			color_frame    = und.copy()
+			globals.color_frame    = und.copy()
 		#this might lowkey monopolize the running_lock. 
   		#I don't want to get gridlock from overlapping mutexes, which I gotta watch out for with debris_detect and capture_frame
 		with globals.running_lock:
